@@ -1,6 +1,6 @@
 // Projectiles: octorok rocks, golem boulders, falling rocks, thrown bushes/pots/rocks/bombs.
 import { Entity } from './base.js';
-import { spriteFrame, TILE, chance } from '../util.js';
+import { spriteFrame, TILE, LEVEL, chance } from '../util.js';
 import { hits } from '../combat.js';
 import { damage } from '../combat.js';
 
@@ -42,7 +42,7 @@ export class Projectile extends Entity {
       if (this.hop <= 0) {
         // fell past a ledge? keep falling to the lower ground
         const h = this.g.world.heightAtPx(this.x, this.y - 2);
-        if (h < this.lvl) { this.hop += (this.lvl - h) * 16; this.lvl = h; this.z = h; }
+        if (h < this.lvl) { this.hop += (this.lvl - h) * LEVEL; this.lvl = h; this.z = h; }
         else { this.hop = 0; this.end('land'); return; }
       }
     }

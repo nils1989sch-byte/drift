@@ -21,6 +21,7 @@ export function createRenderer(canvas, assets) {
     ctx, assets, time: 0,
     tiltShift: true,
     vignette: true,
+    grade: true,
     debug: false,
     stats: { tiles: 0, sprites: 0 },
     sprite(img, x, y, z = 0, o = {}) {
@@ -94,8 +95,17 @@ export function createRenderer(canvas, assets) {
     drawEdges(world, tx, ty, h, id, px, py);
     // ambient occlusion: darken where higher neighbours meet this cell
     const hw = world.heightAt(tx - 1, ty), hn = world.heightAt(tx, ty - 1);
-    if (hw > h && world.inside(tx - 1, ty)) { ctx.fillStyle = 'rgba(20,16,40,0.22)'; ctx.fillRect(px, py, 4, TILE); ctx.fillRect(px, py, 2, TILE); }
-    if (hn > h && world.inside(tx, ty - 1)) { ctx.fillStyle = 'rgba(20,16,40,0.25)'; ctx.fillRect(px, py, TILE, 3); ctx.fillRect(px, py, TILE, 1); }
+    // cast shadow from the key light (top-left): higher ground to the west throws a hard-edged shadow east
+    if (hw > h && world.inside(tx - 1, ty)) {
+      const sw = Math.min(TILE, 6 + 5 * (hw - h - 1));
+      ctx.fillStyle = 'rgba(36,20,72,0.30)'; ctx.fillRect(px, py, sw, TILE);
+      ctx.fillStyle = 'rgba(36,20,72,0.14)'; ctx.fillRect(px + sw, py, 2, TILE);
+    }
+    // contact shadow at the foot of a cliff
+    if (hn > h && world.inside(tx, ty - 1)) {
+      ctx.fillStyle = 'rgba(36,20,72,0.30)'; ctx.fillRect(px, py, TILE, 4);
+      ctx.fillStyle = 'rgba(36,20,72,0.16)'; ctx.fillRect(px, py + 4, TILE, 3);
+    }
     if (h > 0) {
       // rim light on edges dropping off (top-left key light)
       const he = world.heightAt(tx + 1, ty);
@@ -128,17 +138,30 @@ export function createRenderer(canvas, assets) {
     // cliff face from this cell's raised top down to the south neighbour's level
     const n = h - hs;
     if (n <= 0) return;
-    const faces = assets.faces[world.face] || assets.faces.rock;
+    const fid = assets.faces[world.face] ? world.face : 'rock';
+    // end pieces where the plateau's side drops off (west/east neighbour lower): faces[`${id}_l`] / [`${id}_r`]
+    const endL = world.heightAt(tx - 1, ty) < h, endR = world.heightAt(tx + 1, ty) < h;
+    const faces = (endL && !endR && assets.faces[fid + '_l']) || (endR && !endL && assets.faces[fid + '_r']) || assets.faces[fid];
     const px = tx * TILE;
-    for (let i = 0; i < n; i++) {
-      const py = (ty + 1) * TILE - h * LEVEL + i * LEVEL;
-      let img = faces?.[0];
-      if (faces && faces.length >= 3 && n >= 2) img = i === 0 ? faces[0] : i === n - 1 ? faces[2] : faces[1];
-      if (img) ctx.drawImage(img, px, py);
-      else { ctx.fillStyle = '#6b5a48'; ctx.fillRect(px, py, TILE, LEVEL); }
+    const top = (ty + 1) * TILE - h * LEVEL, hgt = n * LEVEL;
+    if (!faces || !faces.length) { ctx.fillStyle = '#6b5a48'; ctx.fillRect(px, top, TILE, hgt); }
+    else {
+      // faces: [top, mid, bottom, single?] of any height; tiled vertically and clipped to the face height
+      const fTop = faces[0], fMid = faces[1] || faces[0], fBot = faces[2] || null;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(px, top, TILE, hgt); ctx.clip();
+      if (n === 1 && faces[3]) ctx.drawImage(faces[3], px, top);
+      else {
+        let y = top + fTop.height;
+        const yEnd = top + hgt - (fBot ? fBot.height : 0);
+        let k = 0;
+        while (y < yEnd) { const m = faces.mids ? faces.mids[hash(tx, ty + k++) % faces.mids.length] : fMid; ctx.drawImage(m, px, y); y += m.height; }
+        if (fBot) ctx.drawImage(fBot, px, top + hgt - fBot.height);
+        ctx.drawImage(fTop, px, top);
+      }
+      ctx.restore();
     }
     // side shading on face ends
-    const top = (ty + 1) * TILE - h * LEVEL, hgt = n * LEVEL;
     if (world.heightAt(tx - 1, ty) < h && world.heightAt(tx - 1, ty + 1) <= hs) { ctx.fillStyle = 'rgba(255,240,210,0.12)'; ctx.fillRect(px, top, 1, hgt); }
     if (world.heightAt(tx + 1, ty) < h && world.heightAt(tx + 1, ty + 1) <= hs) { ctx.fillStyle = 'rgba(10,8,24,0.3)'; ctx.fillRect(px + TILE - 1, top, 1, hgt); }
   }
@@ -163,7 +186,7 @@ export function createRenderer(canvas, assets) {
   }
 
   function drawDiorama(world) {
-    const PL = 28; // plinth depth in world px
+    const PL = 40; // plinth depth in world px
     const W = world.pxW, H = world.pxH;
     ensurePlinth(world.plinth || 'earth');
     // table drop shadow
@@ -198,7 +221,7 @@ export function createRenderer(canvas, assets) {
     const w = canvas.width, h = canvas.height;
     if (R.tiltShift) {
       // strength grows with zoom-in: miniature/diorama look
-      const strength = Math.min(1, Math.max(0.25, (cam.scale - 1) / 4));
+      const strength = Math.min(1, Math.max(0.45, (cam.scale - 0.5) / 3));
       const bw = Math.max(1, Math.round(w / 6)), bh = Math.max(1, Math.round(h / 6));
       if (blurCanvas.width !== bw || blurCanvas.height !== bh) { blurCanvas.width = bw; blurCanvas.height = bh; }
       if (maskCanvas.width !== bw || maskCanvas.height !== bh) { maskCanvas.width = bw; maskCanvas.height = bh; }
@@ -216,6 +239,17 @@ export function createRenderer(canvas, assets) {
       ctx.imageSmoothingEnabled = true;
       ctx.drawImage(blurCanvas, 0, 0, w, h);
       ctx.imageSmoothingEnabled = false;
+    }
+    if (R.grade) {
+      // warm key light from the top-left, cool shade towards the bottom-right (miniature photo look)
+      ctx.globalCompositeOperation = 'soft-light';
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, 'rgba(255,214,150,0.55)');
+      g.addColorStop(0.55, 'rgba(128,128,128,0)');
+      g.addColorStop(1, 'rgba(40,40,140,0.5)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = 'source-over';
     }
     if (R.vignette) {
       const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.35, w / 2, h / 2, Math.max(w, h) * 0.72);

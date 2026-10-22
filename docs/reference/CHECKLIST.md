@@ -9,6 +9,7 @@ Automatisch prüfbare Punkte sind mit **[auto]** markiert (Pixel-Analyse der Can
 - [ ] **[auto]** Jedes Sprite hat `ax`/`ay` oder ist korrekt unten-mittig verankert; Angriffssprites mit Anker.
 - [ ] Kein verschwommenes Pixel bei Zoom (imageSmoothing aus, ganzzahlige Positionen).
 - [ ] Tiles kacheln nahtlos (3×3-Kachelung ohne sichtbare Naht oder auffälliges 16er-Raster).
+- [ ] Keine harten 16-px-Rechteckkanten zwischen Bodenarten/Helligkeiten (auch grass ↔ grass_dark).
 - [ ] Varianten-Tiles (grass, dirt, path …) erzeugen kein erkennbares Wiederholungsmuster auf 10×10 Tiles.
 
 ## B. Farbe
@@ -33,7 +34,9 @@ Automatisch prüfbare Punkte sind mit **[auto]** markiert (Pixel-Analyse der Can
 - [ ] Innenlinien sparsam und in Materialfarbe; Linien ohne 1-3-1-Jaggies.
 
 ## E. Höhen & Klippen
-- [ ] Face `rock` hat **vertikale Strukturrillen** (Rippen hell links / dunkel rechts).
+- [ ] Face `rock` hat **vertikale Strukturrillen** aus unregelmäßigen Brocken (hell links / dunkel rechts), warme cliff-Ramp.
+- [ ] Klippe liest sich als Fels, nicht als Mauer/Palisade: keine durchgehenden horizontalen Fugen, keine gleich breiten Säulen, kein 16-px-Takt.
+- [ ] Klippe wird nach unten dunkler.
 - [ ] Face `[0]` mit Grasüberhang, `[2]` mit dunklem Fuß; Mittelstück kachelt vertikal nahtlos.
 - [ ] Stufenhöhe 16 px pro Level korrekt, Plateau-Oberkante mit Lichtkante.
 - [ ] Treppen klar als begehbar erkennbar (horizontale Stufenlinien).

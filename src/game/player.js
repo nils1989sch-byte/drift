@@ -34,6 +34,11 @@ export class Player extends Entity {
     this.moving = false;
     this.god = false;
   }
+  syncInventory() {
+    this.items = ['sword', ...(this.hasBombs ? ['bomb'] : [])];
+    this.sword = this.hasSword;
+    if (this.hasBombs && !this.item) this.item = 'bomb';
+  }
   // ---- placement / queries --------------------------------------------------------------
   place(x, y, dir = this.dir) {
     this.x = x; this.y = y; this.dir = dir;
@@ -62,10 +67,10 @@ export class Player extends Entity {
   swordBox() {
     const x = this.x, y = this.y;
     switch (this.dir) {
-      case 'down': return { x: x - 13, y: y - 8, w: 26, h: 22 };
-      case 'up': return { x: x - 13, y: y - 30, w: 26, h: 22 };
-      case 'left': return { x: x - 23, y: y - 20, w: 21, h: 24 };
-      default: return { x: x + 2, y: y - 20, w: 21, h: 24 };
+      case 'down': return { x: x - 13, y: y - 10, w: 26, h: 24 };
+      case 'up': return { x: x - 13, y: y - 30, w: 26, h: 31 };
+      case 'left': return { x: x - 23, y: y - 20, w: 27, h: 24 };
+      default: return { x: x - 4, y: y - 20, w: 27, h: 24 };
     }
   }
   spinBox() { return { x: this.x - 24, y: this.y - 30, w: 48, h: 42 }; }
@@ -308,7 +313,7 @@ export class Player extends Entity {
 
   useItem() {
     const g = this.g;
-    if (this.item === 'bombs') {
+    if (this.item === 'bomb' || this.item === 'bombs') {
       if (this.bombs <= 0) { g.hint('nobombs', 'Keine Bomben mehr!'); g.play('error'); return; }
       const active = g.objects.filter((o) => o instanceof Bomb && !o.dead).length;
       if (active >= 3) return;
@@ -432,12 +437,12 @@ export class Player extends Entity {
     // carried object over the head
     if (this.carry) {
       const ci = spriteFrame(r.assets, this.carry.sprite, r.time, 8);
-      let cx = this.x, cy = this.y, hop = this.hop + 13;
+      let cx = this.x, cy = this.y, hop = this.hop + 18;
       if (st === 'lift' && this.liftFrom) {
         const k = Math.min(1, this.t / 0.24);
         cx = this.liftFrom.x + (this.x - this.liftFrom.x) * k;
         cy = this.liftFrom.y + (this.y - this.liftFrom.y) * k;
-        hop = this.hop + 13 * k;
+        hop = this.hop + 18 * k;
       }
       const bob = this.moving && Math.floor(r.time * 9) % 2 ? 1 : 0;
       r.sprite(ci, cx, cy + 0.5, this.z, { hop: hop - bob });

@@ -128,3 +128,10 @@ L/Q=item, Enter/Esc=start, +/-/Mausrad=Zoom. Pinch-Zoom auf Touch (Renderer/Kame
   Beispiel: Wasserzelle mit Gras im Norden → `edges.grass_n` wird oben auf die Wasserzelle gemalt (Uferkante).
 - `faces.plinth_earth`, `faces.plinth_stone`: [Canvas] horizontal kachelbares Muster (z. B. 32×28) für den Diorama-Sockel.
 - Pixel-Font gehört dem UI-Agenten (`src/ui/font.js`), nicht der Art. `assets.font` darf null sein.
+
+## Update Klippen (Regie, nach Review 1)
+- `LEVEL = 24` (statt 16): höhere, ALttP-artige Klippen.
+- `faces[id] = [top, mid, bottom, single?]`, empfohlen je **16×12** (top = Graslippe + obere Brocken, mid = kachelbar,
+  bottom = dunkler Fuß), `single` optional 16×24 für 1-Stufen-Klippen. Renderer: top oben, mid wiederholt, bottom unten, geclippt.
+  Mehrere mid-Varianten: `faces[id].mids = [Canvas…]` (Renderer wählt per Hash) – optional.
+- Endstücke: `faces[id + '_l']`, `faces[id + '_r']` (gleiches Format) werden genutzt, wenn das Plateau links/rechts abfällt.

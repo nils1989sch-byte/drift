@@ -62,7 +62,7 @@ Tiles: höchstens 8 Farben pro 16×16-Tile.
 - Transparenz per Alpha nur für Renderer-Effekte (Schatten, AO, Tilt-Shift, Flash) und FX-Fades; Sprites und
   Tiles selbst sind **voll deckend** (Alpha 0 oder 1).
 
-### 4.3 Masterpalette (69 Farben)
+### 4.3 Masterpalette (74 Farben)
 Schreibweise `name #rrggbb` – so in `assets.palette` übernehmen.
 
 ```
@@ -86,7 +86,14 @@ dirt_lt      #d0a068
 dirt_hi      #f0d098
 sand         #e0c888
 
-# Fels / Klippe (5)       violettgrau -> warmgrau/beige
+# Klippe / Oberwelt-Fels (5)   warm ocker/khaki – für Face `rock` (ALttP-Look), NICHT grau
+cliff_ink    #402830
+cliff_dk     #705040
+cliff_md     #a08058
+cliff_lt     #c8a870
+cliff_hi     #e8d098
+
+# Fels / Stein-Objekte (5)  violettgrau -> warmgrau/beige (hebbare Steine, Golem, Statue)
 rock_ink     #282038
 rock_dk      #504860
 rock_md      #807880
@@ -192,9 +199,14 @@ Alle 16×16, deckend, ohne Outline, nahtlos kachelbar. „Varianten“ = mehrere
 | `void` | Außerhalb der Karte; wird nicht gezeichnet (Diorama-Hintergrund sichtbar). Falls nötig: `night`. | – | – |
 
 **Faces** (`assets.faces[faceId]`, 16×16, vertikal gekachelt; `[0]` oberes Stück, `[1]` Mittelstück, `[2]` Fuß):
-- `rock` – Klippe wie ALttP: **vertikale Strukturrillen** (2–3 px breite Rippen, Abstand 4–6 px, unregelmäßige
-  Länge), Rippe links hell `rock_lt`, rechts dunkel `rock_dk`, Rillen `rock_ink`. `[0]` mit 2 px
-  Grasüberhang (`grass_md`, Zacken nach unten, Schatten `grass_ink`). `[2]` Fuß: Steinbrocken + 2 px `rock_ink`.
+- `rock` – Oberwelt-Klippe wie ALttP, **cliff-Ramp (warm ocker), nicht rock/grau**. Aufbau aus
+  **unregelmäßigen Felsbrocken/Platten** (4–10 px breit, 5–12 px hoch, verschiedene Größen), deren Fugen
+  **überwiegend vertikal/schräg** verlaufen (Strukturrillen), nie als durchgehende horizontale Reihe
+  (sonst wirkt es wie Mauer/Palisade). Jeder Brocken: Lichtkante links/oben `cliff_hi`/`cliff_lt`, Fläche
+  `cliff_md`, rechte/untere Seite `cliff_dk`, Fuge `cliff_ink`. Helligkeit nimmt **nach unten ab** (`[0]` hellste
+  Brocken, `[2]` überwiegend `cliff_dk`). Mittelstück in ≥ 3 Varianten (Zellen-Hash), damit kein 16-px-Takt
+  sichtbar ist. `[0]` mit Grasüberhang (`grass_md`, unregelmäßige Zacken 1–3 px, Schatten `grass_ink`),
+  `[2]` Fuß: Geröll + 2 px `cliff_ink`.
 - `dirt` – Erdkante: horizontale Schichtbänder `dirt_dk`/`dirt_md`, einzelne Steine `rock_md`, Wurzeln `wood_dk`;
   `[0]` mit Grasüberhang wie bei rock.
 - `brick` – Dungeon-/Burgmauer: Ziegel 8×4, halber Versatz, Fuge `stone_ink`, Ziegeloberkante `stone_lt`.
@@ -202,6 +214,9 @@ Alle 16×16, deckend, ohne Outline, nahtlos kachelbar. „Varianten“ = mehrere
   Wurzeln; dunkler als Spielfläche (dirt_ink..dirt_md bzw. stone_ink..stone_md), damit die Spielfläche führt.
 - **Edges** (`assets.edges['<gruppe>_<n|s|w|e>']`, transparente 16×16-Overlays): weiche, unregelmäßige Ränder
   (Gras über Erde/Pfad/Sand, Sand über Wasser). Ränder unregelmäßig mit 2–4 px Zacken, Gras-Rand oben dunkler.
+  Zacken nie im festen Takt (kein „Reißverschluss“): Zackenbreite/-tiefe per Seed variieren.
+- **Jede Material-/Helligkeitsgrenze braucht einen Übergang** – auch `grass` ↔ `grass_dark` (eigene Edge-Gruppe
+  oder Dither-Saum 2–4 px). Harte 16-px-Rechteckkanten zwischen Bodenarten sind verboten.
 
 ## 6. Objekte & Sprites
 

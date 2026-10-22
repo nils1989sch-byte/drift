@@ -1,3 +1,4 @@
+import { LEVEL } from './constants.js';
 // Camera with smooth follow, stepped pixel-perfect zoom (integer scales), and screen shake.
 export function createCamera() {
   const cam = {
@@ -35,7 +36,7 @@ export function createCamera() {
       cam.scale += d * Math.min(1, dt * 12);
       if (Math.abs(d) < 0.01) cam.scale = cam.target;
       if (cam.follow) {
-        const tx = cam.follow.x, ty = cam.follow.y - (cam.follow.z || 0) * 16 - 8;
+        const tx = cam.follow.x, ty = cam.follow.y - (cam.follow.z || 0) * LEVEL - 8;
         const k = Math.min(1, dt * 10);
         cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
       }
