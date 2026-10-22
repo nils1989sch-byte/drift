@@ -44,9 +44,11 @@ function card(name, list, meta, grid, maxColors) {
   const arr = Array.isArray(list) ? list : [list];
   const el = document.createElement('div'); el.className = 'card';
   let ncol = 0;
-  arr.forEach((c, i) => { ncol = Math.max(ncol, check(`${name}[${i}]`, c, maxColors)); });
+  const mc = arr[0].ws ? Infinity : maxColors;
+  arr.forEach((c, i) => { ncol = Math.max(ncol, check(`${name}[${i}]`, c, mc)); });
   const info = [`${arr.length}f`, `${arr[0].width}×${arr[0].height}`, `${ncol}c`];
   if (arr[0].ax !== undefined) info.push(`anchor ${arr[0].ax},${arr[0].ay}`);
+  if (arr[0].ws) info.push(`ws ${arr[0].ws}`);
   if (arr.mode) info.push(arr.mode);
   if (arr.fps) info.push(`${arr.fps}fps`);
   if (meta) info.push(meta);

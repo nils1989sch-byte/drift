@@ -9,7 +9,7 @@ const INK = new Set([P.ink, P.wood_ink, P.grass_ink, P.rock_ink, P.stone_ink, P.
 function fromCanvas(c) { const p = new Pix(c.width, c.height); p.d.set(new Uint32Array(c.getContext('2d').getImageData(0, 0, c.width, c.height).data.buffer)); return p; }
 function hf(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
 const R = (v) => v & 255, G = (v) => (v >>> 8) & 255, B = (v) => (v >>> 16) & 255;
-const pack = (r, g, b) => ((255 << 24) | (Math.max(0, Math.min(255, b | 0)) << 16) | (Math.max(0, Math.min(255, g | 0)) << 8) | Math.max(0, Math.min(255, r | 0))) >>> 0;
+const pack = (r, g, b) => ((255 << 24) | (Math.max(0, Math.min(248, b | 0)) << 16) | (Math.max(0, Math.min(248, g | 0)) << 8) | Math.max(0, Math.min(248, r | 0))) >>> 0;
 const scaleC = (v, k, warm = 0) => pack(R(v) * k * (1 + warm * 0.06), G(v) * k, B(v) * k * (1 - warm * 0.08));
 
 function scale2x(s) {

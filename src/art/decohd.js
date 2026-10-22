@@ -3,7 +3,7 @@
 import { Pix, rng, frames } from './core.js';
 
 const hx = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
-const U = (c) => ((255 << 24) | (Math.max(0, Math.min(255, c[2] | 0)) << 16) | (Math.max(0, Math.min(255, c[1] | 0)) << 8) | Math.max(0, Math.min(255, c[0] | 0))) >>> 0;
+const U = (c) => ((255 << 24) | (Math.max(0, Math.min(248, c[2] | 0)) << 16) | (Math.max(0, Math.min(248, c[1] | 0)) << 8) | Math.max(0, Math.min(248, c[0] | 0))) >>> 0;
 const ramp = (a) => a.map(hx);
 const at = (R, t) => R[Math.max(0, Math.min(R.length - 1, Math.floor(t * R.length)))];
 const cv2 = (p, ax, ay) => { const c = p.canvas(ax, ay); c.ws = 0.5; return c; };
