@@ -8,6 +8,7 @@ import { buildObjects } from './objects.js';
 import { buildFX } from './fx.js';
 import { buildIcons } from './icons.js';
 import { buildDeco } from './deco.js';
+import { buildProps } from './props.js';
 import { RES, buildTilesHD, buildEdgesHD, buildFacesHD, buildLeafAndHouseHD, tilePixHD } from './hd.js';
 import { grassTallSprite, edgeMeta } from './terrain.js';
 
@@ -24,7 +25,7 @@ export function buildAssets() {
   const faces = tm('faces', buildFacesHD);
   const sprites = Object.assign({}, tm('hero', buildHero), tm('soldier', buildSoldier), tm('actors', buildActors), tm('objects', buildObjects), tm('fx', buildFX), tm('deco', buildDeco));
   sprites.grass_tall = grassTallSprite();
-  Object.assign(sprites, tm('hdtex', buildLeafAndHouseHD));
+  Object.assign(sprites, tm('hdtex', buildLeafAndHouseHD), tm('props', buildProps));
   const icons = tm('icons', buildIcons);
   const assets = { tileRes: RES, tiles, faces, sprites, icons, font: null, palette: { ...palette }, edges, edgeGroup, edgePriority };
   assets.buildTimes = times;

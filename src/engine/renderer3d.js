@@ -73,7 +73,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   const MODEL_KEYS = { tree: ['tree', 'green', 0.82], tree_autumn: ['tree', 'autumn', 0.85], tree_pine: ['tree', 'pine', 0.85], tree_small: ['tree', 'green', 0.55], bush: ['bush', null, 1] };
 
   // ---------- state per world ----------
-  let cur = null; // { world, group, groundCanvas, groundTex, animCells, deco }
+  let cur = null;
+  let waterAnim = null; // { world, group, groundCanvas, groundTex, animCells, deco }
   let time = 0;
 
   function hash(x, y) { let h = (x * 374761393 + y * 668265263) | 0; h = (h ^ (h >> 13)) * 1274126177; return (h ^ (h >> 16)) >>> 0; }
@@ -100,13 +101,15 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (arr.mode === 'variant') return arr[hash(tx, ty) % arr.length];
     return arr[(Math.floor(time * (arr.fps || 4)) + (arr.phase ? hash(tx, ty) : 0)) % arr.length];
   }
+  const RES = assets.tileRes || 16;        // texels per tile in art
+  const KF = RES / TILE;                    // texels per world unit
   const SIDES = [['n', 0, -1], ['s', 0, 1], ['w', -1, 0], ['e', 1, 0]];
   function paintCell(world, g, tx, ty) {
     const id = world.tileAt(tx, ty);
-    const px = tx * TILE, py = ty * TILE;
-    g.clearRect(px, py, TILE, TILE);
+    const px = tx * RES, py = ty * RES;
+    g.clearRect(px, py, RES, RES);
     const img = tileFrame(id, tx, ty);
-    if (img) g.drawImage(img, px, py); else { g.fillStyle = '#58a838'; g.fillRect(px, py, TILE, TILE); }
+    if (img) g.drawImage(img, px, py, RES, RES); else { g.fillStyle = '#58a838'; g.fillRect(px, py, RES, RES); }
     const edges = assets.edges;
     if (!edges) return;
     const grp = assets.edgeGroup || {}, pri = assets.edgePriority || {};
@@ -116,9 +119,9 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       if (!world.inside(nx, ny) || world.heightAt(nx, ny) !== h) continue;
       const nid = world.tileAt(nx, ny), g1 = grp[nid] || nid;
       if (g1 === g0 || (pri[g1] ?? 0) <= p0) continue;
-      let e = edges[`${g1}_${side}`];
-      if (Array.isArray(e)) e = e[Math.floor(time * (e.fps || 4)) % e.length];
-      if (e) g.drawImage(e, px, py);
+      let e = edges[`${g1}_${side}@${g0}`] || edges[`${g1}_${side}`];
+      if (Array.isArray(e)) e = e[0];
+      if (e) g.drawImage(e, px, py, RES, RES);
     }
   }
   function isAnimatedCell(world, tx, ty) {
@@ -137,26 +140,28 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   function buildFaceAtlas(maxN) {
     const ids = ['rock', 'dirt', 'brick'];
     const V = 3;
-    const H = maxN * LEVEL;
+    const H = maxN * LEVEL * KF;
+    if (assets.faces?.stairs) ids.push('stairs');
     const cols = ids.length * maxN * V;
     faceAtlas = document.createElement('canvas');
-    faceAtlas.width = cols * TILE; faceAtlas.height = H;
+    faceAtlas.width = cols * RES; faceAtlas.height = H;
     const g = faceAtlas.getContext('2d');
     let col = 0;
     for (const id of ids) {
       const faces = assets.faces?.[id] || assets.faces?.rock;
       for (let n = 1; n <= maxN; n++) for (let v = 0; v < V; v++) {
-        const x = col * TILE, hgt = n * LEVEL;
-        if (!faces || !faces.length) { g.fillStyle = '#6b5a48'; g.fillRect(x, 0, TILE, hgt); }
-        else if (n === 1 && faces[3]) g.drawImage(faces[3], x, 0);
+        const x = col * RES, hgt = n * LEVEL * KF;
+        const dh = (im) => im.height * (RES / im.width); // scale pieces to the strip width
+        if (!faces || !faces.length) { g.fillStyle = '#6b5a48'; g.fillRect(x, 0, RES, hgt); }
+        else if (n === 1 && faces[3]) g.drawImage(faces[3], x, 0, RES, dh(faces[3]));
         else {
           const fTop = faces[0], fMid = faces[1] || faces[0], fBot = faces[2] || null;
-          g.save(); g.beginPath(); g.rect(x, 0, TILE, hgt); g.clip();
-          let y = fTop.height, k = 0;
-          const yEnd = hgt - (fBot ? fBot.height : 0);
-          while (y < yEnd) { const m = faces.mids ? faces.mids[(v + k++) % faces.mids.length] : fMid; g.drawImage(m, x, y); y += m.height; }
-          if (fBot) g.drawImage(fBot, x, hgt - fBot.height);
-          g.drawImage(fTop, x, 0);
+          g.save(); g.beginPath(); g.rect(x, 0, RES, hgt); g.clip();
+          let y = dh(fTop), k = 0;
+          const yEnd = hgt - (fBot ? dh(fBot) : 0);
+          while (y < yEnd) { const m = faces.mids ? faces.mids[(v + k++) % faces.mids.length] : fMid; g.drawImage(m, x, y, RES, dh(m)); y += dh(m); }
+          if (fBot) g.drawImage(fBot, x, hgt - dh(fBot), RES, dh(fBot));
+          g.drawImage(fTop, x, 0, RES, dh(fTop));
           g.restore();
         }
         faceStrips.set(`${id}:${n}:${v}`, col);
@@ -186,13 +191,14 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   function buildWorld(world, drawables) {
     if (cur) { scene.remove(cur.group); cur.group.traverse((o) => { o.geometry?.dispose?.(); }); cur.groundTex.dispose(); }
     const group = new THREE.Group();
+    waterAnim = null;
     const W = world.w, Hh = world.h;
-    const gc = document.createElement('canvas'); gc.width = W * TILE; gc.height = Hh * TILE;
+    const gc = document.createElement('canvas'); gc.width = W * RES; gc.height = Hh * RES;
     const g = gc.getContext('2d');
     const animCells = [];
     for (let ty = 0; ty < Hh; ty++) for (let tx = 0; tx < W; tx++) {
       paintCell(world, g, tx, ty);
-      if (isAnimatedCell(world, tx, ty)) animCells.push([tx, ty]);
+      if (isAnimatedCell(world, tx, ty) && !TILE_DEFS[world.tileAt(tx, ty)]?.water && !TILE_DEFS[world.tileAt(tx, ty)]?.shallow) animCells.push([tx, ty]);
     }
     const groundTex = new THREE.CanvasTexture(gc);
     groundTex.magFilter = THREE.NearestFilter;
@@ -217,7 +223,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const y = topY(world, tx, ty), x0 = tx * TILE, x1 = x0 + TILE, z0 = ty * TILE, z1 = z0 + TILE;
       const u0 = tx / W, u1 = (tx + 1) / W, v0 = 1 - ty / Hh, v1 = 1 - (ty + 1) / Hh;
       quad(top, [x0, y, z0], [x0, y, z1], [x1, y, z1], [x1, y, z0], [0, 1, 0], [u0, v0], [u0, v1], [u1, v1], [u1, v0]);
-      const fid = isWall(world.tileAt(tx, ty)) ? 'brick' : (assets.faces?.[world.face] ? world.face : 'rock');
+      const tid = world.tileAt(tx, ty);
+      const fid = isWall(tid) ? 'brick' : TILE_DEFS[tid]?.stairs && assets.faces?.stairs ? 'stairs' : (assets.faces?.[world.face] ? world.face : 'rock');
       // sides: [dx, dz, corner a, corner b, normal]
       const sides = [
         [0, 1, [x0, z1], [x1, z1], [0, 0, 1]],
@@ -234,15 +241,15 @@ export function createRenderer3D(canvas, assets, opts = {}) {
           const ffid = dyU < LEVEL * 0.5 && fid !== 'brick' ? (assets.faces?.dirt ? 'dirt' : fid) : fid;
           const col = faceStrips.get(`${ffid}:${Math.min(n, maxN)}:${hash(tx, ty + dx * 7) % 3}`) ?? 0;
           const ua = col / atlas.cols, ub = (col + 1) / atlas.cols;
-          const vt = 1, vb = 1 - dyU / atlas.H;
+          const vt = 1, vb = 1 - (dyU * KF) / atlas.H;
           quad(side, [a[0], y, a[1]], [a[0], yb, a[1]], [b[0], yb, b[1]], [b[0], y, b[1]], nrm, [ua, vt], [ua, vb], [ub, vb], [ub, vt]);
         }
         if (outside) {
           // diorama plinth below ground level on the map border
-          const len = TILE / pl.w, along = (dx !== 0 ? ty : tx) * len;
+          const len = (TILE * KF) / pl.w, along = (dx !== 0 ? ty : tx) * len;
           const yTop = Math.min(0, y);
           quad(base, [a[0], yTop, a[1]], [a[0], -PLINTH, a[1]], [b[0], -PLINTH, b[1]], [b[0], yTop, b[1]], nrm,
-            [along, 1], [along, 1 - PLINTH / pl.h], [along + len, 1 - PLINTH / pl.h], [along + len, 1]);
+            [along, 1], [along, 1 - (PLINTH * KF) / pl.h], [along + len, 1 - (PLINTH * KF) / pl.h], [along + len, 1]);
         }
       }
     }
@@ -263,11 +270,14 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const d = TILE_DEFS[world.tileAt(tx, ty)];
       if (!d?.water && !d?.shallow) continue;
       const y = effH(world, tx, ty) * LEVEL - 1.5, x0 = tx * TILE, z0 = ty * TILE;
-      quad(wat, [x0, y, z0], [x0, y, z0 + TILE], [x0 + TILE, y, z0 + TILE], [x0 + TILE, y, z0], [0, 1, 0], [0, 0], [0, 1], [1, 1], [1, 0]);
+      quad(wat, [x0, y, z0], [x0, y, z0 + TILE], [x0 + TILE, y, z0 + TILE], [x0 + TILE, y, z0], [0, 1, 0], [tx, -ty], [tx, -ty - 1], [tx + 1, -ty - 1], [tx + 1, -ty]);
     }
     if (wat.p.length) {
-      const wm = mk(wat, new THREE.MeshPhongMaterial({ color: '#1c4878', specular: '#ffe8c0', shininess: 120, transparent: true, opacity: 0.32, depthWrite: false }));
+      const frames = (assets.tiles.water || []).map((c) => { const t = tex(c, true).clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.needsUpdate = true; return t; });
+      const wmat = new THREE.MeshPhongMaterial({ map: frames[0] || null, color: frames.length ? '#b0c8d8' : '#1c4878', specular: '#ffe8c0', shininess: 110, transparent: true, opacity: 0.72, depthWrite: false });
+      const wm = mk(wat, wmat);
       wm.castShadow = false; wm.renderOrder = 2;
+      waterAnim = { mat: wmat, frames, fps: assets.tiles.water?.fps || 4 };
     }
     mk(side, new THREE.MeshLambertMaterial({ map: faceTex }));
     mk(base, new THREE.MeshLambertMaterial({ map: pl.t, color: '#b0a090' }));
@@ -869,6 +879,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       cur.groundTex.needsUpdate = true;
       buildDeco(world, drawables);
     }
+    if (waterAnim?.frames.length > 1) waterAnim.mat.map = waterAnim.frames[Math.floor(time * waterAnim.fps) % waterAnim.frames.length];
     // animated ground cells
     const fk = Math.floor(time * 4);
     if (fk !== cur.frameKey) {
