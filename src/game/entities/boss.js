@@ -7,7 +7,7 @@ import { move } from '../collision.js';
 
 export class Golem extends Enemy {
   constructor(g, spec) {
-    super(g, spec, { name: 'boss_golem', hp: 12, dmg: 2, shadow: 14, loot: null });
+    super(g, spec, { name: 'boss_golem', hp: 12, dmg: 1, shadow: 14, loot: null });
     this.heavy = true;
     this.boss = true;
     this.foot = { hw: 11, top: 8, bottom: 2 };
@@ -51,7 +51,11 @@ export class Golem extends Enemy {
     if (s === 'walk') { this.t = rand(1.2, 2.0); this.setAnim('walk'); }
     if (s === 'throw') { this.t = 1.1; this.thrown = false; this.setAnim('attack', 'down', { restart: true }); }
     if (s === 'leap') { this.t = 0.95; this.landed = false; const p = this.g.player; this.tgt = { x: p.x, y: p.y }; this.from = { x: this.x, y: this.y }; this.setAnim('idle'); }
-    if (s === 'tired') { this.t = 2.8; this.tiredHits = 0; this.harmless = true; this.setAnim('hurt'); this.g.play('boss_tired'); }
+    if (s === 'tired') {
+      this.t = 3.0; this.tiredHits = 0; this.harmless = true; this.setAnim('hurt'); this.g.play('boss_tired');
+      this.g.spawnFX('sparkle', this.x, this.y - 16, { z: this.z, count: 6, radius: 14 });
+      if (!this.g.flags._golemHint) { this.g.flags._golemHint = true; this.g.toast('Der Kern des Golems glüht – jetzt zuschlagen!'); }
+    }
   }
   ai(dt) {
     const g = this.g, p = g.player;
@@ -85,7 +89,7 @@ export class Golem extends Enemy {
           const n = this.hp <= 6 ? 5 : 3;
           for (let i = 0; i < n; i++) {
             const a = base + (i - (n - 1) / 2) * 0.32;
-            g.spawn(new Projectile(g, { x: this.x + Math.cos(a) * 12, y: this.y + Math.sin(a) * 6, lvl: this.lvl, vx: Math.cos(a) * 95, vy: Math.sin(a) * 95, sprite: 'octorok_rock', dmg: 2, hop: 22, life: 2.4, size: 5, fxOnHit: 'rock' }));
+            g.spawn(new Projectile(g, { x: this.x + Math.cos(a) * 12, y: this.y + Math.sin(a) * 6, lvl: this.lvl, vx: Math.cos(a) * 95, vy: Math.sin(a) * 95, sprite: 'octorok_rock', dmg: 1, hop: 22, life: 2.4, size: 5, fxOnHit: 'rock' }));
           }
           g.play('boss_throw');
         }
@@ -121,7 +125,8 @@ export class Golem extends Enemy {
       }
       case 'tired':
         this.hop = 0;
-        if (Math.random() < dt * 4) g.spawnFX('sparkle', this.x + rand(-6, 6), this.y - 20, { z: this.z });
+        this.flash = Math.floor(this.t * 5) % 2 ? 0.05 : 0;   // pulsing glow = vulnerable
+        if (Math.random() < dt * 8) g.spawnFX('sparkle', this.x + rand(-6, 6), this.y - 20, { z: this.z });
         if (this.t <= 0) { this.g.play('boss_roar'); this.next(); }
         break;
       case 'dying':

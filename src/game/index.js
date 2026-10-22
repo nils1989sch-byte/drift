@@ -9,6 +9,7 @@ import { Pickup } from './entities/pickups.js';
 import { Bomb } from './entities/objects.js';
 import { damage, sameLayer } from './combat.js';
 import { safe, TILE, overlap, chance, choice, pointIn } from './util.js';
+import { blocked } from './collision.js';
 import { saveGame, loadGame, hasSave, clearSave } from './save.js';
 
 // our sound names → audio module names (docs/ANIMATION.md)
@@ -81,6 +82,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
         let tp = type;
         if (tp === 'bombs' && !player.hasBombs) tp = 'rupee';
         if (tp === 'heart' && player.hp >= player.maxHp && chance(0.5)) tp = 'rupee';
+        if (tp !== 'heart' && player.hp <= 2 && chance(0.5)) tp = 'heart';
         g.spawnPickup(tp, x, y, lvl);
         return;
       }
@@ -278,6 +280,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
       if (Math.abs(player.lvl - w.lvl) > 0.5) continue;
       if (!pointIn(player.x, player.y, w.rect)) continue;
       if (w.dirReq && (player.dir !== w.dirReq || !player.moving)) continue;
+      if (w.hint) { g.hint('warp_' + w.x + '_' + w.y, w.hint, 3); continue; }
       g.warpTo(w.to, w.spawn);
       return;
     }
@@ -413,8 +416,21 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     teleport(mapId = g.mapId, x, y) {
       g.state = 'play';
       if (x == null) return g.loadMap(mapId);
-      const px = x * TILE + 8, py = y * TILE + 10;
-      return g.loadMap(mapId, { x: px, y: py, dir: player.dir });
+      const ok = g.loadMap(mapId, { x: x * TILE + 8, y: y * TILE + 10, dir: player.dir });
+      // nudge to the nearest free cell (not in trees/bushes/water/pits)
+      const free = (cx, cy) => {
+        const w = g.world, d = w.def(cx, cy);
+        if (!w.inside(cx, cy) || d.solid || d.pit) return false;
+        const probe = { ...player, x: cx * TILE + 8, y: cy * TILE + 10, lvl: w.heightAt(cx, cy), foot: player.foot };
+        return !blocked(g, probe, probe.x, probe.y);
+      };
+      if (!free(x, y)) {
+        outer: for (let r = 1; r < 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !free(x + dx, y + dy)) continue;
+          player.place((x + dx) * TILE + 8, (y + dy) * TILE + 10, player.dir); safe(camera, 'snap'); break outer;
+        }
+      }
+      return ok;
     },
     give(item, amount) {
       const p = player;

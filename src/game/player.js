@@ -112,7 +112,11 @@ export class Player extends Entity {
     if (this.iframes > 0) this.iframes -= dt;
     if (this.flash > 0) this.flash -= dt;
     this.t += dt;
-    const ax = inp.axis.x || 0, ay = inp.axis.y || 0;
+    if (this.lock > 0) this.lock -= dt;
+    // a carried bomb keeps ticking
+    if (this.carry instanceof Bomb) { this.carry.fuse -= dt; if (this.carry.fuse <= 0) this.carry.explode(); }
+    let ax = inp.axis.x || 0, ay = inp.axis.y || 0;
+    if (this.lock > 0) ax = ay = 0;
     const mag = Math.min(1, Math.hypot(ax, ay));
     const cell = g.world.def(cellOf(this.x), cellOf(centerY(this)));
     this.moving = false;
@@ -183,7 +187,7 @@ export class Player extends Entity {
     // pits
     if (['normal', 'attack', 'charge', 'spin', 'hurt', 'lift', 'throw'].includes(this.state)) {
       const c = g.world.def(cellOf(this.x), cellOf(centerY(this)));
-      if (c.pit) this.startFall();
+      if (c.pit && !this.god) this.startFall();
       else if (this.state === 'normal' && this.isSafeSpot()) this.lastSafe = { x: this.x, y: this.y, lvl: this.lvl };
     }
     this.pickAnim();
@@ -211,6 +215,11 @@ export class Player extends Entity {
       this.moving = true;
       this.dir = dirFromVec(ax, ay, this.dir);
       const r = move(g, this, ax * speed * dt, ay * speed * dt, { slide: true });
+      // on stairs, walking up/down gently centres the hero on the staircase column
+      if (cell.stairs && Math.abs(ay) > Math.abs(ax)) {
+        const cx = cellOf(this.x) * TILE + 8, d = cx - this.x;
+        if (Math.abs(d) > 0.3) move(g, this, Math.sign(d) * Math.min(Math.abs(d), 40 * dt), 0);
+      }
       const cardinalX = Math.abs(ax) > 0.6 && Math.abs(ay) < 0.35, cardinalY = Math.abs(ay) > 0.6 && Math.abs(ax) < 0.35;
       const pushing = (r.hitX && cardinalX) || (r.hitY && cardinalY);
       if (pushing && r.moved < speed * dt * 0.3) {
@@ -357,6 +366,8 @@ export class Player extends Entity {
       const d = w.def(cellOf(px), cellOf(py));
       if (d.pit || d.stairs) return false;
     }
+    // keep a margin of a few pixels to any pit so a respawn never lands on its edge
+    for (const [px, py] of [[this.x - 10, this.y - 2], [this.x + 10, this.y - 2], [this.x, this.y - 12], [this.x, this.y + 8]]) if (w.def(cellOf(px), cellOf(py)).pit) return false;
     return true;
   }
   startFall() {
@@ -376,7 +387,7 @@ export class Player extends Entity {
       this.hp = Math.max(0, this.hp - 2);
       this.flash = 0.12;
       this.g.play('hurt');
-      if (this.hp <= 0) this.die(); else this.iframes = 1.0;
+      if (this.hp <= 0) this.die(); else { this.iframes = 1.0; this.lock = 0.4; }
     }
   }
 

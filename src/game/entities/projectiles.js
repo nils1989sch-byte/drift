@@ -103,7 +103,7 @@ export class FallingRock extends Entity {
       g.spawnFX('rock', this.x, this.y - 4, { z: this.z });
       g.spawnFX('dust', this.x, this.y, { z: this.z });
       g.play('rock_land');
-      if (p.canBeHit() && Math.hypot(p.x - this.x, p.y - this.y) < 11 && p.lvl === this.lvl) p.hurt(2, this);
+      if (p.canBeHit() && Math.hypot(p.x - this.x, p.y - this.y) < 11 && p.lvl === this.lvl) p.hurt(1, this);
     }
   }
   draw(ctx, r) {

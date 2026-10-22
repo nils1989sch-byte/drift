@@ -105,7 +105,7 @@ export class Octorok extends Enemy {
 
 export class Soldier extends Enemy {
   constructor(g, spec) {
-    super(g, spec, { name: 'soldier', hp: 3, dmg: 2, speed: 30 });
+    super(g, spec, { name: 'soldier', hp: 3, dmg: 1, speed: 30 });
     this.patrol = (spec.patrol || [[spec.x, spec.y]]).map(([x, y]) => ({ x: x * TILE + 8, y: y * TILE + 12 }));
     this.wp = 0; this.state = 'patrol'; this.lost = 0;
   }

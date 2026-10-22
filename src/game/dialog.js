@@ -38,10 +38,14 @@ export const DIALOG = {
       'Seit der Golem in der Ruine wütet, trauen sich die Händler aus dem Osten nicht mehr her.',
     ];
     if (p.bombs >= p.maxBombs) return ['Lutz: Deine Bombentasche ist schon randvoll!'];
-    if (p.rupees < 20) return ['Lutz: Bomben gefällig? 5 Stück kosten 20 Rupien.', 'Komm wieder, wenn du genug Rupien hast.'];
-    p.rupees -= 20; p.bombs = Math.min(p.maxBombs, p.bombs + 5);
-    g.play('buy');
-    return ['Lutz: Bomben gefällig? 5 Stück für 20 Rupien.', 'Danke für deinen Einkauf! Pass auf deine Finger auf.'];
+    return (async () => {
+      const c = await g.say({ text: 'Bomben gefällig? 5 Stück für 20 Rupien.', speaker: 'Lutz', choices: ['Ja', 'Nein'] });
+      if (c !== 0) return g.say('Lutz: Schade. Komm wieder, wenn du welche brauchst!');
+      if (p.rupees < 20) { g.play('error'); return g.say('Lutz: Hm, dafür reichen deine Rupien leider nicht.'); }
+      p.rupees -= 20; p.bombs = Math.min(p.maxBombs, p.bombs + 5);
+      g.play('buy');
+      return g.say('Lutz: Danke für deinen Einkauf! Pass auf deine Finger auf.');
+    })();
   },
   fisher(g) {
     if (g.flags.crystal) return ['Jonte: Seit der Kristall zurück ist, beißen die Fische wieder. Herrlich!'];

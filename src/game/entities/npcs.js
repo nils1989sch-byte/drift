@@ -49,7 +49,8 @@ export class NPC extends Entity {
     this.dir = dirFromVec(p.x - this.x, p.y - this.y, this.dir);
     playAnim(this.anim, 'idle', this.dir);
     this.talking = true;
-    await g.say(lines);
+    if (typeof lines?.then === 'function') await lines.catch(() => {});
+    else await g.say(lines);
     this.talking = false;
     this.after?.(g);
     if (!this.wander) { this.dir = this.spec.dir || prev; playAnim(this.anim, 'idle', this.dir); }
