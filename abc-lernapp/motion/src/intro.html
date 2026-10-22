@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180, height=820">
+<title>Intro – ABC mit Bruno</title>
+<script src="../assets/gsap.min.js"></script>
+<script src="../assets/kit.js"></script>
+<style>
+{{COMMON_CSS}}
+.cloud{position:absolute;will-change:transform}
+.cloud>svg{display:block;width:100%;height:100%}
+#bclip{position:absolute;left:0;top:0;width:1180px;height:700px;overflow:hidden}
+#title{position:absolute;left:0;right:0;top:40px;text-align:center;line-height:1}
+#abc{font-size:176px;font-weight:700;letter-spacing:6px;height:178px}
+#abc .ch{color:transparent;-webkit-background-clip:text;background-clip:text;padding:0 4px;
+  filter:drop-shadow(0 7px 0 rgba(91,75,196,.28)) drop-shadow(0 18px 22px rgba(59,42,140,.28))}
+#abc .a{background-image:linear-gradient(180deg,#ffc2d1 0%,#ff7d9c 55%,#e9557c 100%)}
+#abc .b{background-image:linear-gradient(180deg,#ffe49a 0%,#ffb13c 55%,#f28f22 100%)}
+#abc .c{background-image:linear-gradient(180deg,#b5e2ff 0%,#4fb3f6 55%,#2f8fdc 100%)}
+#sub{font-size:80px;color:#fff;margin-top:6px;height:90px;
+  text-shadow:0 3px 0 rgba(91,75,196,.32),0 12px 30px rgba(59,42,140,.32)}
+#sub .sp{display:inline-block;width:26px}
+.spk{position:absolute;will-change:transform}
+.spk>svg{display:block;width:100%;height:100%}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="intro" data-start="0" data-duration="4" data-width="1180" data-height="820">
+  <div class="sky"></div><div class="dots"></div><div class="dots2"></div>
+  <div class="hills">{{SVG:scenery/hills.svg}}</div>
+
+  <div class="cloud" id="c1" style="left:40px;top:330px;width:190px;height:106px">{{SVG:scenery/cloud-small.svg}}</div>
+  <div class="cloud" id="c2" style="left:930px;top:300px;width:230px;height:129px">{{SVG:scenery/cloud.svg}}</div>
+  <div class="cloud" id="c3" style="left:-50px;top:520px;width:300px;height:168px">{{SVG:scenery/cloud.svg}}</div>
+  <div class="cloud" id="c4" style="left:950px;top:540px;width:260px;height:146px">{{SVG:scenery/cloud-small.svg}}</div>
+
+  <div id="bclip"><div class="bwrap" id="bruno" style="left:415px;top:346px;width:350px;height:350px">{{SVG:bruno.svg}}</div></div>
+  <div class="cloud" id="seat" style="left:265px;top:592px;width:650px;height:364px">{{SVG:scenery/cloud.svg}}</div>
+
+  <div id="title">
+    <div id="abc"><span class="ch a">A</span><span class="ch b">B</span><span class="ch c">C</span></div>
+    <div id="sub"></div>
+  </div>
+  <div id="spk"></div>
+</div>
+<template id="sparkle">{{SVG:scenery/sparkle.svg}}</template>
+<script>
+(function(){
+  const {clamp,lerp,prog,E,spr,bump,breath,blink,earWiggle} = K;
+  const DUR = 4;
+  // "mit Bruno" as individual letters
+  const sub = document.getElementById('sub');
+  'mit Bruno'.split('').forEach(c => {
+    const s = document.createElement('span');
+    if (c === ' ') s.className = 'sp'; else { s.className = 'ch'; s.textContent = c; }
+    sub.appendChild(s);
+  });
+  const letters = [...document.querySelectorAll('#abc .ch'), ...document.querySelectorAll('#sub .ch')];
+  const starts = letters.map((_, i) => i < 3 ? 1.05 + i * 0.12 : 1.5 + (i - 3) * 0.06);
+
+  // sparkles
+  const spkHost = document.getElementById('spk');
+  const tpl = document.getElementById('sparkle').innerHTML;
+  const SPK = [
+    {x:300,y:84,s:64,t:2.0},{x:880,y:66,s:52,t:2.12},{x:225,y:250,s:40,t:2.28},
+    {x:950,y:232,s:46,t:2.4},{x:360,y:440,s:44,t:2.52},{x:825,y:420,s:36,t:2.64},
+  ];
+  const spks = SPK.map(d => { const el = document.createElement('div'); el.className='spk';
+    el.style.cssText += `left:${d.x - d.s/2}px;top:${d.y - d.s/2}px;width:${d.s}px;height:${d.s}px`;
+    el.innerHTML = tpl; spkHost.appendChild(el); return el; });
+
+  const clouds = ['c1','c2','c3','c4','seat'].map(id => document.getElementById(id));
+  const drift = [{a:22,p:5.5,o:0},{a:-18,p:6.5,o:1.2},{a:16,p:7,o:2.1},{a:-14,p:6,o:.6},{a:6,p:8,o:0}];
+  const bw = document.getElementById('bruno');
+  const B = K.Bruno(bw);
+  B.parts.shadow.style.display = 'none';
+
+  const RISE = 0.3;
+  const riseY = t => 400 * (1 - K.springAt(t - RISE, 180, 19));
+
+  function render(t) {
+    // clouds drift slowly (seat cloud barely moves)
+    clouds.forEach((c, i) => { const d = drift[i];
+      c.style.transform = `translateX(${(d.a * Math.sin(2*Math.PI*(t + d.o)/d.p) - d.a*Math.sin(2*Math.PI*d.o/d.p)).toFixed(2)}px)`; });
+
+    // Bruno pops up from behind the cloud, stretched while rising, squashed while settling
+    const y = t < RISE ? 400 : riseY(t);
+    const v = (riseY(t) - riseY(t - 1/60)) * 60;          // px/s, negative = up
+    let s = t < RISE ? 0 : clamp(-v / 3200, -0.06, 0.1);
+    const sx = 1 - s * 0.6, sy = 1 + s;
+    bw.style.transform = `translateY(${y.toFixed(2)}px) scale(${sx.toFixed(4)},${sy.toFixed(4)})`;
+
+    // mood & arm: happy at 1.05, arm springs up, then waves
+    const happy = t >= 1.0;
+    let armR = 0;
+    if (happy) {
+      armR = -125 * spr(t, 1.0, [200, 13, 1]);
+      const w = prog(t, 1.45, 0.25) * (1 - prog(t, 2.9, 0.4));
+      armR += 15 * w * Math.sin(2 * Math.PI * (t - 1.45) / 0.72);
+    }
+    const armL = 0;
+    // look up at the title while letters land, then back to camera
+    const look = E.inOut(prog(t, 1.15, 0.35)) * (1 - E.inOut(prog(t, 2.65, 0.45)));
+    B.set({
+      mood: happy ? 'happy' : 'neutral',
+      armL, armR,
+      breath: breath(Math.max(0, t - 1.2)),
+      headY: -3 * look, headRot: 0,
+      eyeY: -4 * look, eyeX: 0,
+      lid: blink(t, [0.95, 3.15]),
+      earL: earWiggle(t, 0.95), earR: earWiggle(t, 1.01),
+    });
+
+    // title letters drop in with squash & stretch
+    letters.forEach((el, i) => {
+      const u = t - starts[i];
+      if (u <= 0) { el.style.opacity = 0; return; }
+      el.style.opacity = clamp(u / (i < 3 ? 0.1 : 0.2));
+      const fall = i < 3 ? 0.3 : 0.24, h = i < 3 ? 170 : 56;
+      let ty = 0, sx2 = 1, sy2 = 1;
+      if (u < fall) { const p = u / fall; ty = -h * (1 - E.inQuad(p)); const st = 0.1 * p; sx2 = 1 - st * .6; sy2 = 1 + st; }
+      else { const w = u - fall; const a = 0.17 * Math.exp(-6.5 * w) * Math.cos(2 * Math.PI * w / 0.34);
+        sx2 = 1 + a; sy2 = 1 - a; ty = -10 * Math.exp(-7 * w) * Math.max(0, Math.sin(Math.PI * (w - 0.08) / 0.24)) * (w > .08 && w < .32 ? 1 : 0); }
+      el.style.transform = `translateY(${ty.toFixed(2)}px) scale(${sx2.toFixed(4)},${sy2.toFixed(4)})`;
+    });
+
+    // sparkles pop in, then twinkle gently
+    spks.forEach((el, i) => { const d = SPK[i];
+      const pin = spr(t, d.t, [220, 14, 1]);
+      const tw = Math.sin(2 * Math.PI * (t - d.t) / 2.8 + i);
+      const sc = t < d.t ? 0 : pin * (0.85 + 0.15 * tw);
+      el.style.opacity = t < d.t ? 0 : clamp((t - d.t) / .15) * (0.8 + 0.2 * tw);
+      el.style.transform = `scale(${sc.toFixed(4)}) rotate(${(20 * (1 - pin) + 8 * tw).toFixed(2)}deg)`;
+    });
+  }
+  K.bind('intro', DUR, render);
+})();
+</script>
+</body>
+</html>

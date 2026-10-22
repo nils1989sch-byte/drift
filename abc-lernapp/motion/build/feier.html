@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1180, height=820">
+<title>Feier – ABC mit Bruno</title>
+<script src="../assets/gsap.min.js"></script>
+<script src="../assets/kit.js"></script>
+<style>
+@font-face{font-family:Fredoka;font-weight:600;src:url(../assets/fredoka-600.woff2) format("woff2")}
+@font-face{font-family:Fredoka;font-weight:700;src:url(../assets/fredoka-700.woff2) format("woff2")}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1180px;height:820px;overflow:hidden;background:#f3f0ff}
+#root{position:relative;width:1180px;height:820px;overflow:hidden;font-family:Fredoka,sans-serif;font-weight:600}
+.abs{position:absolute}
+.abs>svg,.fill>svg{display:block;width:100%;height:100%}
+.sky{position:absolute;inset:0;background:
+  radial-gradient(55% 45% at 92% 104%,rgba(255,196,170,.95),transparent 70%),
+  radial-gradient(45% 35% at -5% 100%,rgba(255,206,226,.7),transparent 70%),
+  radial-gradient(70% 55% at 18% -8%,#9a8af6,transparent 70%),
+  linear-gradient(180deg,#8a7af0 0%,#ab9ffa 22%,#d9d2ff 46%,#f3f0ff 66%,#fbf6f6 100%)}
+.dots{position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.55) 1.3px,transparent 1.8px) 0 0/16px 16px;
+  -webkit-mask:radial-gradient(40% 45% at 88% 6%,#000,transparent 75%);mask:radial-gradient(40% 45% at 88% 6%,#000,transparent 75%)}
+.dots2{position:absolute;inset:0;background:radial-gradient(circle,rgba(123,111,224,.22) 1.3px,transparent 1.8px) 0 0/16px 16px;
+  -webkit-mask:radial-gradient(38% 40% at 92% 96%,#000,transparent 75%);mask:radial-gradient(38% 40% at 92% 96%,#000,transparent 75%)}
+.hills{position:absolute;left:0;bottom:0;width:1180px;height:220px}
+.hills>svg{display:block;width:100%;height:100%}
+.bwrap{position:absolute;transform-origin:50% 96.7%}
+.bwrap>svg{display:block;width:100%;height:100%;overflow:visible}
+.bruno *{transition:none!important;animation:none!important}
+.bruno .b-ear-l{transform-origin:52px 70px}.bruno .b-ear-r{transform-origin:188px 70px}
+.ch{display:inline-block;transform-origin:50% 88%;will-change:transform}
+
+#rays{position:absolute;left:-210px;top:-500px;width:1600px;height:1600px;will-change:transform;
+  background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.26) 0deg 7deg,rgba(255,255,255,0) 7deg 22.5deg);
+  -webkit-mask:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.6) 35%,transparent 72%);
+  mask:radial-gradient(closest-side,#000 8%,rgba(0,0,0,.6) 35%,transparent 72%)}
+#glow{position:absolute;left:290px;top:0;width:600px;height:560px;background:radial-gradient(closest-side,rgba(255,255,255,.55),rgba(255,255,255,0))}
+.cloud{position:absolute;will-change:transform}
+.cloud>svg{display:block;width:100%;height:100%}
+#text{position:absolute;left:0;right:0;top:494px;text-align:center;font-size:84px;color:#2b2158;line-height:1;
+  text-shadow:0 0 18px #fff,0 0 34px rgba(255,255,255,.9),0 4px 0 rgba(255,255,255,.8)}
+#text .sp{display:inline-block;width:24px}
+#stars{position:absolute;left:0;right:0;top:606px;display:flex;justify-content:center;gap:18px}
+.star{width:76px;height:76px;filter:drop-shadow(0 8px 10px rgba(224,122,0,.35))}
+.star>svg{display:block;width:100%;height:100%}
+.burst,.conf{position:absolute;left:0;top:0;will-change:transform}
+.burst>svg{display:block;width:100%;height:100%}
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="feier" data-start="0" data-duration="3" data-width="1180" data-height="820">
+  <div class="sky"></div><div class="dots"></div><div class="dots2"></div>
+  <div id="rays"></div><div id="glow"></div>
+  <div class="cloud" id="c1" style="left:-30px;top:250px;width:230px;height:129px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 140" aria-hidden="true"><defs><linearGradient id="sc-cl-cb" gradientUnits="userSpaceOnUse" x1="0" y1="21" x2="0" y2="140"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f4f1ff"/><stop offset="1" stop-color="#cfc6fa"/></linearGradient><radialGradient id="sc-cl-hl"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><ellipse cx="125" cy="132" rx="105" ry="7" fill="#3b2a8c" opacity=".08"/><g fill="url(#sc-cl-cb)"><circle cx="40" cy="104" r="26"/><circle cx="78" cy="86" r="38"/><circle cx="124" cy="66" r="50"/><circle cx="172" cy="84" r="40"/><circle cx="208" cy="104" r="24"/><rect x="40" y="94" width="168" height="30" rx="18"/></g><ellipse cx="33.5" cy="93.6" rx="14.3" ry="8.32" transform="rotate(-15 33.5 93.6)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="68.5" cy="70.8" rx="20.900000000000002" ry="12.16" transform="rotate(-15 68.5 70.8)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="111.5" cy="46" rx="27.500000000000004" ry="16" transform="rotate(-15 111.5 46)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="162" cy="68" rx="22" ry="12.8" transform="rotate(-15 162 68)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="202" cy="94.4" rx="13.200000000000001" ry="7.68" transform="rotate(-15 202 94.4)" fill="url(#sc-cl-hl)" opacity="0.9"/></svg></div>
+  <div class="cloud" id="c2" style="left:880px;top:60px;width:200px;height:112px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 96" aria-hidden="true"><defs><linearGradient id="sc-cs-cb" gradientUnits="userSpaceOnUse" x1="0" y1="14.399999999999999" x2="0" y2="96"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f4f1ff"/><stop offset="1" stop-color="#cfc6fa"/></linearGradient><radialGradient id="sc-cs-hl"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><ellipse cx="75" cy="88" rx="63" ry="7" fill="#3b2a8c" opacity=".08"/><g fill="url(#sc-cs-cb)"><circle cx="30" cy="66" r="20"/><circle cx="62" cy="50" r="30"/><circle cx="98" cy="58" r="26"/><circle cx="124" cy="70" r="16"/><rect x="30" y="60" width="94" height="20" rx="13"/></g><ellipse cx="25" cy="58" rx="11" ry="6.4" transform="rotate(-15 25 58)" fill="url(#sc-cs-hl)" opacity="0.9"/><ellipse cx="54.5" cy="38" rx="16.5" ry="9.6" transform="rotate(-15 54.5 38)" fill="url(#sc-cs-hl)" opacity="0.9"/><ellipse cx="91.5" cy="47.6" rx="14.3" ry="8.32" transform="rotate(-15 91.5 47.6)" fill="url(#sc-cs-hl)" opacity="0.9"/><ellipse cx="120" cy="63.6" rx="8.8" ry="5.12" transform="rotate(-15 120 63.6)" fill="url(#sc-cs-hl)" opacity="0.9"/></svg></div>
+  <div class="hills"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 220" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="sc-hi-lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6ceff"/><stop offset="1" stop-color="#ece8ff"/></linearGradient><linearGradient id="sc-hi-lf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3d8"/><stop offset="1" stop-color="#fff3ee"/></linearGradient></defs><path d="M0 120C140 60 260 70 380 100S640 150 780 96 1060 40 1180 90V220H0Z" fill="url(#sc-hi-lb)"/><path d="M0 160C160 110 300 120 460 150S760 190 920 140 1100 110 1180 130V220H0Z" fill="url(#sc-hi-lf)"/><path d="M0 160C160 110 300 120 460 150S760 190 920 140 1100 110 1180 130" fill="none" stroke="#fff" stroke-width="3" opacity=".7"/></svg></div>
+  <div class="cloud" id="c3" style="left:960px;top:560px;width:260px;height:146px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 140" aria-hidden="true"><defs><linearGradient id="sc-cl-cb" gradientUnits="userSpaceOnUse" x1="0" y1="21" x2="0" y2="140"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#f4f1ff"/><stop offset="1" stop-color="#cfc6fa"/></linearGradient><radialGradient id="sc-cl-hl"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><ellipse cx="125" cy="132" rx="105" ry="7" fill="#3b2a8c" opacity=".08"/><g fill="url(#sc-cl-cb)"><circle cx="40" cy="104" r="26"/><circle cx="78" cy="86" r="38"/><circle cx="124" cy="66" r="50"/><circle cx="172" cy="84" r="40"/><circle cx="208" cy="104" r="24"/><rect x="40" y="94" width="168" height="30" rx="18"/></g><ellipse cx="33.5" cy="93.6" rx="14.3" ry="8.32" transform="rotate(-15 33.5 93.6)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="68.5" cy="70.8" rx="20.900000000000002" ry="12.16" transform="rotate(-15 68.5 70.8)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="111.5" cy="46" rx="27.500000000000004" ry="16" transform="rotate(-15 111.5 46)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="162" cy="68" rx="22" ry="12.8" transform="rotate(-15 162 68)" fill="url(#sc-cl-hl)" opacity="0.9"/><ellipse cx="202" cy="94.4" rx="13.200000000000001" ry="7.68" transform="rotate(-15 202 94.4)" fill="url(#sc-cl-hl)" opacity="0.9"/></svg></div>
+  <div id="bursts"></div>
+  <div id="confetti"></div>
+  <div class="bwrap" id="bruno" style="left:410px;top:112px;width:360px;height:360px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" class="bruno alive" data-mood="neutral" role="img" aria-label="Bruno"><defs><filter id="br-ds" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#3b2a8c" flood-opacity=".22"/></filter><radialGradient id="br-aura"><stop offset=".35" stop-color="#ffffff" stop-opacity=".75"/><stop offset=".7" stop-color="#d9d2ff" stop-opacity=".35"/><stop offset="1" stop-color="#d9d2ff" stop-opacity="0"/></radialGradient><radialGradient id="br-sh"><stop offset="0" stop-color="#3b2a8c" stop-opacity=".32"/><stop offset=".6" stop-color="#3b2a8c" stop-opacity=".12"/><stop offset="1" stop-color="#3b2a8c" stop-opacity="0"/></radialGradient><radialGradient id="br-fa596f6b" cx="0.36" cy="0.15" r="0.85"><stop offset="0" stop-color="#cec5fa"/><stop offset=".55" stop-color="#a596f6"/><stop offset="1" stop-color="#8576d6"/></radialGradient><radialGradient id="br-fffd3e0bel" cx="0.36" cy="0.28" r="0.85"><stop offset="0" stop-color="#ffe7ee"/><stop offset=".55" stop-color="#ffd3e0"/><stop offset="1" stop-color="#c4a0c7"/></radialGradient><radialGradient id="br-hl"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><radialGradient id="br-fa596f6f" cx="0.36" cy="0.28" r="0.85"><stop offset="0" stop-color="#cec5fa"/><stop offset=".55" stop-color="#a596f6"/><stop offset="1" stop-color="#8576d6"/></radialGradient><radialGradient id="br-fffb3c8p" cx="0.36" cy="0.28" r="0.85"><stop offset="0" stop-color="#ffd5e1"/><stop offset=".55" stop-color="#ffb3c8"/><stop offset="1" stop-color="#c48ab6"/></radialGradient><radialGradient id="br-fa596f6e" cx="0.36" cy="0.28" r="0.85"><stop offset="0" stop-color="#cec5fa"/><stop offset=".55" stop-color="#a596f6"/><stop offset="1" stop-color="#8576d6"/></radialGradient><radialGradient id="br-fa596f6h" cx="0.36" cy="0.2" r="0.8"><stop offset="0" stop-color="#cec5fa"/><stop offset=".55" stop-color="#a596f6"/><stop offset="1" stop-color="#8576d6"/></radialGradient><radialGradient id="br-ff3eeffmz" cx="0.36" cy="0.28" r="0.85"><stop offset="0" stop-color="#f8f6ff"/><stop offset=".55" stop-color="#f3eeff"/><stop offset="1" stop-color="#ddd6f1"/></radialGradient><radialGradient id="br-bl"><stop offset="0" stop-color="#ff6f9c" stop-opacity=".6"/><stop offset="1" stop-color="#ff6f9c" stop-opacity="0"/></radialGradient><linearGradient id="br-eye" x1="0" y1="0" x2="0" y2="1"><stop offset=".4" stop-color="#2b2158"/><stop offset="1" stop-color="#6150b8"/></linearGradient><radialGradient id="br-f3b2c6en" cx="0.36" cy="0.28" r="0.85"><stop offset="0" stop-color="#766b9a"/><stop offset=".55" stop-color="#3b2c6e"/><stop offset="1" stop-color="#3b2b77"/></radialGradient><radialGradient id="br-fa596f6a" cx="0.3" cy="0.2" r="0.85"><stop offset="0" stop-color="#cec5fa"/><stop offset=".55" stop-color="#a596f6"/><stop offset="1" stop-color="#8576d6"/></radialGradient><radialGradient id="br-fff6f91ht" cx="0.36" cy="0.28" r="0.85"><stop offset="0" stop-color="#ffb0c3"/><stop offset=".55" stop-color="#ff6f91"/><stop offset="1" stop-color="#c45a90"/></radialGradient></defs><style>.b-arm-l{transform-origin:62px 150px}.b-arm-r{transform-origin:178px 150px}.b-head{transform-origin:120px 150px}.b-body{transform-origin:120px 232px}.b-eye-l,.b-eye-r{transform-box:fill-box;transform-origin:center}.b-eyelid-l,.b-eyelid-r{transform-box:fill-box;transform-origin:50% 0;transform:scaleY(0)}.b-arm-l,.b-arm-r,.b-head,.b-eye-l,.b-eye-r{transition:transform .5s cubic-bezier(.34,1.56,.64,1)}.b-mouth-happy,.b-mouth-cheer,.b-mouth-thinking,.b-mouth-encourage,.b-eyes-happy,.b-brows,.b-sparkles,.b-heart{display:none}[data-mood=happy] .b-mouth-neutral,[data-mood=cheer] .b-mouth-neutral,[data-mood=thinking] .b-mouth-neutral,[data-mood=encourage] .b-mouth-neutral{display:none}[data-mood=happy] .b-mouth-happy,[data-mood=cheer] .b-mouth-cheer,[data-mood=thinking] .b-mouth-thinking,[data-mood=encourage] .b-mouth-encourage{display:inline}[data-mood=cheer] .b-eye-l,[data-mood=cheer] .b-eye-r,[data-mood=cheer] .b-eyelid-l,[data-mood=cheer] .b-eyelid-r{display:none}[data-mood=cheer] .b-eyes-happy,[data-mood=cheer] .b-sparkles,[data-mood=thinking] .b-brows,[data-mood=encourage] .b-brows,[data-mood=encourage] .b-heart{display:inline}[data-mood=happy] .b-arm-r{transform:rotate(-125deg)}[data-mood=cheer] .b-arm-l{transform:rotate(125deg)}[data-mood=cheer] .b-arm-r{transform:rotate(-125deg)}[data-mood=cheer] .b-head{transform:translateY(-3px)}[data-mood=thinking] .b-arm-r{transform:rotate(104deg)}[data-mood=thinking] .b-head{transform:rotate(-5deg)}[data-mood=thinking] .b-eye-l,[data-mood=thinking] .b-eye-r{transform:translate(4px,-4px)}[data-mood=thinking] .b-brow-r{transform:translateY(-5px)}[data-mood=encourage] .b-arm-l{transform:rotate(128deg)}[data-mood=encourage] .b-head{transform:rotate(6deg)}.alive .b-body{animation:b-breathe 3.2s cubic-bezier(.45,0,.55,1) infinite}.alive .b-head{animation:b-bob 3.2s cubic-bezier(.45,0,.55,1) infinite}.alive .b-eyelid-l,.alive .b-eyelid-r{animation:b-blink 4.6s linear infinite}@keyframes b-breathe{50%{transform:scale(1.025,.985)}}@keyframes b-bob{50%{transform:translateY(2.5px)}}@keyframes b-blink{0%,92%,100%{transform:scaleY(0)}95%{transform:scaleY(1)}}@media (prefers-reduced-motion:reduce){.alive *{animation:none!important}.b-arm-l,.b-arm-r,.b-head,.b-eye-l,.b-eye-r{transition:none}}</style><g id="aura" class="b-aura"><ellipse cx="120" cy="140" rx="118" ry="104" fill="url(#br-aura)"/></g><g id="shadow" class="b-shadow"><ellipse cx="120" cy="232" rx="74" ry="9" fill="url(#br-sh)"/></g><g id="body" class="b-body"><path d="M120 116C172 116 194 160 188 198C184 224 160 232 120 232C80 232 56 224 52 198C46 160 68 116 120 116Z" fill="url(#br-fa596f6b)"/><ellipse cx="120" cy="186" rx="42" ry="36" fill="url(#br-fffd3e0bel)"/><ellipse cx="104" cy="170" rx="14" ry="8" transform="rotate(-20 104 170)" fill="url(#br-hl)" opacity="0.6"/></g><g id="foot-l" class="b-foot-l"><ellipse cx="88" cy="218" rx="26" ry="16" fill="url(#br-fa596f6f)"/><ellipse cx="88" cy="221" rx="11" ry="8" fill="url(#br-fffb3c8p)"/><circle cx="78" cy="210" r="3.4" fill="#ffb3c8"/><circle cx="88" cy="207.5" r="3.4" fill="#ffb3c8"/><circle cx="98" cy="210" r="3.4" fill="#ffb3c8"/></g><g id="foot-r" class="b-foot-r"><ellipse cx="152" cy="218" rx="26" ry="16" fill="url(#br-fa596f6f)"/><ellipse cx="152" cy="221" rx="11" ry="8" fill="url(#br-fffb3c8p)"/><circle cx="142" cy="210" r="3.4" fill="#ffb3c8"/><circle cx="152" cy="207.5" r="3.4" fill="#ffb3c8"/><circle cx="162" cy="210" r="3.4" fill="#ffb3c8"/></g><g id="head" class="b-head"><g id="ear-l" class="b-ear-l"><circle cx="52" cy="46" r="27" fill="url(#br-fa596f6e)"/><circle cx="56" cy="50" r="15" fill="url(#br-fffb3c8p)"/></g><g id="ear-r" class="b-ear-r"><circle cx="188" cy="46" r="27" fill="url(#br-fa596f6e)"/><circle cx="184" cy="50" r="15" fill="url(#br-fffb3c8p)"/></g><ellipse cx="120" cy="96" rx="82" ry="69" fill="url(#br-fa596f6h)"/><ellipse cx="92" cy="52" rx="32" ry="13" transform="rotate(-18 92 52)" fill="url(#br-hl)" opacity="0.65"/><ellipse cx="120" cy="126" rx="31" ry="23" fill="url(#br-ff3eeffmz)"/><g id="blush" class="b-blush"><ellipse cx="68" cy="124" rx="14.9" ry="9.5" fill="url(#br-bl)"/><ellipse cx="172" cy="124" rx="14.9" ry="9.5" fill="url(#br-bl)"/></g><g id="eye-l" class="b-eye-l"><ellipse cx="86" cy="100" rx="10.5" ry="12.5" fill="url(#br-eye)"/><circle cx="89.6" cy="95.6" r="4.3" fill="#fff"/><circle cx="82.6" cy="104.6" r="1.9" fill="#fff" opacity=".85"/></g><g id="eye-r" class="b-eye-r"><ellipse cx="154" cy="100" rx="10.5" ry="12.5" fill="url(#br-eye)"/><circle cx="157.6" cy="95.6" r="4.3" fill="#fff"/><circle cx="150.6" cy="104.6" r="1.9" fill="#fff" opacity=".85"/></g><g id="eyelid-l" class="b-eyelid-l"><ellipse cx="86" cy="100" rx="12.5" ry="14" fill="#ac9ef7"/><path d="M75 103Q86 111 97 103" fill="none" stroke="#2b2158" stroke-width="3.4" stroke-linecap="round"/></g><g id="eyelid-r" class="b-eyelid-r"><ellipse cx="154" cy="100" rx="12.5" ry="14" fill="#ac9ef7"/><path d="M143 103Q154 111 165 103" fill="none" stroke="#2b2158" stroke-width="3.4" stroke-linecap="round"/></g><g id="eyes-happy" class="b-eyes-happy"><path d="M74 104Q86 88 98 104M142 104Q154 88 166 104" fill="none" stroke="#2b2158" stroke-width="5" stroke-linecap="round"/></g><g id="brows" class="b-brows"><path id="brow-l" class="b-brow-l" d="M76 80Q86 74 96 79" fill="none" stroke="#62569f" stroke-width="4" stroke-linecap="round"/><path id="brow-r" class="b-brow-r" d="M144 79Q154 74 164 80" fill="none" stroke="#62569f" stroke-width="4" stroke-linecap="round"/></g><path d="M109 113Q120 108 131 113Q131 122 120 125Q109 122 109 113Z" fill="url(#br-f3b2c6en)"/><ellipse cx="116" cy="113" rx="4" ry="2.4" fill="url(#br-hl)" opacity="0.9"/><g id="mouth-neutral" class="b-mouth-neutral"><path d="M120 125V130M108 129Q114 136 120 130Q126 136 132 129" fill="none" stroke="#2b2158" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></g><g id="mouth-happy" class="b-mouth-happy"><path d="M120 125V129" stroke="#2b2158" stroke-width="3.4" stroke-linecap="round"/><clipPath id="br-mhc"><path d="M106 129Q120 131 134 129Q133 148 120 148Q107 148 106 129Z"/></clipPath><path d="M106 129Q120 131 134 129Q133 148 120 148Q107 148 106 129Z" fill="#2b2158"/><ellipse cx="120" cy="148" rx="10" ry="7" fill="#ff7a9c" clip-path="url(#br-mhc)"/></g><g id="mouth-cheer" class="b-mouth-cheer"><path d="M120 125V128" stroke="#2b2158" stroke-width="3.4" stroke-linecap="round"/><clipPath id="br-mcc"><path d="M101 128Q120 131 139 128Q138 158 120 158Q102 158 101 128Z"/></clipPath><path d="M101 128Q120 131 139 128Q138 158 120 158Q102 158 101 128Z" fill="#2b2158"/><ellipse cx="120" cy="158" rx="13" ry="9" fill="#ff7a9c" clip-path="url(#br-mcc)"/></g><g id="mouth-thinking" class="b-mouth-thinking"><path d="M120 125V130M112 135Q116 131.5 120 135Q124 138.5 128 135" fill="none" stroke="#2b2158" stroke-width="3.4" stroke-linecap="round"/></g><g id="mouth-encourage" class="b-mouth-encourage"><path d="M120 125V129" stroke="#2b2158" stroke-width="3.4" stroke-linecap="round"/><clipPath id="br-mec"><path d="M104 130Q120 134 136 130Q132 144 120 144Q108 144 104 130Z"/></clipPath><path d="M104 130Q120 134 136 130Q132 144 120 144Q108 144 104 130Z" fill="#2b2158"/><ellipse cx="120" cy="145" rx="9" ry="5.5" fill="#ff7a9c" clip-path="url(#br-mec)"/></g></g><g id="arm-l" class="b-arm-l"><g transform="rotate(18 62 150)" filter="url(#br-ds)"><rect x="46" y="140" width="32" height="62" rx="16" fill="url(#br-fa596f6a)"/><ellipse cx="62" cy="190" rx="10" ry="7.5" fill="url(#br-fffb3c8p)"/></g></g><g id="arm-r" class="b-arm-r"><g transform="rotate(-18 178 150)" filter="url(#br-ds)"><rect x="162" y="140" width="32" height="62" rx="16" fill="url(#br-fa596f6a)"/><ellipse cx="178" cy="190" rx="10" ry="7.5" fill="url(#br-fffb3c8p)"/></g></g><g id="sparkles" class="b-sparkles"><path d="M26 59Q27.98 68.02 37 70Q27.98 71.98 26 81Q24.02 71.98 15 70Q24.02 68.02 26 59Z" fill="#ffd23f"/><path d="M214 53Q215.62 60.38 223 62Q215.62 63.62 214 71Q212.38 63.62 205 62Q212.38 60.38 214 53Z" fill="#ff9ec4"/><path d="M206 121Q207.26 126.74 213 128Q207.26 129.26 206 135Q204.74 129.26 199 128Q204.74 126.74 206 121Z" fill="#ffd23f"/><path d="M36 124Q37.08 128.92 42 130Q37.08 131.08 36 136Q34.92 131.08 30 130Q34.92 128.92 36 124Z" fill="#ffffff"/><path d="M120 0Q121.44 6.5600000000000005 128 8Q121.44 9.44 120 16Q118.56 9.44 112 8Q118.56 6.5600000000000005 120 0Z" fill="#ffffff"/></g><g id="heart" class="b-heart"><path d="M206 38C206 30 196 28 192 35C188 28 178 30 178 38C178 47 192 55 192 55C192 55 206 47 206 38Z" fill="url(#br-fff6f91ht)"/><ellipse cx="186" cy="36" rx="4" ry="3" fill="url(#br-hl)" opacity="0.9"/></g></svg></div>
+  <div id="text"></div>
+  <div id="stars"></div>
+</div>
+<template id="star"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="sc-st-fffc928" cx="0.36" cy="0.25" r="0.85"><stop offset="0" stop-color="#ffe9a9"/><stop offset=".55" stop-color="#ffc928"/><stop offset="1" stop-color="#cea141"/></radialGradient><radialGradient id="sc-st-hl"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><path d="M50.0 9.0L62.3 36.0L91.8 39.4L70.0 59.5L75.9 88.6L50.0 74.0L24.1 88.6L30.0 59.5L8.2 39.4L37.7 36.0Z" fill="url(#sc-st-fffc928)" stroke="#ffc928" stroke-width="10" stroke-linejoin="round"/><path d="M50.0 9.0L62.3 36.0L91.8 39.4L70.0 59.5L75.9 88.6L50.0 74.0L24.1 88.6L30.0 59.5L8.2 39.4L37.7 36.0Z" fill="none" stroke="#f3a918" stroke-width="10" stroke-linejoin="round" opacity=".25" transform="translate(0 2)"/><ellipse cx="40" cy="36" rx="14" ry="7" transform="rotate(-25 40 36)" fill="url(#sc-st-hl)" opacity="0.85"/></svg></template>
+<script>
+(function(){
+  const {clamp,lerp,prog,E,spr,bump,breath,blink,rng} = K;
+  const DUR = 3;
+  const starSvg = document.getElementById('star').innerHTML;
+
+  // Text letters
+  const text = document.getElementById('text');
+  'Super gemacht!'.split('').forEach(c => { const s = document.createElement('span');
+    if (c === ' ') s.className = 'sp'; else { s.className = 'ch'; s.textContent = c; } text.appendChild(s); });
+  const chars = [...text.querySelectorAll('.ch')];
+
+  // Five reward stars
+  const starsHost = document.getElementById('stars');
+  const stars = [0,1,2,3,4].map(i => { const d = document.createElement('div'); d.className = 'star'; d.innerHTML = starSvg; starsHost.appendChild(d); return d; });
+
+  // Star bursts behind Bruno
+  const R = rng(7);
+  const burstHost = document.getElementById('bursts');
+  const BURSTS = [];
+  [[0.62, 10, 1], [1.62, 8, 0.8]].forEach(([t0, n, k]) => {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + R() * 0.4 - Math.PI / 2, dist = (230 + R() * 110) * k, size = 26 + R() * 22;
+      const el = document.createElement('div'); el.className = 'burst';
+      el.style.width = el.style.height = size + 'px'; el.innerHTML = starSvg; burstHost.appendChild(el);
+      BURSTS.push({ el, t0: t0 + R() * 0.06, a, dist, size, rot: (R() - .5) * 300 });
+    }
+  });
+
+  // Confetti (spec: 40 pieces, angles -160..-20, v 500-900 px/s, g 1400 px/s², flip, life 1.6-2.2s)
+  const COLORS = ['#ff6f91','#ff9a3c','#ffc928','#3ccf8e','#4fb3f6','#9b7cf7'];
+  const confHost = document.getElementById('confetti');
+  const CONF = [];
+  function wave(t0, n, x0, y0, lifeMin, lifeMax, seed) {
+    const r = rng(seed);
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('div'); el.className = 'conf';
+      const dot = r() < 0.35, w = dot ? 16 : 14 + r() * 4, h = dot ? 16 : 22 + r() * 4;
+      el.style.cssText += `width:${w}px;height:${h}px;border-radius:${dot ? '50%' : '5px'};background:${COLORS[i % COLORS.length]};` +
+        `box-shadow:inset 0 -3px 0 rgba(43,33,88,.12),inset 0 2px 0 rgba(255,255,255,.35)`;
+      confHost.appendChild(el);
+      const ang = (-160 + r() * 140) * Math.PI / 180, v = 500 + r() * 400;
+      CONF.push({ el, t0: t0 + r() * 0.16, x0: x0 + (r() - .5) * 240, y0: y0 + (r() - .5) * 60, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v,
+        life: lifeMin + r() * (lifeMax - lifeMin), rz: r() * 360, vrz: (r() - .5) * 540, flip: 1 + r(), w, h });
+    }
+  }
+  wave(0.5, 40, 590, 230, 1.6, 2.2, 11);
+  wave(1.5, 18, 590, 230, 1.2, 1.4, 23);
+
+  const bw = document.getElementById('bruno');
+  const B = K.Bruno(bw);
+  const rays = document.getElementById('rays');
+  const clouds = ['c1','c2','c3'].map(id => document.getElementById(id));
+
+  // One cheer jump per DESIGN.md: squash 120ms, up 280ms, down 260ms, landing squash springs back.
+  const H = 74;
+  function jump(t, js) {
+    const u = t - js;
+    if (u < 0) return null;
+    if (u < 0.12) { const p = E.in(u / 0.12); return { y: 0, sx: 1 + 0.08 * p, sy: 1 - 0.08 * p, air: 0 }; }
+    if (u < 0.40) { const p = (u - 0.12) / 0.28; const e = E.out(p);
+      const st = 0.09 * (1 - p); return { y: -H * e, sx: 1 - st * .6, sy: 1 + st, air: e }; }
+    if (u < 0.66) { const p = (u - 0.40) / 0.26; const e = E.inQuad(p);
+      const st = 0.06 * p; return { y: -H * (1 - e), sx: 1 - st * .6, sy: 1 + st, air: 1 - e }; }
+    const w = u - 0.66; const sq = 1 - K.springAt(w, 260, 14);     // 1 -> 0 with overshoot
+    return { y: 0, sx: 1 + 0.1 * sq, sy: 1 - 0.1 * sq, air: 0, land: w };
+  }
+  const J = [0.22, 1.22];
+
+  function render(t) {
+    rays.style.transform = `rotate(${(t * 9).toFixed(3)}deg)`;
+    clouds.forEach((c, i) => c.style.transform = `translateX(${(14 * Math.sin(2 * Math.PI * t / 6 + i * 2) - 14 * Math.sin(i * 2)).toFixed(2)}px)`);
+
+    // Bruno
+    // second jump takes over once it starts
+    const cur = t >= J[1] ? jump(t, J[1]) : (jump(t, J[0]) || { y: 0, sx: 1, sy: 1, air: 0 });
+    bw.style.transform = `translateY(${cur.y.toFixed(2)}px) scale(${cur.sx.toFixed(4)},${cur.sy.toFixed(4)})`;
+    const cheer = t >= J[0] + 0.12;
+    const armUp = cheer ? spr(t, J[0] + 0.12, [220, 13, 1]) : 0;
+    // arms lag a little on each landing
+    let lag = 0; J.forEach(js => { const w = t - (js + 0.66); if (w > 0) lag += 12 * Math.exp(-7 * w) * Math.sin(2 * Math.PI * w / 0.36); });
+    B.set({
+      mood: cheer ? 'cheer' : 'happy',
+      armL: 125 * armUp - lag, armR: -125 * armUp + lag,
+      breath: breath(Math.max(0, t - 2.2), 3.2),
+      headY: -3 * armUp, headRot: 0,
+      lid: blink(t, []),
+      shadow: 1 - 0.55 * cur.air,
+      earL: K.earWiggle(t, J[0] + 0.66), earR: K.earWiggle(t, J[0] + 0.72),
+    });
+    // twinkling sparkles (part of cheer mood)
+    B.sparkleKids.forEach((el, i) => {
+      const t0 = J[0] + 0.12 + i * 0.08; const u = t - t0;
+      let s = 0, r = 0;
+      if (u > 0) { const p = clamp(u / 0.45); s = p < .6 ? lerp(.6, 1.2, E.out(p / .6)) : lerp(1.2, 1, E.inOut((p - .6) / .4));
+        r = 45 * E.out(p); s *= 1 - 0.15 * (u > .45 ? (1 - Math.cos(2 * Math.PI * (u - .45) / 1.4)) / 2 : 0); }
+      el.style.transform = `scale(${s.toFixed(3)}) rotate(${r.toFixed(2)}deg)`;
+    });
+
+    // star bursts
+    BURSTS.forEach(b => { const u = t - b.t0;
+      if (u <= 0 || u > 1.1) { b.el.style.opacity = 0; return; }
+      const p = u / 1.1, e = E.out(p);
+      const cx = 590 + Math.cos(b.a) * b.dist * e, cy = 290 + Math.sin(b.a) * b.dist * e * 0.8 + 60 * p * p;
+      const sc = p < .2 ? E.out(p / .2) : 1 - 0.4 * (p - .2) / .8;
+      b.el.style.opacity = p < .6 ? 1 : 1 - (p - .6) / .4;
+      b.el.style.transform = `translate(${(cx - b.size / 2).toFixed(1)}px,${(cy - b.size / 2).toFixed(1)}px) rotate(${(b.rot * e).toFixed(1)}deg) scale(${sc.toFixed(3)})`;
+    });
+
+    // confetti physics
+    CONF.forEach(c => { const u = t - c.t0;
+      if (u <= 0 || u > c.life) { c.el.style.opacity = 0; return; }
+      const drag = Math.exp(-0.6 * u);
+      const x = c.x0 + c.vx * u * drag, y = c.y0 + c.vy * u * drag + 0.5 * 1400 * u * u * 0.55;
+      c.el.style.opacity = u > c.life - 0.3 ? (c.life - u) / 0.3 : 1;
+      c.el.style.transform = `translate(${(x - c.w / 2).toFixed(1)}px,${(y - c.h / 2).toFixed(1)}px) perspective(400px) rotateZ(${(c.rz + c.vrz * u).toFixed(1)}deg) rotateX(${(720 * c.flip * u / c.life).toFixed(1)}deg)`;
+    });
+
+    // "Super gemacht!" letters pop in
+    chars.forEach((el, i) => { const t0 = 0.78 + i * 0.04; const u = t - t0;
+      if (u <= 0) { el.style.opacity = 0; el.style.transform = 'scale(0)'; return; }
+      const v = K.springAt(u, 240, 14);
+      el.style.opacity = clamp(u / 0.12);
+      // little wave of joy when Bruno lands the second jump
+      const hop = -10 * bump(t, J[1] + 0.66 + i * 0.03, 0.32);
+      el.style.transform = `translateY(${(36 * (1 - v) + hop).toFixed(2)}px) scale(${(0.3 + 0.7 * v).toFixed(4)}) rotate(${(-8 * (1 - v)).toFixed(2)}deg)`;
+    });
+
+    // reward stars drop in (translateY(-60) scale 0 -> rest, 500ms spring, 120ms stagger), alternately tilted
+    stars.forEach((el, i) => { const t0 = 1.3 + i * 0.12; const v = t < t0 ? 0 : K.springAt(t - t0, 260, 14);
+      const tilt = (i % 2 ? 8 : -8);
+      el.style.opacity = t < t0 ? 0 : clamp((t - t0) / 0.1);
+      el.style.transform = `translateY(${(-60 * (1 - v)).toFixed(2)}px) scale(${v.toFixed(4)}) rotate(${(tilt * v).toFixed(2)}deg)`;
+    });
+  }
+  K.bind('feier', DUR, render);
+})();
+</script>
+</body>
+</html>

@@ -3,5 +3,18 @@
   "private": true,
   "version": "1.0.0",
   "description": "Animierte Clips für ABC mit Bruno (HyperFrames)",
-  "scripts": {}
+  "scripts": {
+    "build": "node build.mjs",
+    "render": "./render.sh",
+    "render:intro": "./render.sh intro",
+    "render:feier": "./render.sh feier",
+    "render:buchstabe": "./render.sh buchstabe",
+    "preview": "node build.mjs && npx hyperframes preview",
+    "lint": "node build.mjs && npx hyperframes lint build"
+  },
+  "dependencies": {
+    "@fontsource/fredoka": "5.3.0",
+    "gsap": "3.15.0",
+    "hyperframes": "0.8.140"
+  }
 }
