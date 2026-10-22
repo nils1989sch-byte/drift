@@ -1,0 +1,4 @@
+node_modules/
+abc-lernapp/tests/results/
+abc-lernapp/tests/test-results/
+abc-lernapp/tests/playwright-report/
