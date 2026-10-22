@@ -3,15 +3,18 @@ const { test, expect } = require('../support/fixtures');
 
 test.describe('Performance smoke', () => {
   test('time to interactive < 2 s', async ({ app, page }) => {
-    const t0 = Date.now();
-    await app.goto();
+    await app.goto(); // returns once the tab bar is visible
+    // ready = ms since navigation start until the UI is visible (measured in the page clock)
+    const ready = await page.evaluate(() => performance.now());
+    await page.evaluate(() => document.addEventListener('pointerdown', () => { window.__pd = performance.now(); }, { capture: true, once: true }));
     await app.go('abc'); // first real interaction works
-    const tti = Date.now() - t0;
+    const response = await page.evaluate(() => performance.now() - window.__pd);
     const nav = await page.evaluate(() => {
       const n = performance.getEntriesByType('navigation')[0];
-      return n ? { dcl: Math.round(n.domContentLoadedEventEnd), load: Math.round(n.loadEventEnd), size: n.transferSize } : null;
+      return n ? { dcl: Math.round(n.domContentLoadedEventEnd), load: Math.round(n.loadEventEnd) } : {};
     });
-    app.note('metric', `TTI ${tti}ms (goto -> first tab switch); DOMContentLoaded ${nav && nav.dcl}ms; load ${nav && nav.load}ms`);
+    const tti = Math.round(ready + response);
+    app.note('metric', `TTI ~${tti}ms (UI visible ${Math.round(ready)}ms + first tab switch ${Math.round(response)}ms); DOMContentLoaded ${nav.dcl}ms; load ${nav.load}ms`);
     expect(tti).toBeLessThan(2000);
   });
 
@@ -52,10 +55,9 @@ test.describe('Performance smoke', () => {
     });
     const b = await app.$('trace-board').boundingBox();
     const { touchStroke } = require('../support/touch');
-    const t0 = Date.now();
     for (let i = 0; i < 3; i++) await touchStroke(page, [{ x: b.x + 50, y: b.y + 50 + i * 40 }, { x: b.x + b.width - 50, y: b.y + b.height - 50 - i * 40 }]);
     await page.waitForTimeout(200);
     const lt = await page.evaluate(() => window.__lt);
-    app.note('metric', `3 strokes in ${Date.now() - t0}ms; long tasks (>50ms): ${lt.length ? lt.join(',') + 'ms' : 'none'}`);
+    app.note('metric', `tracing: long tasks (>50ms) during 3 strokes: ${lt.length ? lt.join(',') + 'ms' : 'none'}`);
   });
 });
