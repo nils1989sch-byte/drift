@@ -80,6 +80,13 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (id === 'void') return -Infinity;
     return world.heightAt(tx, ty) + (isWall(id) ? WALL_LEVELS : 0);
   };
+  // top surface height in world units; water beds are recessed so banks get little earth walls
+  const topY = (world, tx, ty) => {
+    const e = effH(world, tx, ty);
+    if (e === -Infinity) return -Infinity;
+    const d = TILE_DEFS[world.tileAt(tx, ty)];
+    return e * LEVEL - (d?.water ? 7 : d?.shallow ? 3 : 0);
+  };
 
   // ----- ground texture (top faces), composited in 2D with terrain edge overlays -----
   function tileFrame(id, tx, ty) {
@@ -203,7 +210,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     for (let ty = 0; ty < Hh; ty++) for (let tx = 0; tx < W; tx++) {
       const e = effH(world, tx, ty);
       if (e === -Infinity) continue;
-      const y = e * LEVEL, x0 = tx * TILE, x1 = x0 + TILE, z0 = ty * TILE, z1 = z0 + TILE;
+      const y = topY(world, tx, ty), x0 = tx * TILE, x1 = x0 + TILE, z0 = ty * TILE, z1 = z0 + TILE;
       const u0 = tx / W, u1 = (tx + 1) / W, v0 = 1 - ty / Hh, v1 = 1 - (ty + 1) / Hh;
       quad(top, [x0, y, z0], [x0, y, z1], [x1, y, z1], [x1, y, z0], [0, 1, 0], [u0, v0], [u0, v1], [u1, v1], [u1, v0]);
       const fid = isWall(world.tileAt(tx, ty)) ? 'brick' : (assets.faces?.[world.face] ? world.face : 'rock');
@@ -215,21 +222,21 @@ export function createRenderer3D(canvas, assets, opts = {}) {
         [1, 0, [x1, z1], [x1, z0], [1, 0, 0]],
       ];
       for (const [dx, dz, a, b, nrm] of sides) {
-        let en = effH(world, tx + dx, ty + dz);
-        const outside = en === -Infinity;
-        if (outside) en = 0;
-        if (en < e) {
-          const n = e - en;
-          const col = faceStrips.get(`${fid}:${Math.min(n, maxN)}:${hash(tx, ty + dx * 7) % 3}`) ?? 0;
+        let yb = topY(world, tx + dx, ty + dz);
+        const outside = yb === -Infinity;
+        if (outside) yb = 0;
+        if (yb < y - 0.01) {
+          const dyU = y - yb, n = Math.max(1, Math.ceil(dyU / LEVEL - 0.01));
+          const ffid = dyU < LEVEL * 0.5 && fid !== 'brick' ? (assets.faces?.dirt ? 'dirt' : fid) : fid;
+          const col = faceStrips.get(`${ffid}:${Math.min(n, maxN)}:${hash(tx, ty + dx * 7) % 3}`) ?? 0;
           const ua = col / atlas.cols, ub = (col + 1) / atlas.cols;
-          const vt = 1, vb = 1 - (n * LEVEL) / atlas.H;
-          const yb = en * LEVEL;
+          const vt = 1, vb = 1 - dyU / atlas.H;
           quad(side, [a[0], y, a[1]], [a[0], yb, a[1]], [b[0], yb, b[1]], [b[0], y, b[1]], nrm, [ua, vt], [ua, vb], [ub, vb], [ub, vt]);
         }
         if (outside) {
           // diorama plinth below ground level on the map border
           const len = TILE / pl.w, along = (dx !== 0 ? ty : tx) * len;
-          const yTop = Math.min(0, e * LEVEL);
+          const yTop = Math.min(0, y);
           quad(base, [a[0], yTop, a[1]], [a[0], -PLINTH, a[1]], [b[0], -PLINTH, b[1]], [b[0], yTop, b[1]], nrm,
             [along, 1], [along, 1 - PLINTH / pl.h], [along + len, 1 - PLINTH / pl.h], [along + len, 1]);
         }
@@ -246,6 +253,18 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       return m;
     };
     mk(top, new THREE.MeshLambertMaterial({ map: groundTex }));
+    // glossy translucent water surface over recessed water beds
+    const wat = { p: [], n: [], uv: [] };
+    for (let ty = 0; ty < Hh; ty++) for (let tx = 0; tx < W; tx++) {
+      const d = TILE_DEFS[world.tileAt(tx, ty)];
+      if (!d?.water && !d?.shallow) continue;
+      const y = effH(world, tx, ty) * LEVEL - 1.5, x0 = tx * TILE, z0 = ty * TILE;
+      quad(wat, [x0, y, z0], [x0, y, z0 + TILE], [x0 + TILE, y, z0 + TILE], [x0 + TILE, y, z0], [0, 1, 0], [0, 0], [0, 1], [1, 1], [1, 0]);
+    }
+    if (wat.p.length) {
+      const wm = mk(wat, new THREE.MeshPhongMaterial({ color: '#1c4878', specular: '#ffe8c0', shininess: 120, transparent: true, opacity: 0.32, depthWrite: false }));
+      wm.castShadow = false; wm.renderOrder = 2;
+    }
     mk(side, new THREE.MeshLambertMaterial({ map: faceTex }));
     mk(base, new THREE.MeshLambertMaterial({ map: pl.t, color: '#b0a090' }));
     // table under the diorama
@@ -540,8 +559,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
         vec3 o = toSRGB(c);
         if (uVignette > 0.5) {
           vec2 q = (vUv - 0.5) * vec2(uAspect, 1.0);
-          float v = smoothstep(0.95, 0.35, length(q));
-          o *= mix(vec3(0.16, 0.13, 0.26), vec3(1.0), v);
+          float v = smoothstep(1.05, 0.45, length(q));
+          o *= mix(vec3(0.3, 0.26, 0.42), vec3(1.0), v);
         }
         // fine film grain keeps gradients from banding
         float n = fract(sin(dot(vUv * (uTime + 1.0), vec2(12.9898, 78.233))) * 43758.5453);
