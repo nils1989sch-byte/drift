@@ -1,0 +1,13 @@
+{
+  "name": "abc-bruno-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright test harness for ABC mit Bruno",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.56.1"
+  }
+}
