@@ -1,0 +1,132 @@
+[
+ {
+  "letter": "A",
+  "word": "Affe",
+  "file": "illustrations/a.svg"
+ },
+ {
+  "letter": "B",
+  "word": "Banane",
+  "file": "illustrations/b.svg"
+ },
+ {
+  "letter": "C",
+  "word": "Clown",
+  "file": "illustrations/c.svg"
+ },
+ {
+  "letter": "D",
+  "word": "Dino",
+  "file": "illustrations/d.svg"
+ },
+ {
+  "letter": "E",
+  "word": "Elefant",
+  "file": "illustrations/e.svg"
+ },
+ {
+  "letter": "F",
+  "word": "Fisch",
+  "file": "illustrations/f.svg"
+ },
+ {
+  "letter": "G",
+  "word": "Giraffe",
+  "file": "illustrations/g.svg"
+ },
+ {
+  "letter": "H",
+  "word": "Hund",
+  "file": "illustrations/h.svg"
+ },
+ {
+  "letter": "I",
+  "word": "Igel",
+  "file": "illustrations/i.svg"
+ },
+ {
+  "letter": "J",
+  "word": "Jacke",
+  "file": "illustrations/j.svg"
+ },
+ {
+  "letter": "K",
+  "word": "Katze",
+  "file": "illustrations/k.svg"
+ },
+ {
+  "letter": "L",
+  "word": "Löwe",
+  "file": "illustrations/l.svg"
+ },
+ {
+  "letter": "M",
+  "word": "Maus",
+  "file": "illustrations/m.svg"
+ },
+ {
+  "letter": "N",
+  "word": "Nashorn",
+  "file": "illustrations/n.svg"
+ },
+ {
+  "letter": "O",
+  "word": "Oktopus",
+  "file": "illustrations/o.svg"
+ },
+ {
+  "letter": "P",
+  "word": "Pinguin",
+  "file": "illustrations/p.svg"
+ },
+ {
+  "letter": "Q",
+  "word": "Qualle",
+  "file": "illustrations/q.svg"
+ },
+ {
+  "letter": "R",
+  "word": "Rakete",
+  "file": "illustrations/r.svg"
+ },
+ {
+  "letter": "S",
+  "word": "Sonne",
+  "file": "illustrations/s.svg"
+ },
+ {
+  "letter": "T",
+  "word": "Tiger",
+  "file": "illustrations/t.svg"
+ },
+ {
+  "letter": "U",
+  "word": "Ufo",
+  "file": "illustrations/u.svg"
+ },
+ {
+  "letter": "V",
+  "word": "Vogel",
+  "file": "illustrations/v.svg"
+ },
+ {
+  "letter": "W",
+  "word": "Wal",
+  "file": "illustrations/w.svg"
+ },
+ {
+  "letter": "X",
+  "word": "Xylofon",
+  "file": "illustrations/x.svg"
+ },
+ {
+  "letter": "Y",
+  "word": "Yak",
+  "file": "illustrations/y.svg"
+ },
+ {
+  "letter": "Z",
+  "word": "Zebra",
+  "file": "illustrations/z.svg"
+ }
+]
