@@ -7,15 +7,18 @@ import { Fig, TAU, lerp } from './chars/rig.js';
 import { M } from './chars/materials.js';
 import { drawHuman, CX, FOOT, skeleton, sword } from './chars/human.js';
 import { SOLDIER, buildSoldierHD } from './chars/soldier.js';
+import { HERO_HAIR } from './chars/head.js';
 
 const DIRS = ['down', 'up', 'left', 'right'];
 const viewOf = (d) => (d === 'left' || d === 'right' ? 'side' : d);
 
 export const HERO_LOOK = {
+  id: 'hero',
   skin: M.skin, hair: M.hair, eye: M.eye,
-  jacket: M.leather, shirt: M.shirt, sleeve: M.leather, cuffMat: M.shirt, hemMat: M.shirt,
+  jacket: M.leather, shirt: M.shirt, sleeve: M.leather, cuffMat: M.leather_dk, hemMat: M.shirt,
   pants: M.pants, boot: M.boot, belt: M.belt,
   scarf: true, shield: true, sheath: true, pouch: true, laces: true,
+  headP: { hair: M.hair, skin: M.skin, eye: M.eye, ...HERO_HAIR },
 };
 
 // render one pose; base frame 32×48, foot anchor (16, 47). Larger canvases keep the foot at (ax, ay).
@@ -75,9 +78,9 @@ function idlePose(view, i) {
 
 // attack: sword angles per view (deg, screen space) + body motion
 const ATK = {
-  down: { ax: 32, ay: 41, ang: [205, 160, 112, 64, 38], lean: [-1, -0.6, 0, 0.8, 0.5], bob: [0, 0, 1, 1, 0], reach: [4.5, 6, 6.8, 6.2, 5.2] },
+  down: { ax: 32, ay: 44, ang: [205, 160, 112, 64, 38], lean: [-1, -0.6, 0, 0.8, 0.5], bob: [0, 0, 1, 1, 0], reach: [4.5, 6, 6.8, 6.2, 5.2] },
   up: { ax: 32, ay: 60, ang: [22, 338, 288, 244, 218], lean: [1, 0.6, 0, -0.8, -0.5], bob: [0, 0, 1, 1, 0], reach: [4.5, 6, 6.8, 6.2, 5.2] },
-  side: { ax: 40, ay: 54, ang: [292, 252, 202, 158, 134], lean: [0.8, 0, -1.6, -2, -1.2], bob: [0, 0, 1, 1, 0], reach: [4.5, 5.6, 6.8, 6.4, 5.4] },
+  side: { ax: 40, ay: 54, ang: [312, 250, 202, 158, 134], lean: [0.8, 0, -1.6, -2, -1.2], bob: [0, 0, 1, 1, 0], reach: [4.5, 5.6, 6.8, 6.4, 5.4] },
 };
 const D2R = Math.PI / 180;
 function attackPose(view, k, o = {}) {
@@ -89,7 +92,7 @@ function attackPose(view, k, o = {}) {
   let behind = false, farFront = false;
   if (view === 'down') behind = s < -0.35;
   else if (view === 'up') behind = s < -0.3;
-  else { behind = c > 0.2; farFront = c < -0.2; }
+  else { behind = c > 0.2 || s < -0.75; farFront = !behind && c < -0.2; }
   if (view === 'side') {
     const sh = J.shF;
     pose.hands = { F: [sh[0] + c * r, sh[1] + s * r * 0.85 + 1], N: [J.shN[0] + 2.5 - (A.lean[k] < -1 ? 0 : 1), J.shN[1] + 6.4] };
@@ -186,7 +189,7 @@ export function buildHero() {
   {
     const p = { bob: 0, eyes: 'happy', mouth: 'open', wind: 0.3, carry: true, shield: 'none' };
     const J = skeleton('down', p);
-    p.hands = { R: [J.shR[0] + 0.8, J.shR[1] - 9.5], L: [J.shL[0] - 0.8, J.shL[1] - 9.5] };
+    p.hands = { R: [CX - 8, J.head[1] - 4.5], L: [CX + 8, J.head[1] - 4.5] };
     S.hero_item_get = [renderPose(L, 'down', p)];
   }
   // spin attack: 8 frames 80×80, anchor (40, 62)
@@ -239,8 +242,8 @@ function liftPose(v, k) {
 function carryHands(v, p) {
   const J = skeleton(v, p);
   p.carry = true; p.shield = 'none';
-  if (v === 'side') { p.hands = { N: [J.shN[0] - 1.2, J.head[1] - 7.6], F: [J.shF[0] - 1.8, J.head[1] - 7.8] }; p.carry = false; }
-  else p.hands = { R: [J.shR[0] + 2.2 * J.sg, J.head[1] - 8.2], L: [J.shL[0] - 2.2 * J.sg, J.head[1] - 8.2] };
+  if (v === 'side') { p.hands = { N: [J.shN[0] - 2.6, J.head[1] - 3.2], F: [J.shF[0] - 3, J.head[1] - 3.6] }; p.carry = false; p.armLen = 1.5; }
+  else p.hands = { R: [CX - 7.8 * J.sg, J.head[1] - 2.4], L: [CX + 7.8 * J.sg, J.head[1] - 2.4] };
   return p;
 }
 function pushPose(v, i) {

@@ -161,7 +161,8 @@ async function openPage({ r3d = false, ctx: ctxOpts = {}, query = '' } = {}) {
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console.error: ' + m.text()); if (m.type() === 'warning' && /\[game\]|\[ui\]/.test(m.text())) errors.push('warn: ' + m.text()); });
   const q = (r3d ? '?' : '?r=2d') + (query ? (r3d ? '' : '&') + query : '');
   await page.goto(BASE + q);
-  await page.waitForFunction(() => window.__drift?.game && window.__drift.ui, null, { timeout: 30000 });
+  try { await page.waitForFunction(() => window.__drift?.game && window.__drift.ui, null, { timeout: 30000 }); }
+  catch (e) { throw new Error('game did not boot within 30 s; errors: ' + JSON.stringify(errors.slice(0, 3))); }
   await page.waitForTimeout(300);
   await page.evaluate(QA_LIB);
   return { page, errors, close: async () => { await ctx.close(); if (r3d) await b.close(); } };

@@ -36,8 +36,8 @@ function def(name, base, o = {}) {
 }
 
 // --- shared ---
-def('skin', '#eab38a', { dk: 0.075, lt: 0.055, hsD: 9, shadowHue: 345, sD: 0.02, line: '#6a2c2c', lineLit: '#a55a48', amb: 0.4, k: 0.58 });
-def('skin_old', '#e2ad8c', { dk: 0.075, lt: 0.055, hsD: 9, shadowHue: 345, line: '#683030', lineLit: '#a05a4a', amb: 0.4, k: 0.58 });
+def('skin', '#eab38a', { colors: ['#9a5a52', '#b8705e', '#d69272', '#eab38a', '#f6cba2', '#fde2c0'], line: '#5a2c30', lineLit: '#94564c', amb: 0.42, k: 0.58 });
+def('skin_old', '#e0aa8a', { colors: ['#8e5652', '#a86a5e', '#c88670', '#e0aa8a', '#efc2a0', '#f8dabc'], line: '#562c30', lineLit: '#8a524c', amb: 0.42, k: 0.58 });
 def('blush', '#e48a7a', { colors: ['#b8564e', '#d06e62', '#e48a7a', '#ec9e88'], noLine: true });
 def('eye', '#2a3048', { colors: ['#1e1a2c', '#2a3a5c', '#3e6a8a', '#f4eee2'], noLine: true });
 def('eye_brn', '#3a2a28', { colors: ['#22161e', '#4a3024', '#7a5034', '#f4eee2'], noLine: true });
@@ -48,14 +48,14 @@ def('brass', '#cf9a3e', { dk: 0.09, lt: 0.08, hsD: 8, shadowHue: 10, line: '#4a2
 def('glint', '#fbf6e4', { colors: ['#fbf6e4'], noLine: true, noOutline: true });
 
 // --- hero ---
-def('hair', '#5b3a2e', { dk: 0.06, lt: 0.075, hsD: 8, hsL: 6, shadowHue: 280, sD: 0.02, line: '#20141e', lineLit: '#3a2228', spec: 0.95, amb: 0.36, k: 0.66 });
+def('hair', '#50342a', { dk: 0.06, lt: 0.075, hsD: 8, hsL: 6, shadowHue: 280, sD: 0.02, line: '#20141e', lineLit: '#3a2228', spec: 0.95, amb: 0.36, k: 0.66 });
 def('scarf', '#2b7682', { dk: 0.075, lt: 0.075, hsD: 10, hsL: 8, shadowHue: 235, lightHue: 160, line: '#122236', lineLit: '#1a3a52', amb: 0.38, k: 0.62 });
 def('scarf_in', '#1f5868', { dk: 0.07, lt: 0.06, hsD: 10, shadowHue: 240, line: '#101c30', lineLit: '#162c44' });
 def('leather', '#8f5a3a', { dk: 0.075, lt: 0.075, hsD: 8, shadowHue: 330, line: '#2e1618', lineLit: '#4e2620', amb: 0.36, k: 0.64 });
 def('leather_dk', '#5e3a2c', { dk: 0.06, lt: 0.07, hsD: 8, shadowHue: 300, line: '#1e1016', lineLit: '#36202a' });
 def('shirt', '#e4d8bc', { dk: 0.08, lt: 0.045, hsD: 12, shadowHue: 260, sD: -0.02, line: '#4a3a48', lineLit: '#7a6a70', amb: 0.4, k: 0.6 });
 def('pants', '#4f4d68', { dk: 0.07, lt: 0.075, hsD: 6, shadowHue: 255, lightHue: 220, line: '#181628', lineLit: '#2a283e' });
-def('boot', '#6c4430', { dk: 0.07, lt: 0.075, hsD: 8, shadowHue: 320, line: '#22121a', lineLit: '#3a2024', spec: 0.95 });
+def('boot', '#5a3a2e', { dk: 0.07, lt: 0.075, hsD: 8, shadowHue: 320, line: '#22121a', lineLit: '#3a2024', spec: 0.95 });
 def('belt', '#44302c', { dk: 0.06, lt: 0.075, hsD: 6, shadowHue: 300, line: '#1a1018', lineLit: '#2a1a20' });
 def('pouch', '#a5703f', { dk: 0.08, lt: 0.07, hsD: 8, shadowHue: 340, line: '#3a1c16', lineLit: '#5a3020' });
 def('wood', '#9c6436', { dk: 0.08, lt: 0.07, hsD: 8, shadowHue: 340, line: '#341a16', lineLit: '#56301e' });

@@ -3,6 +3,7 @@
 // A "look" describes materials and feature flags (hero, soldier, NPCs share the skeleton).
 import { Fig, ik, lerp } from './rig.js';
 import { M } from './materials.js';
+import { drawHeadP } from './head.js';
 
 export const CX = 16.5;   // body centre (between columns 16|17 → column 16 is the centre column)
 export const FOOT = 45;   // boot centre line (soles reach y = 46)
@@ -21,7 +22,7 @@ export function skeleton(view, pose = {}) {
   } else {
     const sg = view === 'down' ? 1 : -1; // character's right is screen-left in the front view
     J.hip = T(CX + lean * 0.3, 36.5 + b);
-    J.shR = T(CX - 6 * sg + lean, 27.6 + b); J.shL = T(CX + 6 * sg + lean, 27.6 + b);
+    J.shR = T(CX - 5.4 * sg + lean, 27.8 + b); J.shL = T(CX + 5.4 * sg + lean, 27.8 + b);
     J.neck = T(CX + lean, 24.5 + b);
     J.head = T(CX + lean * 1.1 + (pose.hx || 0), 16 + b + (pose.hdy || 0));
     J.sg = sg;
@@ -121,7 +122,22 @@ export function headVariant(str, eyes) {
   return str;
 }
 
+const HEADS = new Map();
 export function drawHead(f, view, hc, look, pose = {}) {
+  if (look.headP) {
+    // cached stamp per (look, view, expression, scale, sub-pixel offset)
+    const fx = Math.round((hc[0] - Math.floor(hc[0])) * 4) / 4, fy = Math.round((hc[1] - Math.floor(hc[1])) * 4) / 4;
+    const key = `${look.id || ''}|${view}|${pose.eyes || ''}|${pose.mouth || ''}|${pose.scale || 1}|${fx}|${fy}`;
+    let st = HEADS.get(key);
+    if (!st) {
+      st = new Fig(40, 40, 20, 20);
+      drawHeadP(st, view, [fx, fy], look.headP, pose);
+      st.ox = 0; st.oy = 0;
+      HEADS.set(key, st);
+    }
+    f.stamp(st, Math.floor(hc[0]) - 20, Math.floor(hc[1]) - 20);
+    return;
+  }
   const set = look.headSet || HERO_HEAD;
   let str = set[view];
   str = headVariant(str, pose.eyes);
@@ -150,13 +166,13 @@ function boot(f, view, x, y, lift, mat, o = {}) {
   const yy = y - lift;
   if (view === 'side') {
     const fw = o.toe ?? -1; // toe direction (-1 = left)
-    f.limb(x, yy - 4.2, x, yy - 0.8, 2.2, 2.2, mat, { grp: o.grp });
+    f.limb(x, yy - 3.3, x, yy - 0.8, 2.1, 2.2, mat, { grp: o.grp });
     f.ell(x + fw * 1.1, yy + 0.4, 3.2, 1.6, mat, { grp: o.grp, flat: 0.2 });
-    if (!o.noCuff) f.limb(x - 0.3, yy - 4.6, x + 0.3, yy - 4.6, 2.5, 2.5, mat, { grp: o.grp, bias: 0.8 });
+    if (!o.noCuff) f.limb(x - 0.3, yy - 3.5, x + 0.3, yy - 3.5, 2.3, 2.3, mat, { grp: o.grp, bias: 0.9 });
   } else {
-    f.limb(x, yy - 4.2, x, yy - 0.6, 2.25, 2.3, mat, { grp: o.grp });
+    f.limb(x, yy - 3.2, x, yy - 0.6, 2.2, 2.3, mat, { grp: o.grp });
     f.ell(x, yy + 0.4, 2.6, 1.6, mat, { grp: o.grp, flat: 0.2, bias: view === 'down' ? 0.3 : -0.2 });
-    if (!o.noCuff) f.ell(x, yy - 4.4, 2.7, 1.1, mat, { grp: o.grp, bias: 0.8 });
+    if (!o.noCuff) f.ell(x, yy - 3.4, 2.6, 1.0, mat, { grp: o.grp, bias: 0.9 });
   }
 }
 
@@ -176,7 +192,7 @@ function leg(f, J, hip, foot, look, view, near, o = {}) {
 
 function arm(f, sh, hand, look, o = {}) {
   const sm = o.sleeve ?? look.sleeve ?? M.leather, g = f.newGroup();
-  const el = ik(sh[0], sh[1], hand[0], hand[1], 4.4, 4.2, o.bend ?? 1);
+  const el = ik(sh[0], sh[1], hand[0], hand[1], 4.4 * (o.len ?? 1), 4.2 * (o.len ?? 1), o.bend ?? 1);
   f.limb(sh[0], sh[1], el[0], el[1], 2.15, 1.85, sm, { grp: g, bias: o.bias ?? 0 });
   f.limb(el[0], el[1], hand[0], hand[1], 1.85, 1.6, o.forearm ?? sm, { grp: g, bias: o.bias ?? 0 });
   if (o.cuff !== false && (look.cuff ?? true)) f.ell(lerp(el[0], hand[0], 0.72), lerp(el[1], hand[1], 0.72), 1.9, 1.3, o.cuffMat ?? look.cuffMat ?? sm, { grp: g, bias: 0.6 });
@@ -282,7 +298,7 @@ function scarfFront(f, J, view, pose) {
     tail(f, n[0] - 3.2, n[1] + 2.4, 92, 35, 11 + wind * 2, wind * 0.8, ph, { w0: 1.9, w1: 1.4 });
   } else {
     f.ell(n[0] - 2.4, n[1] + 1.4, 1.8, 1.7, M.scarf, { flat: 0.2, bias: 0.3 });
-    tail(f, n[0] - 2.6, n[1] + 2.2, 96, 40, 6.5, wind * 0.6, ph + 1, { w0: 1.6, w1: 1.25 });
+    tail(f, n[0] - 2.4, n[1] + 2.2, 100, 60, 4.5, wind * 0.6, ph + 1, { w0: 1.5, w1: 1.2 });
   }
 }
 
@@ -298,8 +314,8 @@ function jacket(f, J, view, look, pose) {
     return g;
   }
   const cx = J.neck[0];
-  const pts = [[cx - 6.4, top + 0.2], [cx + 6.4, top + 0.2], [cx + 6.6, top + 2.4], [cx + 5.4, bot + 1], [cx - 5.4, bot + 1], [cx - 6.6, top + 2.4]];
-  const nf = torsoN(cx, (top + bot) / 2, 6.6, 6);
+  const pts = [[cx - 5.6, top + 0.2], [cx + 5.6, top + 0.2], [cx + 6.0, top + 2.4], [cx + 4.9, bot + 1], [cx - 4.9, bot + 1], [cx - 6.0, top + 2.4]];
+  const nf = torsoN(cx, (top + bot) / 2, 6.0, 6);
   const g = f.poly(pts, jm, { nf });
   if (view === 'down' && look.shirt) {
     // open front: shirt V + lapels
@@ -311,7 +327,7 @@ function jacket(f, J, view, look, pose) {
     for (let y = Math.round(top + 1); y < bot; y++) f.touch(cx - 0.5, y, { b: -0.6 });
     for (let x = -5; x <= 5; x++) f.touch(cx + x - 0.5, top + 3.5, { b: 0.5 });
   }
-  if (look.hem !== false) f.poly([[cx - 5.5, bot - 0.2], [cx + 5.5, bot - 0.2], [cx + 5.8, bot + 2.6], [cx - 5.8, bot + 2.6]], look.hemMat ?? look.shirt ?? jm, { nf: torsoN(cx, bot, 6, 4), bias: -0.2 });
+  if (look.hem !== false) f.poly([[cx - 5.0, bot - 0.2], [cx + 5.0, bot - 0.2], [cx + 5.4, bot + 2.6], [cx - 5.4, bot + 2.6]], look.hemMat ?? look.shirt ?? jm, { nf: torsoN(cx, bot, 6, 4), bias: -0.2 });
   return g;
 }
 
@@ -325,7 +341,7 @@ function belt(f, J, view, look) {
     return;
   }
   const cx = J.neck[0];
-  f.limb(cx - 5.4, y, cx + 5.4, y, 1.15, 1.15, bm, { flat: 0.3 });
+  f.limb(cx - 4.9, y, cx + 4.9, y, 1.15, 1.15, bm, { flat: 0.3 });
   if (view === 'down') {
     f.poly([[cx - 1.6, y - 1.2], [cx + 1.6, y - 1.2], [cx + 1.6, y + 1.2], [cx - 1.6, y + 1.2]], M.brass, { n: [-0.2, -0.3, 0.93] });
     f.touch(cx - 0.5, y - 0.2, { m: M.belt, t: 1 });
@@ -378,7 +394,7 @@ export function drawHuman(f, view, pose, look) {
     const swordFront = sw && !sw.behind;
     if (sw && sw.behind) sword(f, hF[0], hF[1], sw.a, sw.len, { hand: look.skin ?? M.skin });
     if (look.scarf) scarfBack(f, J, view, pose);
-    if (!(sw && swordFront && sw.farFront)) arm(f, J.shF, hF, look, { bias: -0.9, bend: sw ? -1 : 1 });
+    if (!(sw && swordFront && sw.farFront)) arm(f, J.shF, hF, look, { bias: -0.9, bend: sw ? -1 : 1, len: pose.armLen ?? 1 });
     if (look.back) look.back(f, J, view, pose);
     leg(f, J, J.hip, T(...fF).concat(fF[2]), look, view, false);
     leg(f, J, J.hip, T(...fN).concat(fN[2]), look, view, true);
@@ -393,10 +409,10 @@ export function drawHuman(f, view, pose, look) {
     if (sw && swordFront && sw.farFront) { arm(f, J.shF, hF, look, { bias: -0.4, bend: -1 }); }
     if (sw && swordFront) sword(f, hF[0], hF[1], sw.a, sw.len, { hand: look.skin ?? M.skin });
     if (look.prop) look.prop(f, J, view, pose, hN);
-    arm(f, J.shN, hN, look, { bend: pose.bendN ?? 1 });
+    arm(f, J.shN, hN, look, { bend: pose.bendN ?? 1, len: pose.armLen ?? 1 });
     if (hasShield) {
-      const sh = pose.shieldAt || [hN[0] - 0.6, hN[1] - 1.4];
-      shield(f, sh[0], sh[1], 4.6, 5.4, 'front');
+      const sh = pose.shieldAt || [hN[0] - 0.4, hN[1] - 0.6];
+      shield(f, sh[0], sh[1], 3.4, 4.2, 'front');
     }
     return J;
   }
@@ -418,6 +434,7 @@ export function drawHuman(f, view, pose, look) {
   if (look.skirt) look.skirt(f, J, view, pose);
   if (look.body) look.body(f, J, view, pose); else jacket(f, J, view, look, pose);
   belt(f, J, view, look);
+  if (look.deco) look.deco(f, J, view, pose);
   if (look.sheath) sheath(f, J, view, !sw);
   if (up) {
     if (look.scarf) scarfWrap(f, J, view, pose);
@@ -430,22 +447,23 @@ export function drawHuman(f, view, pose, look) {
     if (look.headTop) look.headTop(f, J, view, pose);
     if (look.scarf) scarfFront(f, J, view, pose);
     if (look.back) look.back(f, J, view, pose);
-    if (armsUp) { arm(f, J.shR, hR, look, { bend: sg }); arm(f, J.shL, hL, look, { bend: -sg }); }
+    if (armsUp) { arm(f, J.shR, hR, look, { bend: sg, len: 1.55 }); arm(f, J.shL, hL, look, { bend: -sg, len: 1.55 }); }
     if (sw && !sw.behind) sword(f, hR[0], hR[1], sw.a, sw.len, { hand: look.skin ?? M.skin });
     return J;
   }
   // front
   if (!armsUp) arm(f, J.shR, hR, look, { bend: sg * (pose.bendR ?? 1) });
+  else { arm(f, J.shR, hR, look, { bend: -sg, len: 1.55 }); arm(f, J.shL, hL, look, { bend: sg, len: 1.55 }); }
   if (look.scarf) scarfWrap(f, J, view, pose);
   drawHead(f, view, J.head, look, pose);
   if (look.headTop) look.headTop(f, J, view, pose);
   if (look.scarf) scarfFront(f, J, view, pose);
   if (look.prop) look.prop(f, J, view, pose, hL);
-  if (armsUp) { arm(f, J.shR, hR, look, { bend: sg }); arm(f, J.shL, hL, look, { bend: -sg }); }
+  if (armsUp) { f.ell(hR[0], hR[1] + 0.4, 1.8, 1.7, look.skin ?? M.skin); f.ell(hL[0], hL[1] + 0.4, 1.8, 1.7, look.skin ?? M.skin); }
   else {
     if (sw && !sw.behind) sword(f, hR[0], hR[1], sw.a, sw.len, { hand: look.skin ?? M.skin });
     arm(f, J.shL, hL, look, { bend: -sg });
-    if (hasShield) shield(f, hL[0] + 1.0, hL[1] - 1.2, 4.6, 5.2, 'front');
+    if (hasShield) shield(f, hL[0] + 1.4, hL[1] - 0.6, 3.8, 4.4, 'front');
   }
   return J;
 }

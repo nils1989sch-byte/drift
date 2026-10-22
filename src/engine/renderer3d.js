@@ -107,17 +107,22 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (!arr || !arr.length) return null;
     if (arr.length === 1) return arr[0];
     if (arr.mode === 'variant') return arr[hash(tx, ty) % arr.length];
-    return arr[(Math.floor(time * (arr.fps || 4)) + (arr.phase ? hash(tx, ty) : 0)) % arr.length];
+    return arr[0];
   }
   const RES = assets.tileRes || 16;        // texels per tile in art
   const KF = RES / TILE;                    // texels per world unit
   const SIDES = [['n', 0, -1], ['s', 0, 1], ['w', -1, 0], ['e', 1, 0]];
-  function paintCell(world, g, tx, ty) {
+  // Ground is composed in a plain RGBA buffer (no canvas read-backs): tile pixels + art edge overlays.
+  function paintCell(world, buf, tx, ty) {
     const id = world.tileAt(tx, ty);
-    const px = tx * RES, py = ty * RES;
-    g.clearRect(px, py, RES, RES);
+    const d = buf.data, W = buf.width;
     const img = tileFrame(id, tx, ty);
-    if (img) g.drawImage(img, px, py, RES, RES); else { g.fillStyle = '#58a838'; g.fillRect(px, py, RES, RES); }
+    const src = img ? pixelsOf(img) : null;
+    for (let y = 0; y < RES; y++) {
+      const row = ((ty * RES + y) * W + tx * RES) * 4;
+      if (src) d.set(src.subarray(y * RES * 4, (y + 1) * RES * 4), row);
+      else for (let x = 0; x < RES; x++) { const k = row + x * 4; d[k] = 88; d[k + 1] = 168; d[k + 2] = 56; d[k + 3] = 255; }
+    }
     const edges = assets.edges;
     if (!edges) return;
     const grp = assets.edgeGroup || {}, pri = assets.edgePriority || {};
@@ -127,9 +132,91 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       if (!world.inside(nx, ny) || world.heightAt(nx, ny) !== h) continue;
       const nid = world.tileAt(nx, ny), g1 = grp[nid] || nid;
       if (g1 === g0 || (pri[g1] ?? 0) <= p0) continue;
+      if (SOFT.has(g0) && SOFT.has(g1)) continue; // organic blend handles these
       let e = edges[`${g1}_${side}@${g0}`] || edges[`${g1}_${side}`];
       if (Array.isArray(e)) e = e[0];
-      if (e) g.drawImage(e, px, py, RES, RES);
+      if (!e) continue;
+      const ep = pixelsOf(e);
+      for (let y = 0; y < RES; y++) for (let x = 0; x < RES; x++) {
+        const sk = (y * RES + x) * 4, a = ep[sk + 3];
+        if (!a) continue;
+        const k = ((ty * RES + y) * W + tx * RES + x) * 4, f = a / 255;
+        d[k] += (ep[sk] - d[k]) * f; d[k + 1] += (ep[sk + 1] - d[k + 1]) * f; d[k + 2] += (ep[sk + 2] - d[k + 2]) * f;
+      }
+    }
+  }
+  // ----- organic terrain blending -----
+  const SOFT = new Set(['grass', 'grass_dark', 'grass_light', 'grass_flowers', 'grass_tall', 'path', 'dirt', 'sand', 'clearing', 'stone_floor']);
+  const NEIGH8 = [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+  const vn = (x, y) => { // value noise in [0,1]
+    const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+    const r = (a, b) => (hash(a, b) % 10000) / 10000;
+    const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+    return (r(xi, yi) * (1 - u) + r(xi + 1, yi) * u) * (1 - v) + (r(xi, yi + 1) * (1 - u) + r(xi + 1, yi + 1) * u) * v;
+  };
+  const fbm = (x, y) => vn(x, y) * 0.6 + vn(x * 2.3 + 17, y * 2.3 + 5) * 0.3 + vn(x * 5.1 + 3, y * 5.1 + 11) * 0.1;
+  // Pixel cache of tile images at RES×RES
+  const pixCache = new WeakMap();
+  let pixC = null, pixG = null;
+  function pixelsOf(img) {
+    let a = pixCache.get(img);
+    if (a) return a;
+    if (!pixC) { pixC = document.createElement('canvas'); pixC.width = pixC.height = RES; pixG = pixC.getContext('2d', { willReadFrequently: true }); }
+    pixG.clearRect(0, 0, RES, RES); pixG.drawImage(img, 0, 0, RES, RES);
+    a = pixG.getImageData(0, 0, RES, RES).data;
+    pixCache.set(img, a);
+    return a;
+  }
+  // Blend soft transitions for cells in [x0..x1]×[y0..y1] into the ground canvas (one read-back + write per call)
+  function blendRegion(world, buf, x0, y0, x1, y1) {
+    const grp = assets.edgeGroup || {}, pri = assets.edgePriority || {};
+    const W = buf.width, d = buf.data;
+    const depthG = RES * 0.62, depthO = RES * 0.5, rimW = Math.max(1, RES / 24);
+    // precomputed noise field (one sample per 3 texels) for the whole map
+    const NS = 3, nw = Math.ceil((world.w * RES) / NS) + 1;
+    if (!world._blendNoise) {
+      const nh = Math.ceil((world.h * RES) / NS) + 1, f = new Float32Array(nw * nh);
+      for (let y = 0; y < nh; y++) for (let x = 0; x < nw; x++) {
+        const gx = x * NS, gy = y * NS;
+        f[y * nw + x] = vn(gx / (RES * 0.33), gy / (RES * 0.33)) * 0.7 + vn(gx / (RES * 0.12) + 7, gy / (RES * 0.12) + 3) * 0.3;
+      }
+      world._blendNoise = f;
+    }
+    const NF = world._blendNoise;
+    for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) {
+      const id = world.tileAt(tx, ty), g0 = grp[id] || id;
+      if (!SOFT.has(g0)) continue;
+      const p0 = pri[g0] ?? 0, h = world.heightAt(tx, ty);
+      for (const [dx, dy] of NEIGH8) {
+        const nx = tx + dx, ny = ty + dy;
+        if (!world.inside(nx, ny) || world.heightAt(nx, ny) !== h) continue;
+        const nid = world.tileAt(nx, ny), g1 = grp[nid] || nid;
+        if (g1 === g0 || !SOFT.has(g1) || (pri[g1] ?? 0) <= p0) continue;
+        if (dx && dy) {
+          const ia = world.tileAt(tx + dx, ty), ib = world.tileAt(tx, ty + dy);
+          if ((grp[ia] || ia) === g1 || (grp[ib] || ib) === g1) continue;
+        }
+        const src = pixelsOf(tileFrame(nid, nx, ny));
+        const isGrass = g1.startsWith('grass'), depth = isGrass ? depthG : depthO;
+        const ox = tx * RES, oy = ty * RES;
+        for (let y = 0; y < RES; y++) {
+          const ddy = dy < 0 ? y : RES - 1 - y;
+          if (!dx && ddy > depth + rimW) continue;
+          for (let x = 0; x < RES; x++) {
+            const ddx = dx < 0 ? x : RES - 1 - x;
+            const dist = dx && dy ? Math.hypot(ddx, ddy) * 1.15 : dx ? ddx : ddy;
+            if (dist > depth + rimW) continue;
+            const n = NF[(((ty * RES + y) / NS) | 0) * nw + (((tx * RES + x) / NS) | 0)];
+            const reach = depth * (0.15 + 0.95 * n);
+            const k = ((oy + y) * W + ox + x) * 4;
+            if (dist < reach) { const sk = (y * RES + x) * 4; d[k] = src[sk]; d[k + 1] = src[sk + 1]; d[k + 2] = src[sk + 2]; }
+            else if (dist < reach + rimW) {
+              if (isGrass) { d[k] = d[k] * 0.62 + 6; d[k + 1] = d[k + 1] * 0.62 + 8; d[k + 2] = d[k + 2] * 0.62; }
+              else { d[k] = d[k] * 0.85 + 34; d[k + 1] = d[k + 1] * 0.85 + 30; d[k + 2] = d[k + 2] * 0.85 + 22; }
+            }
+          }
+        }
+      }
     }
   }
   function isAnimatedCell(world, tx, ty) {
@@ -203,11 +290,14 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     const W = world.w, Hh = world.h;
     const gc = document.createElement('canvas'); gc.width = W * RES; gc.height = Hh * RES;
     const g = gc.getContext('2d');
+    const buf = g.createImageData(gc.width, gc.height);
     const animCells = [];
     for (let ty = 0; ty < Hh; ty++) for (let tx = 0; tx < W; tx++) {
-      paintCell(world, g, tx, ty);
-      if (isAnimatedCell(world, tx, ty) && !TILE_DEFS[world.tileAt(tx, ty)]?.water && !TILE_DEFS[world.tileAt(tx, ty)]?.shallow) animCells.push([tx, ty]);
+      paintCell(world, buf, tx, ty);
+      // ground is static (animated tiles use frame 0; water animates on its own surface, foliage via blades)
     }
+    blendRegion(world, buf, 0, 0, W - 1, Hh - 1);
+    g.putImageData(buf, 0, 0);
     const groundTex = new THREE.CanvasTexture(gc);
     groundTex.magFilter = THREE.NearestFilter;
     groundTex.minFilter = THREE.LinearMipmapLinearFilter;
@@ -302,7 +392,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     table.visible = !surround;
 
     scene.add(group);
-    cur = { world, group, groundCanvas: gc, groundCtx: g, groundTex, animCells, deco: null, frameKey: -1, dark, version: world.version };
+    cur = { world, group, groundCanvas: gc, groundCtx: g, groundBuf: buf, groundTex, animCells, deco: null, frameKey: -1, dark, version: world.version };
     buildDeco(world, drawables);
     world.dirty.length = 0;
   }
@@ -930,7 +1020,13 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (!cur || cur.world !== world) { houses.forEach((g) => scene.remove(g)); houses.clear(); models.forEach((g) => scene.remove(g)); models.clear(); camY.init = false; buildWorld(world, drawables); }
     // tile changes (cut grass, bombed walls...)
     if (world.dirty.length) {
-      for (const i of world.dirty) { const tx = i % world.w, ty = (i / world.w) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (world.inside(tx + dx, ty + dy)) paintCell(world, cur.groundCtx, tx + dx, ty + dy); }
+      for (const i of world.dirty) {
+        const tx = i % world.w, ty = (i / world.w) | 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (world.inside(tx + dx, ty + dy)) paintCell(world, cur.groundBuf, tx + dx, ty + dy);
+        const x0 = Math.max(0, tx - 1), y0 = Math.max(0, ty - 1), x1 = Math.min(world.w - 1, tx + 1), y1 = Math.min(world.h - 1, ty + 1);
+        blendRegion(world, cur.groundBuf, x0, y0, x1, y1);
+        cur.groundCtx.putImageData(cur.groundBuf, 0, 0, x0 * RES, y0 * RES, (x1 - x0 + 1) * RES, (y1 - y0 + 1) * RES);
+      }
       world.dirty.length = 0;
       cur.groundTex.needsUpdate = true;
       buildDeco(world, drawables);
@@ -940,7 +1036,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     const fk = Math.floor(time * 4);
     if (fk !== cur.frameKey) {
       cur.frameKey = fk;
-      for (const [tx, ty] of cur.animCells) paintCell(world, cur.groundCtx, tx, ty);
+      // (ground no longer animates)
       if (cur.animCells.length) cur.groundTex.needsUpdate = true;
     }
     const dist = placeCamera(cam, world);

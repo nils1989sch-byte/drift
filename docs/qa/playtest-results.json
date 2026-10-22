@@ -1,498 +1,62 @@
 {
- "date": "2026-10-22T21:42:46.520Z",
+ "date": "2026-10-22T21:51:19.001Z",
  "seed": 1,
  "frames": 2000,
  "results": [
   {
-   "name": "stairs_side_exit",
+   "name": "input_quick_tap",
    "ok": false,
    "checks": [
     {
      "ok": false,
-     "msg": "hill(42,20) left: walking straight down off misaligned (4px) stairs does not get stuck",
+     "msg": "a key tapped within one frame (keydown+keyup before the next poll) is not lost",
      "data": {
-      "name": "hill(42,20) left",
-      "start": null,
-      "stuck": "tile(41,20)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 676,
-       "y": 338.2,
-       "tx": 42,
-       "ty": 21,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false
-     }
-    },
-    {
-     "ok": false,
-     "msg": "hill(42,20) left: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 676,
-      "y": 338.2,
-      "tx": 42,
-      "ty": 21,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": false,
-     "msg": "hill(42,20) right: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "hill(42,20) right",
-      "start": null,
-      "stuck": "tile(43,20)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 684,
-       "y": 338.2,
-       "tx": 42,
-       "ty": 21,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false
-     }
-    },
-    {
-     "ok": false,
-     "msg": "hill(42,20) right: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 684,
-      "y": 338.2,
-      "tx": 42,
-      "ty": 21,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": false,
-     "msg": "nord(9,13) left: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "nord(9,13) left",
-      "start": null,
-      "stuck": "tile(8,13)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 148,
-       "y": 226.2,
-       "tx": 9,
-       "ty": 14,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false
-     }
-    },
-    {
-     "ok": false,
-     "msg": "nord(9,13) left: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 148,
-      "y": 226.2,
-      "tx": 9,
-      "ty": 14,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": false,
-     "msg": "nord(9,13) right: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "nord(9,13) right",
-      "start": null,
-      "stuck": "tile(10,13)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 156,
-       "y": 226.2,
-       "tx": 9,
-       "ty": 14,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false
-     }
-    },
-    {
-     "ok": false,
-     "msg": "nord(9,13) right: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 156,
-      "y": 226.2,
-      "tx": 9,
-      "ty": 14,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off -7px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off -7px",
-      "stuck": "tile(8,13)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 145,
-       "y": 226.6,
-       "tx": 9,
-       "ty": 14,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false,
-      "escapes": 0
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off -7px: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 145,
-      "y": 226.6,
-      "tx": 9,
-      "ty": 14,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off -5px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off -5px",
-      "stuck": "tile(8,13)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 147,
-       "y": 226.6,
-       "tx": 9,
-       "ty": 14,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false,
-      "escapes": 0
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off -5px: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 147,
-      "y": 226.6,
-      "tx": 9,
-      "ty": 14,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off -4px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off -4px",
-      "stuck": "tile(8,13)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 148,
-       "y": 226.6,
-       "tx": 9,
-       "ty": 14,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false,
-      "escapes": 0
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off -4px: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 148,
-      "y": 226.6,
-      "tx": 9,
-      "ty": 14,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 3px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off 3px",
-      "stuck": null,
-      "canLeave": true,
-      "escapes": 6
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 3px: can step back towards the stairs centre"
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off 4px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off 4px",
-      "stuck": "tile(10,13)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 156,
-       "y": 226.6,
-       "tx": 9,
-       "ty": 14,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false,
-      "escapes": 0
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off 4px: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 156,
-      "y": 226.6,
-      "tx": 9,
-      "ty": 14,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off 5px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off 5px",
-      "stuck": "tile(10,13)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 157,
-       "y": 226.6,
-       "tx": 9,
-       "ty": 14,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": false,
-      "escapes": 0
-     }
-    },
-    {
-     "ok": false,
-     "msg": "walk down nord stairs, off 5px: can step back towards the stairs centre",
-     "data": {
-      "map": "overworld",
-      "x": 157,
-      "y": 226.6,
-      "tx": 9,
-      "ty": 14,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
+      "attack": false,
+      "pause": false
      }
     }
    ],
-   "notes": [],
+   "notes": [
+    "tap inside one frame registered?: {\"attack\":false,\"pause\":false}"
+   ],
    "errors": [],
-   "ms": 3098
+   "ms": 4354
+  },
+  {
+   "name": "bomb_throw_realloop",
+   "ok": false,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "bomb can be lifted with E"
+    },
+    {
+     "ok": false,
+     "msg": "game loop keeps running after throwing a bomb",
+     "data": {
+      "f0": 147,
+      "f1": 147
+     }
+    },
+    {
+     "ok": true,
+     "msg": "an exploded bomb is not still held over the head",
+     "data": {
+      "carriedBefore": "bomb",
+      "carryAfter": "bomb",
+      "carryDead": false,
+      "hp": 6
+     }
+    }
+   ],
+   "notes": [
+    "carried: \"bomb\"",
+    "bomb held for 3.3 s: {\"carriedBefore\":\"bomb\",\"carryAfter\":\"bomb\",\"carryDead\":false,\"hp\":6}"
+   ],
+   "errors": [
+    "pageerror: Cannot set properties of undefined (setting 'carried')"
+   ],
+   "ms": 6281
   }
  ]
 }
