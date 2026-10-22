@@ -22,7 +22,40 @@ function speechStub() {
     ss.speak = function (u) { rec('tts', u.text, { lang: u.lang, rate: u.rate }); fire(u, 'start', 0); fire(u, 'end', 30); };
     ss.cancel = function () { window.__speechCancels++; };
   }
-  HTMLMediaElement.prototype.play = function () { rec('audio', this.currentSrc || this.src); return Promise.resolve(); };
+  // Recorded voice clips (…/voice/<key>.mp3) are logged as kind 'clip' with their key; other media
+  // (intro / celebration videos) as kind 'media'. Playback itself stays real, so the app's
+  // 'ended'/'error' handling and timing behave as on the device.
+  const origPlay = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    const src = this.currentSrc || this.src || '';
+    const m = src.match(/\/voice\/([^/?#]+)\.(mp3|m4a|aac|wav|ogg|opus)(?:[?#]|$)/i);
+    if (m) rec('clip', '', { key: decodeURIComponent(m[1]), src });
+    else rec('media', src);
+    return origPlay.call(this);
+  };
+}
+
+// What a recorded clip says, so speech assertions work for clips and TTS alike.
+// Keys come from voice/manifest.json (letter-L, name-L, ask-L, is-L, trace-L, praise-N, try-N, …).
+const CLIP_TEXT = {
+  traced: 'Toll gemalt! (Lob)',
+  party: 'Toll gemacht! Fünf Sterne! (Lob)',
+  hello: 'Hallo! Ich bin Bruno.',
+  'hello-name': 'Hallo! Ich bin Bruno. (mit Name)',
+  'play-q': 'Magst du spielen?',
+  tickle: 'Hihi, das kitzelt!',
+  today: 'Buchstabe des Tages',
+};
+function clipText(key) {
+  let m;
+  if ((m = key.match(/^letter-([A-Z])$/i))) return `${m[1].toUpperCase()}.`;
+  if ((m = key.match(/^name-([A-Z])$/i))) return `${m[1].toUpperCase()} wie …`;
+  if ((m = key.match(/^ask-([A-Z])$/i))) return `Wo ist das ${m[1].toUpperCase()}?`;
+  if ((m = key.match(/^is-([A-Z])$/i))) return `Das ist das ${m[1].toUpperCase()}.`;
+  if ((m = key.match(/^trace-([A-Z])$/i))) return `Mal das ${m[1].toUpperCase()}.`;
+  if (/^praise-\d+$/.test(key)) return 'Super! (Lob)';
+  if (/^try-\d+$/.test(key)) return "Probier's nochmal!";
+  return CLIP_TEXT[key] || `[clip ${key}]`;
 }
 
 class App {
@@ -69,7 +102,13 @@ class App {
     await base.expect(this.$(`screen-${tab}`)).toBeVisible();
   }
 
-  async spoken() { return this.page.evaluate(() => window.__spoken.filter((s) => s.kind === 'tts').map((s) => s.text)); }
+  /** Everything Bruno said, in order: TTS text, and recorded clips translated via clipText(). */
+  async spoken() {
+    const log = await this.page.evaluate(() => window.__spoken.filter((s) => s.kind === 'tts' || s.kind === 'clip'));
+    return log.map((s) => (s.kind === 'clip' ? clipText(s.key) : s.text));
+  }
+  /** Raw speech log entries ({kind:'tts'|'clip', text, key, lang}). */
+  async speechLog() { return this.page.evaluate(() => window.__spoken.filter((s) => s.kind === 'tts' || s.kind === 'clip')); }
   async clearSpoken() { await this.page.evaluate(() => { window.__spoken.length = 0; }); }
 
   async hold(key, ms, arg) { await touch.touchHold(this.page, this.$(key, arg), ms); }
@@ -136,4 +175,4 @@ const test = base.test.extend({
   },
 });
 
-module.exports = { test, expect: base.expect, TABS, STORAGE_KEY, touch };
+module.exports = { test, expect: base.expect, TABS, STORAGE_KEY, touch, clipText };

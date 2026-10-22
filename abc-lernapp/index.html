@@ -606,21 +606,22 @@ function stopTalk(){clearInterval(talkT);talkT=null;if(talkB)talkB.svg.classList
 let VM=null, vmAsked=false; const voiceEl=new Audio(); voiceEl.preload='auto';
 function loadVoices(){if(vmAsked)return;vmAsked=true;
   try{fetch('voice/manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{VM=(j&&j.clips)||{};VM.__name=j&&j.name}).catch(()=>{VM={}})}catch(e){VM={}}}
-const clip=k=>{if(!VM||!k||!VM[k])return null;if(k==='hello-name'&&(VM.__name||'Mia')!==S.name)return null;return VM[k]};
+const clip=k=>(VM&&k&&VM[k])||null;
 function speak(key,text,o={}){speakParts([[key,text]],o)}
 function speakParts(parts,o={}){
   const seq=++speakSeq; stopVoices();
   if(!S.sound){setTimeout(()=>{if(seq===speakSeq)o.onEnd&&o.onEnd()},Math.min(1600,300+parts.map(p=>p[1]).join(' ').length*40));return}
   let i=0;
   const next=()=>{if(seq!==speakSeq)return;if(i>=parts.length){stopTalk();o.onEnd&&o.onEnd();return}
-    const [k,t]=parts[i++], last=i===parts.length, url=clip(k);
+    const [k,t]=parts[i++], last=i===parts.length, url=clip(k); o.onPart&&o.onPart(i-1,!!url);
     if(url)playClip(url,seq,o.bruno,next,()=>tts(t,seq,{bruno:o.bruno,onBoundary:last?o.onBoundary:null},next));
     else tts(t,seq,{bruno:o.bruno,onBoundary:last?o.onBoundary:null},next)};
   next();
 }
 function playClip(url,seq,bruno,done,fallback){
-  let fin=false; const end=ok=>{if(fin)return;fin=true;clearTimeout(g);voiceEl.onended=voiceEl.onerror=voiceEl.onplaying=null;if(seq!==speakSeq)return;ok?done():fallback()};
-  const g=setTimeout(()=>end(true),9000);
+  let fin=false; const end=ok=>{if(fin)return;fin=true;clearTimeout(g);voiceEl.onended=voiceEl.onerror=voiceEl.onplaying=voiceEl.onloadedmetadata=null;if(seq!==speakSeq)return;ok?done():fallback()};
+  let g=setTimeout(()=>end(true),9000); /* safety net if 'ended' never comes; tightened once the length is known */
+  voiceEl.onloadedmetadata=()=>{if(fin||!isFinite(voiceEl.duration))return;clearTimeout(g);g=setTimeout(()=>end(true),voiceEl.duration*1000+900)};
   voiceEl.onplaying=()=>{if(seq===speakSeq)startTalk(bruno)}; voiceEl.onended=()=>end(true); voiceEl.onerror=()=>end(false);
   voiceEl.src=url; try{const pr=voiceEl.play();if(pr&&pr.catch)pr.catch(()=>end(false))}catch(e){end(false)}
 }
@@ -638,12 +639,15 @@ function tts(text,seq,o,done){
 }
 function stopVoices(){stopTalk();try{if(!voiceEl.paused)voiceEl.pause()}catch(e){}if(hasTTS&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()}
 function hush(){speakSeq++;stopVoices()}
-/* "A! A wie Affe!" – onWord fires when the voice reaches the word (boundary event) or on a timed fallback */
+/* letter reveal: `letter-L` ("Ah!") while the glyph springs in, then `name-L` ("A wie Affe!") while the picture
+   appears. onWord fires when the voice reaches the word (TTS boundary event, or timed inside the clip) */
 function sayLetter(L,o={}){
-  const w=wordOf(L), text=`${L}. ${L} wie ${w}.`, wi=text.lastIndexOf(w);
-  let fired=false; const fire=()=>{if(fired)return;fired=true;o.onWord&&o.onWord()};
-  const fb=later(fire,S.sound?1450:700);
-  speak('name-'+L,text,{bruno:o.bruno,onBoundary:ci=>{if(ci>=wi){clearTimeout(fb);fire()}},onEnd:()=>{fire();o.onEnd&&o.onEnd()}});
+  const w=wordOf(L), t2=`${L} wie ${w}!`, wi=t2.lastIndexOf(w);
+  let fired=false, fb=0; const fire=()=>{if(fired)return;fired=true;clearTimeout(fb);o.onWord&&o.onWord()};
+  if(!S.sound)fb=later(fire,700);
+  speakParts([['letter-'+L,`${L}.`],['name-'+L,t2]],{bruno:o.bruno,
+    onPart:(i,isClip)=>{if(i===1){clearTimeout(fb);fb=later(fire,isClip?650:900)}},
+    onBoundary:ci=>{if(ci>=wi)fire()},onEnd:()=>{fire();o.onEnd&&o.onEnd()}});
 }
 const PRAISE=['Super!','Juhu, richtig!','Toll gemacht!','Klasse!','Ja, genau!'], TRY=["Hmm, probier's nochmal!",'Fast! Schau noch mal genau.','Nicht schlimm. Noch ein Versuch!'];
 const pickIdx=a=>Math.floor(Math.random()*a.length);
@@ -811,7 +815,7 @@ function paintToday(){
   const hit=$('#todayHit');hit.dataset.letter=L;hit.setAttribute('aria-label',`Buchstabe des Tages: ${L} wie ${w}`);
 }
 const HELLOS=()=>{const L=letterOfDay();return[[`Hallo ${S.name}!<br>Spielst du mit mir?`,[['hello-name',`Hallo ${S.name}! Spielst du mit mir?`]]],
-  [`Heute üben wir<br>das ${L}!`,clip('today')?[['today','Heute üben wir das'],['is-'+L,`Das ist das ${L}.`]]:[[null,`Heute üben wir das ${L}!`]]],
+  [`Heute üben wir<br>das ${L}!`,clip('today')?[['today','Heute üben wir das'],['letter-'+L,`${L}!`]]:[[null,`Heute üben wir das ${L}!`]]],
   ['Magst du Ballons<br>fangen?',[['play-q','Magst du Ballons fangen?']]],['Hihi,<br>das kitzelt!',[['tickle','Hihi, das kitzelt!']]]]};
 let hi=0;
 function setBubble(html){const b=$('#homeBubble');b.innerHTML=html;if(!reduced())spring(b,p=>({transform:`scale(${.85+.15*p})`,opacity:Math.min(1,p*2)}),SP_SOFT)}
@@ -909,10 +913,10 @@ function pick(btn){
     happy(BR.find); const n=pickIdx(PRAISE); speakParts([['praise-'+(n+1),PRAISE[n]],['is-'+L,`Das ist das ${L}!`]],{bruno:BR.find,onEnd:()=>{praised=true;step()}});
     popBalloon(btn,slot);
     later(()=>{minDone=true;step()},F.found>=5?1500:1650);
-    later(()=>{praised=true;step()},4200); /* fallback if the voice never reports onend */
+    later(()=>{praised=true;step()},3000); /* fallback if the voice never reports onend */
   }else{
     wobble(btn); encourage(BR.find);
-    speakParts([['is-'+L,`Das ist das ${L}.`],['ask-'+F.target,`Wo ist das ${F.target}?`]],{bruno:BR.find});
+    const n=pickIdx(TRY); speakParts([['try-'+(n+1),TRY[n]],['ask-'+F.target,`Wo ist das ${F.target}?`]],{bruno:BR.find});
   }
 }
 function wobble(btn){if(reduced())return;const b=$('.bl-body',btn);
@@ -1235,7 +1239,7 @@ document.addEventListener('contextmenu',e=>{if(!e.target.closest('input'))e.prev
 document.addEventListener('visibilitychange',()=>{if(document.hidden)hush()});
 let rzT=0; addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{const was=LAND;fit();if(current==='trace')setupTrace(false)},120)});
 RMQ.addEventListener&&RMQ.addEventListener('change',()=>{});
-paintName(); paintStars(); paintToday();
+paintName(); paintStars(); paintToday(); loadVoices(); /* fetching needs no gesture; playback starts only on touch */
 requestAnimationFrame(()=>setTimeout(()=>{if(!$('#abcGrid').children.length){renderGrid();gridSig=S.caseMode+letterOfDay()}},60));
 $('#tabs').style.setProperty('--ti',0);
 setTimeout(()=>{if(current==='home')happy(BR.home)},500);
