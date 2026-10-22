@@ -443,7 +443,7 @@ S('stairs_side_exit', async ({ page, assert, ev }) => {
     }
     return out;
   });
-  for (const c of r) { assert(!c.stuck, `${c.name}: walking straight down off misaligned (4px) stairs does not get stuck`, c); assert(c.canLeave, `${c.name}: can step back towards the stairs centre`, c.snap); }
+  for (const c of r) { assert(!c.stuck, `${c.name}: walking straight down off misaligned (4px) stairs does not get stuck`, c); assert(c.canLeave, `${c.name}: can escape afterwards (any direction)`, c.snap); }
 });
 
 S('ledge_jump', async ({ page, assert, ev }) => {
