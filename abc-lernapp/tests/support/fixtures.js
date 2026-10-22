@@ -27,7 +27,7 @@ function speechStub() {
   // 'ended'/'error' handling and timing behave as on the device.
   const origPlay = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
-    const src = this.currentSrc || this.src || '';
+    const src = this.src || this.currentSrc || ''; // src is set synchronously; currentSrc lags behind
     const m = src.match(/\/voice\/([^/?#]+)\.(mp3|m4a|aac|wav|ogg|opus)(?:[?#]|$)/i);
     if (m) rec('clip', '', { key: decodeURIComponent(m[1]), src });
     else rec('media', src);

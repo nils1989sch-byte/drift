@@ -4,7 +4,7 @@ const { test, expect, touch } = require('../support/fixtures');
 
 test.describe('Visual review screenshots', () => {
   test('capture all screens and overlays', async ({ app, page }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000); // ~85 s with recorded voice clips and 4 workers
     await app.goto();
     await page.evaluate(() => document.fonts && document.fonts.ready);
     await app.shot('01-home');
