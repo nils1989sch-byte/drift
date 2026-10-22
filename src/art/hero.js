@@ -1,5 +1,5 @@
 // Hero (paper-doll from hand-drawn ASCII parts) + soldier (re-coloured parts with a helmet).
-import { Pix, mat, frames } from './core.js';
+import { Pix, mat, frames, recolorCanvas, HURT_MAP } from './core.js';
 import { palette as P } from './palette.js';
 
 const L = {
@@ -343,6 +343,26 @@ export function buildHero() {
       return out(compose({ view: v, legs: w[0], arms: 'fwd', headDy: 1, legsFlip: w[3] }), dir);
     }), { fps: 6 });
   }
+  // extras used by src/anim/defs.js
+  for (const dir of DIRS) {
+    const v = viewOf(dir), A = ATK[v], ax = A.ox + 8, ay = A.oy + 23;
+    const f0 = attackFrame(dir, A.F + 8, {});
+    const f1 = f0.clone();
+    // charge glint travelling on the blade
+    const tip = [A.pivot[0] + Math.round(Math.cos(((A.F + 8) * Math.PI) / 180) * 9), A.pivot[1] + Math.round(Math.sin(((A.F + 8) * Math.PI) / 180) * 9)];
+    for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) f1.put(tip[0] + dx, tip[1] + dy, dx || dy ? P.gold_md : P.metal_lt);
+    S[`hero_charge_${dir}`] = frames([out(f0, dir, ax, ay), out(f1, dir, ax, ay)], { fps: 12 });
+    S[`hero_throw_${dir}`] = frames([out(compose({ view: v, arms: 'fwd' }), dir), out(compose({ view: v }), dir)], { fps: 10 });
+    S[`hero_swim_${dir}`] = frames([0, 1, 2, 3].map((i) => {
+      const body = compose({ view: v, arms: i % 2 ? 'swingA' : 'swingB', bob: i === 1 || i === 3 ? 1 : 0 });
+      const p = new Pix(16, 24);
+      p.blit(body, 0, 6);
+      for (let y = 19; y < 24; y++) for (let x = 0; x < 16; x++) p.clear(x, y);
+      for (let x = 1; x < 15; x++) { const w = (x + i * 2) % 6; p.put(x, 18, w < 3 ? P.foam : P.water_lt); if (w === 0) p.put(x, 19, P.water_lt); }
+      p.put(0, 19, P.water_lt); p.put(15, 19, P.water_lt);
+      return out(p, dir);
+    }), { fps: 7.5 });
+  }
   S.hero_item_get = [compose({ view: 'down', arms: 'up', headDy: 0 }).canvas()];
   // spin: 8 frames, 40×40, anchor (20,31)
   {
@@ -492,6 +512,8 @@ export function buildSoldier() {
       return out(c, dir, A.ox + 8, A.oy + 23);
     };
     S[`soldier_walk_${dir}`] = frames(seq.map(([legs, bob, , fl]) => mk({ legs, bob, legsFlip: fl, arms: 'nosword' })), { fps: 8 });
+    S[`soldier_idle_${dir}`] = [S[`soldier_walk_${dir}`][0]];
+    S[`soldier_hurt_${dir}`] = frames([recolorCanvas(S[`soldier_walk_${dir}`][0], HURT_MAP), S[`soldier_walk_${dir}`][0]], { fps: 16 });
     S[`soldier_attack_${dir}`] = frames([mk({ arms: 'nosword', headDy: 1 }, -2), mk({ arms: 'nosword', legs: v === 'left' ? 'a' : 'step' }, 4)], { fps: 8 });
   }
   return S;

@@ -1,5 +1,5 @@
 // Enemies, boss and NPCs.
-import { Pix, mat, frames } from './core.js';
+import { Pix, mat, frames, recolorCanvas, HURT_MAP } from './core.js';
 import { palette as P, R } from './palette.js';
 
 const DIRS = ['down', 'up', 'left', 'right'];
@@ -11,14 +11,14 @@ function part(p, cx, cy, rx, ry, ramp, rim, o) {
 }
 
 // ---------------- octorok ----------------
-function octorok(dir, f) {
+function octorok(dir, f, puff = 0) {
   const p = new Pix(16, 16);
   const ramp = [P.red_dk, P.red_md, P.red_md, P.red_lt];
   // legs (alternate)
   const legs = f ? [[3, 13], [7, 14], [11, 13]] : [[4, 14], [8, 13], [12, 14]];
   for (const [x, y] of legs) { p.rect(x, y - 1, 2, 2, P.red_dk); }
   p.ball(8, 7.5, 6.5, 6, ramp);
-  const ext = f ? 1 : 0;
+  const ext = (f ? 1 : 0) + puff;
   const snout = { down: [8, 12 + ext], up: [8, 2 - ext], left: [2 - ext, 8.5], right: [14 + ext, 8.5] }[dir];
   if (dir !== 'up') {
     const eyes = dir === 'down' ? [[4, 6], [10, 6]] : dir === 'left' ? [[5, 5]] : [[10, 5]];
@@ -26,8 +26,9 @@ function octorok(dir, f) {
   }
   // snout tube
   const [sx, sy] = snout;
-  if (dir === 'up') { p.ellipse(sx, sy + 1, 2.5, 2, P.red_lt); p.rect(sx - 1, sy, 2, 1, P.ink); }
-  else { p.ellipse(sx, sy, 2.5, 2.5, P.red_lt); p.ellipse(sx, sy, 1.2, 1.2, P.ink); }
+  const sr = puff > 1 ? 3 : 2.5;
+  if (dir === 'up') { p.ellipse(sx, sy + 1, sr, 2, P.red_lt); p.rect(sx - 1, sy, 2, 1, P.ink); }
+  else { p.ellipse(sx, sy, sr, sr, P.red_lt); p.ellipse(sx, sy, puff > 1 ? 1.6 : 1.2, puff > 1 ? 1.6 : 1.2, P.ink); }
   p.outline(P.ink);
   return p;
 }
@@ -108,7 +109,8 @@ function golem(mode, f) {
     if (f === 2) { arms = [[9, 33], [31, 33]]; head = [20, 14]; armRy = 6; }
   }
   // legs
-  part(p, 13, 34, 5, 4, rp, P.rock_dk); part(p, 27, 34, 5, 4, rp, P.rock_dk);
+  const lw = mode === 'walk' ? (f ? [-1, 1] : [1, -1]) : [0, 0];
+  part(p, 13, 34 + lw[0], 5, 4, rp, P.rock_dk); part(p, 27, 34 + lw[1], 5, 4, rp, P.rock_dk);
   // back arm parts when raised are behind body
   const raised = arms[0][1] < 18;
   if (raised) for (const [x, y] of arms) part(p, x, y, 5, armRy, rp, P.rock_dk);
@@ -234,12 +236,22 @@ function npc(def, f) {
 export function buildActors() {
   const S = {};
   for (const dir of DIRS) S[`octorok_walk_${dir}`] = frames([octorok(dir, 0).canvas(), octorok(dir, 1).canvas()], { fps: 6.7 });
+  for (const dir of DIRS) {
+    const w = S[`octorok_walk_${dir}`];
+    S[`octorok_idle_${dir}`] = frames([w[0], octorok(dir, 0, -0).canvas()], { fps: 3 });
+    S[`octorok_attack_${dir}`] = frames([octorok(dir, 0, -1).canvas(), octorok(dir, 0, 2).canvas(), w[0]], { fps: 8 });
+    S[`octorok_hurt_${dir}`] = frames([recolorCanvas(w[0], HURT_MAP), w[0]], { fps: 16 });
+  }
   S.octorok_rock = frames([octorokRock(0), octorokRock(1)], { fps: 10 });
   S.slime_idle = frames([slime(1), slime(0), slime(2)], { fps: 5.5 });
+  S.slime_walk = frames([slime(2), slime(0), slime(1)], { fps: 7 });
+  S.slime_hurt = frames([recolorCanvas(S.slime_idle[1], HURT_MAP), S.slime_idle[1]], { fps: 16 });
   S.bat_fly = frames(BAT.map((b) => b.canvas()), { fps: 12 });
+  S.bat_hurt = frames([recolorCanvas(S.bat_fly[0], HURT_MAP), S.bat_fly[0]], { fps: 16 });
   S.boss_golem_idle = frames([golem('idle', 0), golem('idle', 1)], { fps: 2 });
   S.boss_golem_attack = frames([golem('attack', 0), golem('attack', 1), golem('attack', 2)], { fps: 6 });
   S.boss_golem_hurt = [golem('hurt', 0)];
+  S.boss_golem_walk = frames([golem('walk', 0), golem('walk', 1)], { fps: 4 });
   for (const [name, def] of Object.entries(NPC)) S[`npc_${name}_idle_down`] = frames([npc(def, 0), npc(def, 1)], { fps: 2 });
   return S;
 }

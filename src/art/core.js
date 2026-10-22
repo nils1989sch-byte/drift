@@ -172,3 +172,25 @@ export function mat(str, legend, w, h) {
 
 export function frames(list, opts = {}) { const a = list; Object.assign(a, opts); return a; }
 export function pixToCanvas(p, ax, ay) { return p.canvas(ax, ay); }
+
+// palette swap on a finished canvas (keeps anchors)
+export function recolorCanvas(c, map) {
+  const g = c.getContext('2d');
+  const id = g.getImageData(0, 0, c.width, c.height);
+  const d = new Uint32Array(id.data.buffer);
+  const m = new Map(Object.entries(map).map(([a, b]) => [c32(a), c32(b)]));
+  for (let i = 0; i < d.length; i++) { const r = m.get(d[i]); if (r !== undefined) d[i] = r; }
+  const o = document.createElement('canvas'); o.width = c.width; o.height = c.height;
+  o.getContext('2d').putImageData(id, 0, 0);
+  if (c.ax !== undefined) o.ax = c.ax;
+  if (c.ay !== undefined) o.ay = c.ay;
+  return o;
+}
+// hit-flash palette: every ramp one step lighter
+export const HURT_MAP = {
+  '#702030': '#c84040', '#c84040': '#f08060', '#f08060': '#f8f8f8',
+  '#283070': '#4868c8', '#4868c8': '#90b0f0', '#90b0f0': '#f8f8f8',
+  '#502878': '#8848b8', '#8848b8': '#c890e0', '#c890e0': '#f8f8f8',
+  '#485070': '#8898b8', '#8898b8': '#c8d8e8', '#c8d8e8': '#f8f8f8',
+  '#181020': '#502878',
+};
