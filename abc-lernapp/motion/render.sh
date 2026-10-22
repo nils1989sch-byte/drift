@@ -29,8 +29,10 @@ encode() {  # $1 = master mp4, $2 = output basename
   ffmpeg -v error -y -i "$m" -an -vf "scale=${WEBM_W}:-2:flags=lanczos" -c:v libvpx-vp9 -b:v 0 -crf "$WEBM_CRF" \
     -pix_fmt yuv420p -row-mt 1 -deadline good -cpu-used 1 -pass 2 -passlogfile "$TMP/$n" "out/$n.webm"
   ffmpeg -v error -y -sseof -0.05 -i "$m" -frames:v 1 -update 1 "out/$n-poster.png"
-  printf '  %-16s mp4 %6s KB | webm %6s KB | poster %5s KB\n' "$n" \
-    $(( $(stat -c%s "out/$n.mp4") / 1024 )) $(( $(stat -c%s "out/$n.webm") / 1024 )) $(( $(stat -c%s "out/$n-poster.png") / 1024 ))
+  ffmpeg -v error -y -i "out/$n-poster.png" -c:v libwebp -quality 82 "out/$n-poster.webp"
+  printf '  %-14s mp4 %4s KB | webm %4s KB | poster png %4s KB / webp %3s KB\n' "$n" \
+    $(( $(stat -c%s "out/$n.mp4") / 1024 )) $(( $(stat -c%s "out/$n.webm") / 1024 )) \
+    $(( $(stat -c%s "out/$n-poster.png") / 1024 )) $(( $(stat -c%s "out/$n-poster.webp") / 1024 ))
 }
 
 render() {  # $1 = composition, $2 = output name, $3 = variables json (optional)
