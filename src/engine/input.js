@@ -18,13 +18,14 @@ export function createInput(target = window) {
   let prev = new Set();
   let cur = new Set();
   const pulses = new Set(); // one-shot presses (wheel etc.)
+  const tapped = new Set(); // keys pressed since the last poll (keeps taps shorter than a frame)
   let lastDevice = 'keyboard';
   const listeners = [];
 
   target.addEventListener('keydown', (e) => {
     const a = KEYMAP[e.code] || (e.key === '+' ? 'zoomIn' : e.key === '-' ? 'zoomOut' : null);
     if (!a) return;
-    keys.add(a);
+    keys.add(a); tapped.add(a);
     lastDevice = 'keyboard';
     if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
   });
@@ -47,8 +48,8 @@ export function createInput(target = window) {
     // call once per frame before game update
     poll() {
       prev = cur;
-      cur = new Set([...keys, ...virtual, ...pulses]);
-      pulses.clear();
+      cur = new Set([...keys, ...virtual, ...pulses, ...tapped]);
+      pulses.clear(); tapped.clear();
       let gx = 0, gy = 0;
       const pads = navigator.getGamepads ? navigator.getGamepads() : [];
       for (const p of pads) {

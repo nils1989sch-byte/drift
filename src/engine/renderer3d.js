@@ -91,7 +91,13 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (!world.inside(tx, ty)) return -Infinity;
     const id = world.tileAt(tx, ty);
     if (id === 'void') return -Infinity;
-    return world.heightAt(tx, ty) + (isWall(id) ? WALL_LEVELS : 0);
+    if (!isWall(id)) return world.heightAt(tx, ty);
+    // south-facing room walls (floor behind them to the north) stay low so the room stays visible
+    const nid = world.inside(tx, ty - 1) ? world.tileAt(tx, ty - 1) : 'void';
+    const southWall = !isWall(nid) && nid !== 'void' && !TILE_DEFS[nid]?.solid;
+    const below = world.inside(tx, ty + 1) ? world.tileAt(tx, ty + 1) : 'void';
+    const outerSouth = !world.inside(tx, ty + 1) || below === 'void';
+    return world.heightAt(tx, ty) + (southWall || outerSouth ? 0.42 : WALL_LEVELS);
   };
   // top surface height in world units; water beds are recessed so banks get little earth walls
   const topY = (world, tx, ty) => {
@@ -305,7 +311,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     groundTex.colorSpace = THREE.SRGBColorSpace;
 
     let maxN = 1;
-    for (let ty = 0; ty < Hh; ty++) for (let tx = 0; tx < W; tx++) { const e = effH(world, tx, ty); if (e > -Infinity) maxN = Math.max(maxN, e + 1); }
+    for (let ty = 0; ty < Hh; ty++) for (let tx = 0; tx < W; tx++) { const e = effH(world, tx, ty); if (e > -Infinity) maxN = Math.max(maxN, Math.ceil(e) + 1); }
     const atlas = buildFaceAtlas(maxN);
 
     const top = { p: [], n: [], uv: [] }, side = { p: [], n: [], uv: [] }, base = { p: [], n: [], uv: [] };
@@ -989,7 +995,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     stretch = THREE.MathUtils.clamp(Math.tan(elev) * 1.25, 1, 1.5);
     const fov = 30;
     camera.fov = fov;
-    const dist = 120 / Math.tan((fov / 2) * DEG) / zf * 0.6 * (H / Math.max(W, H) < 0.7 ? 1 : 1.25);
+    const dist = 120 / Math.tan((fov / 2) * DEG) / zf * 0.6 * (W >= H ? (H / W < 0.7 ? 1 : 1.25) : Math.min(2.2, (H / W) * 0.9));
     const f = cam.follow;
     const fy = f ? ((f.z || 0) * LEVEL) : 0;
     if (!camY.init) { camY.v = fy; camY.init = true; }
@@ -1070,7 +1076,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const t = torchSpots[i];
       if (!t) { l.intensity = 0; return; }
       l.position.set(t[0], t[2] * LEVEL + 18, t[1] + 2);
-      l.intensity = (cur.dark ? 9000 : 3500) * (0.85 + 0.15 * Math.sin(time * 13 + i * 2.1) * Math.sin(time * 7.3 + i));
+      l.intensity = (cur.dark ? 4200 : 2500) * (0.85 + 0.15 * Math.sin(time * 13 + i * 2.1) * Math.sin(time * 7.3 + i));
     });
 
     // scene -> rtScene
@@ -1091,7 +1097,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       src = rtComp;
     }
     if (R.bloom && bloom) {
-      bloom.strength = cur.dark ? 0.45 : 0.22;
+      bloom.strength = cur.dark ? 0.28 : 0.22; bloom.threshold = cur.dark ? 0.95 : 0.9;
       bloom.render(gl, null, src, dt, false);
     }
     gradeMat.uniforms.tColor.value = src.texture;
@@ -1109,6 +1115,18 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (overlay) overlay(octx, R);
   };
   R.resize = resize;
+  // step effects down when the device can't keep up (called by main.js)
+  R.quality = 5;
+  R.degrade = function () {
+    if (R.quality <= 0) return;
+    R.quality--;
+    if (R.quality === 4) R.dof = false;
+    else if (R.quality === 3) { R.resScale = Math.min(R.resScale, 0.75); resize(W, H); }
+    else if (R.quality === 2) R.bloom = false;
+    else if (R.quality === 1) { sun.shadow.mapSize.set(1024, 1024); sun.shadow.map?.dispose(); sun.shadow.map = null; }
+    else { R.resScale = 0.5; resize(W, H); }
+    console.info('[drift] render quality', R.quality);
+  };
   return R;
 }
 

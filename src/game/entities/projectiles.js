@@ -20,6 +20,7 @@ export class Projectile extends Entity {
     this.size = o.size ?? 4;
     this.fxOnHit = o.fxOnHit || 'spark';
     this.onEnd = o.onEnd;
+    this.onTick = o.onTick;
     this.carryObj = o.carryObj;       // thrown object spec
     this.flying = false;
     this.t = 0;
@@ -36,6 +37,7 @@ export class Projectile extends Entity {
     const g = this.g;
     this.t += dt;
     this.life -= dt;
+    if (this.onTick) { this.onTick(g, this, dt); if (this.dead) return; }
     if (this.grav) {
       this.vz -= this.grav * dt;
       this.hop += this.vz * dt;
@@ -119,10 +121,11 @@ export function throwObject(g, p, carry) {
   const kind = carry.type;
   if (kind === 'bomb') {
     // thrown bomb: arcs, then lands and keeps ticking
-    const b = carry.obj;
+    const b = carry;
     return new Projectile(g, {
       x: p.x + v[0] * 4, y: p.y + v[1] * 4, lvl: p.lvl, z: p.z, owner: 'player', vx: v[0] * 130, vy: v[1] * 130,
       sprite: 'bomb', hop: 18, vz: 40, grav: 300, life: 3, dmg: 0, shadow: 4, carryObj: b,
+      onTick: (gg, pr, dt) => { b.fuse -= dt; if (b.fuse <= 0) { pr.dead = true; b.carried = false; b.x = pr.x; b.y = pr.y; b.lvl = pr.lvl; b.z = pr.z; b.dead = false; b.explode(); } },
       onEnd: (gg, pr) => { b.carried = false; b.dead = false; b.x = pr.x; b.y = pr.y; b.lvl = pr.lvl; b.z = pr.z; b.hop = 0; if (!gg.objects.includes(b)) gg.objects.push(b); },
     });
   }

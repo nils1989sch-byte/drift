@@ -70,6 +70,9 @@ function boot() {
   window.addEventListener('keydown', unlock, { once: true });
 
   let acc = 0, last = performance.now();
+  let errShown = false;
+  // adaptive quality: if the frame rate stays low, the 3D renderer steps down its effects
+  let slowT = 0, fastT = 0;
   const debug = new URLSearchParams(location.search).has('debug');
   renderer.debug = debug;
   if (new URLSearchParams(location.search).get('tilt') === '0') renderer.tiltShift = false;
@@ -83,7 +86,10 @@ function boot() {
       input.poll();
       if (input.pressed('zoomIn')) camera.zoom(1);
       if (input.pressed('zoomOut')) camera.zoom(-1);
-      if (!ui.blocking) { game.update(STEP); fx.update(STEP); }
+      if (!ui.blocking) {
+        try { game.update(STEP); fx.update(STEP); }
+        catch (e) { if (!errShown) { console.error(e); errShown = true; } }
+      }
       ui.update(STEP);
       camera.update(STEP, game.world);
       acc -= STEP; steps++;
@@ -91,6 +97,10 @@ function boot() {
     if (steps === 6) acc = 0;
     const drawables = game.world ? [...game.entities, ...fx.drawables()] : [];
     renderer.render(game.world, drawables, camera, dt, game.drawOverlay);
+    if (renderer.degrade && game.world) {
+      if (dt > 1 / 40) { slowT += dt; fastT = 0; } else { fastT += dt; slowT = Math.max(0, slowT - dt * 0.5); }
+      if (slowT > 2) { renderer.degrade(); slowT = 0; }
+    }
     ui.draw();
     requestAnimationFrame(frame);
   }

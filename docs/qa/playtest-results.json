@@ -1,62 +1,65 @@
 {
- "date": "2026-10-22T21:51:19.001Z",
+ "date": "2026-10-22T21:58:42.646Z",
  "seed": 1,
  "frames": 2000,
  "results": [
   {
-   "name": "input_quick_tap",
+   "name": "bomb_cave",
    "ok": false,
    "checks": [
     {
-     "ok": false,
-     "msg": "a key tapped within one frame (keydown+keyup before the next poll) is not lost",
+     "ok": true,
+     "msg": "item key places a bomb"
+    },
+    {
+     "ok": true,
+     "msg": "bomb next to the cracked rock opens the cave",
      "data": {
-      "attack": false,
-      "pause": false
+      "beforeMap": "overworld",
+      "bombObj": true,
+      "flag": true,
+      "hp": [
+       6,
+       4
+      ],
+      "map": "cave",
+      "maxHp": [
+       6,
+       8
+      ],
+      "carryBomb": "bomb",
+      "throwError": "TypeError: Cannot set properties of undefined (setting 'carried')"
      }
+    },
+    {
+     "ok": true,
+     "msg": "walk into the opened cave",
+     "data": "cave"
+    },
+    {
+     "ok": true,
+     "msg": "cave chest gives a heart container",
+     "data": [
+      6,
+      8
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "a placed bomb can be lifted",
+     "data": "bomb"
+    },
+    {
+     "ok": false,
+     "msg": "throwing a lifted bomb does not throw",
+     "data": "TypeError: Cannot set properties of undefined (setting 'carried')"
     }
    ],
    "notes": [
-    "tap inside one frame registered?: {\"attack\":false,\"pause\":false}"
+    "HP when standing next to own bomb (hp before/after): [6,4]"
    ],
    "errors": [],
-   "ms": 4354
-  },
-  {
-   "name": "bomb_throw_realloop",
-   "ok": false,
-   "checks": [
-    {
-     "ok": true,
-     "msg": "bomb can be lifted with E"
-    },
-    {
-     "ok": false,
-     "msg": "game loop keeps running after throwing a bomb",
-     "data": {
-      "f0": 147,
-      "f1": 147
-     }
-    },
-    {
-     "ok": true,
-     "msg": "an exploded bomb is not still held over the head",
-     "data": {
-      "carriedBefore": "bomb",
-      "carryAfter": "bomb",
-      "carryDead": false,
-      "hp": 6
-     }
-    }
-   ],
-   "notes": [
-    "carried: \"bomb\"",
-    "bomb held for 3.3 s: {\"carriedBefore\":\"bomb\",\"carryAfter\":\"bomb\",\"carryDead\":false,\"hp\":6}"
-   ],
-   "errors": [
-    "pageerror: Cannot set properties of undefined (setting 'carried')"
-   ],
-   "ms": 6281
+   "ms": 3430
   }
  ]
 }

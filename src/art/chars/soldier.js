@@ -4,77 +4,41 @@ import { M } from './materials.js';
 import { CX, FOOT } from './human.js';
 import { flashCanvas } from './util.js';
 
-// helmet uses the "hair" channel (h/d/x/l/L) with steel; face below the brim in shadow
-const HELM = {
-  down: `
-.........xd........
-.......dhlLhd......
-.....dhlLLlhhdd....
-....dhlLlhhhhhhd...
-...dhlLhhhhhhhhhd..
-...hlhhhhhhhhhhhd..
-..dhhhhhhhhhhhhhhd.
-.xllLlllhhhhhhhhddx
-xddhhhhhhhhhhhhdddx
-.xxSSSSSSkSSSSSSxx.
-..xSSbbSSkSSbbSSx..
-..xsseessnsseessx..
-..kssiisssssiissk..
-..xsssssnnnsssssx..
-...xsssqmmmqsssx...
-....xSsssssssSx....
-......xSSSSSx......`,
-  up: `
-.........xd........
-.......dhlLhd......
-.....dhlLLlhhdd....
-....dhlLlhhhhhhd...
-...dhlLhhhhhhhhhd..
-...hlhhhhhhhhhhhd..
-..dhhhhhhhhhhhhhhd.
-.xllLlllhhhhhhhhddx
-xddhhhhhhhhhhhhdddx
-.xxdhhhhhhhhhhhdxx.
-..xdhhhdhdhhhhhdx..
-..xdhhhhhhhhhhhdx..
-..kdhhdhhhhdhhhdk..
-..xSdhhhhhhhhhdSx..
-...xSSSSSSSSSSSx...
-....xSSSSSSSSSx....
-......xSSSSSx......`,
-  side: `
-..........xd.......
-........dhlLhd.....
-......dhlLLlhhd....
-.....dhlLlhhhhhd...
-....dhlLhhhhhhhhd..
-....hlhhhhhhhhhhd..
-...dhhhhhhhhhhhhhd.
-xllLlllhhhhhhhhhddx
-xdhhhhhhhhhhhhhdddx
-..xSSSSSSkkhhhhdx..
-..SbbSSSSkkhhhhdx..
-.Seesssskkdhhhhdx..
-xsiissssSkkdhhhdx..
-sssssssSkkdhhhhx...
-.SsssssssSxdhhx....
-..xqmmsssSxxdx.....
-...xSSsssSSx.......
-....xxSSSSx........`,
+const HELM_P = {
+  down: { mass: null, ears: [], face: [0, 3.2, 5.6, 5.4], feat: 'down', back: [], front: [] },
+  up: { mass: [0, 1, 6.4, 6.4], ears: [], face: null, back: [], front: [] },
+  side: { mass: [1.6, 1, 5.6, 6], ears: [], face: [-2.4, 3.2, 5.0, 5.4], chin: 0.4, nose: [-6.9, 3.7], feat: 'side', back: [], front: [] },
 };
-
+function helmet(f, view, hc, pose, s) {
+  const side = view === 'side', sx = side ? 0.8 : 0;
+  // neck guard / cheek plates
+  if (view === 'up') f.ell(hc[0], hc[1] + 3.6, 6.6, 4.2, M.chain, { flat: 0.1 });
+  else if (side) f.ell(hc[0] + 3.4, hc[1] + 3.8, 3.8, 4.4, M.chain, { flat: 0.1 });
+  else for (const k of [-1, 1]) f.ell(hc[0] + k * 5.4, hc[1] + 4, 1.8, 3.6, M.chain, { flat: 0.1 });
+  // dome
+  f.ell(hc[0] + sx, hc[1] - 2.6, 7.4, 6.6, M.steel, { clip: (x, y) => y + 0.5 < hc[1] + 0.6 });
+  // ridge
+  if (!side) f.limb(hc[0], hc[1] - 8.6, hc[0], hc[1] - 1, 0.9, 0.9, M.steel, { bias: 0.9 });
+  else f.chain([[hc[0] - 5.4, hc[1] - 4, 0.9], [hc[0] - 1, hc[1] - 8.8, 0.9], [hc[0] + 4.6, hc[1] - 7.4, 0.9]], M.steel, { bias: 0.9 });
+  // brim
+  f.ell(hc[0] + sx, hc[1] + 0.2, side ? 9.4 : 9.2, 2.1, M.steel, { flat: 0.55, bias: -0.2 });
+  for (let x = -8; x <= 8; x += 3) f.touch(hc[0] + sx + x, hc[1] - 0.4, { m: M.brass, t: 2 }); // rivets
+  // shadow of the brim on the face
+  if (view !== 'up') for (let x = -5; x <= 5; x++) f.touch(hc[0] + (side ? -2.4 : 0) + x, hc[1] + 2.4, f.matAt(hc[0] + (side ? -2.4 : 0) + x, hc[1] + 2.4) === M.skin ? { b: -1.2 } : {});
+  void pose; void s;
+}
 export const SOLDIER = {
   id: 'soldier',
-  skin: M.skin, hair: M.steel, eye: M.eye_brn, headSet: HELM,
+  skin: M.skin, eye: M.eye_brn, headP: { hair: M.steel, skin: M.skin, eye: M.eye_brn, brow: M.hair_blk, ...HELM_P, top: helmet },
   jacket: M.tabard, sleeve: M.chain, cuffMat: M.leather_dk, hemMat: M.chain,
   pants: M.pants, boot: M.leather_dk, belt: M.belt, pouch: false,
   scarf: false, shield: false, sheath: false,
   headTop(f, J, view) {
     const h = J.head;
     if (view === 'side') {
-      f.chain([[h[0] + 0.5, h[1] - 7.5, 1.6], [h[0] + 3.5, h[1] - 9.2, 1.8], [h[0] + 7, h[1] - 8.4, 1.5], [h[0] + 9.2, h[1] - 6, 1.0]], M.plume, { flat: 0.3 });
+      f.chain([[h[0] - 1, h[1] - 8.6, 1.6], [h[0] + 2.5, h[1] - 10.6, 1.9], [h[0] + 6.4, h[1] - 10, 1.6], [h[0] + 9.4, h[1] - 7.4, 1.0]], M.plume, { flat: 0.3 });
     } else {
-      f.chain([[h[0], h[1] - 7.6, 1.6], [h[0] + 0.3, h[1] - 9.6, 2.0], [h[0] + 0.1, h[1] - 11, 1.4]], M.plume, { flat: 0.2 });
+      f.chain([[h[0], h[1] - 8.6, 1.7], [h[0] + 0.3, h[1] - 10.8, 2.1], [h[0] + 0.1, h[1] - 12.4, 1.4]], M.plume, { flat: 0.2 });
       if (view === 'up') f.chain([[h[0], h[1] - 9, 1.6], [h[0], h[1] - 4, 1.5], [h[0] - 0.3, h[1] - 1, 1.1]], M.plume, { flat: 0.3, bias: -0.3 });
     }
   },

@@ -227,7 +227,8 @@ export class Bomb extends Obj {
   explode() {
     if (this.dead) return;
     this.dead = true;
-    if (this.carried) { const p = this.g.player; if (p.carry?.obj === this) p.carry = null; this.x = p.x; this.y = p.y; this.lvl = p.lvl; this.z = p.z; }
+    const p = this.g.player;
+    if (p.carry === this) { p.carry = null; this.carried = false; this.x = p.x; this.y = p.y; this.lvl = p.lvl; this.z = p.z; }
     this.g.explode(this.x, this.y - 2, this.lvl, this.z);
   }
   draw(ctx, r) {

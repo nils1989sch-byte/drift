@@ -48,7 +48,7 @@ export function blocked(g, e, x, y) {
     return false;
   }
   const lvl = e.lvl;
-  const cs = world.def(cellOf(e.x), cellOf(centerY(e))).stairs;
+  const cs = onStairs(world, e);
   for (const [px, py] of pts) if (!cellOk(world, cellOf(px), cellOf(py), lvl, cs, e)) return true;
   if (e.noSolids) return false;
   const fr = { x: x0, y: y0, w: fb.hw * 2, h: fb.top + fb.bottom };
@@ -58,6 +58,15 @@ export function blocked(g, e, x, y) {
     if (e.ignoreSolid && e.ignoreSolid(s)) continue;
     if (overlap(fr, s.solidBox())) return true;
   }
+  return false;
+}
+
+// Is any cell under the entity's CURRENT foot box (or its centre) a stairs cell?
+export function onStairs(world, e) {
+  if (world.def(cellOf(e.x), cellOf(centerY(e))).stairs) return true;
+  const fb = e.foot || FOOT;
+  const xs = [e.x - fb.hw, e.x + fb.hw - 0.01], ys = [e.y - fb.top, e.y + fb.bottom - 0.01];
+  for (const px of xs) for (const py of ys) if (world.def(cellOf(px), cellOf(py)).stairs) return true;
   return false;
 }
 
