@@ -161,6 +161,16 @@ export class Fig {
     for (let i = 0; i < this.nx.length; i++) this.nx[i] = -this.nx[i];
     return this;
   }
+  // rotate 90° clockwise (normals rotate along, so the light stays top-left)
+  rot90() {
+    const w = this.w, h = this.h, r = new Fig(h, w);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x, j = x * h + (h - 1 - y);
+      r.m[j] = this.m[i]; r.nx[j] = -this.ny[i]; r.ny[j] = this.nx[i]; r.nz[j] = this.nz[i];
+      r.b[j] = this.b[i]; r.t[j] = this.t[i]; r.g[j] = this.g[i]; r.o[j] = this.o[i];
+    }
+    return r;
+  }
   // resolve to a canvas. ax/ay = foot anchor in sprite pixels; ws = 0.5 (HD density)
   canvas(ax, ay, o = {}) {
     const w = this.w, h = this.h, n = w * h, M = this.m;

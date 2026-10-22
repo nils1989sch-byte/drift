@@ -456,7 +456,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       bladeTex = tex(c);
     }
     const pts = [];
-    const per = mobile ? 7 : 16;
+    const per = mobile ? 16 : 40;
     for (let ty = 0; ty < world.h; ty++) for (let tx = 0; tx < world.w; tx++) {
       const id = world.tileAt(tx, ty);
       const grp = (assets.edgeGroup || {})[id] || id;

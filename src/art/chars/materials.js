@@ -97,3 +97,4 @@ def('moss', '#6a8e3e', { dk: 0.08, lt: 0.08, hsD: 9, shadowHue: 200, lightHue: 7
 def('glow', '#7ae8e0', { colors: ['#2a8a98', '#4cc0c8', '#7ae8e0', '#c0fff4', '#f4fffa'], line: '#14384a', noLine: true, amb: 0.7, k: 0.3 });
 def('glow_hot', '#f8c860', { colors: ['#c86a20', '#f09a38', '#f8c860', '#fff0a8', '#fffbe8'], line: '#4a2010', noLine: true, amb: 0.7, k: 0.3 });
 def('flash', '#fbf6ec', { colors: ['#d8d0e0', '#e8e2ec', '#f4f0f0', '#fbf8f4', '#fffdf8'], line: '#8a7a98', lineLit: '#b0a4bc' });
+def('slash', '#c8f4f4', { colors: ['#4a8ab0', '#7ac8dc', '#c8f4f4', '#f8fffc'], noLine: true, noOutline: true });
