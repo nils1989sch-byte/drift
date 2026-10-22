@@ -116,3 +116,15 @@ Touch: UI erzeugt virtuellen Stick + Buttons (A=Schwert, B=Aktion/Heben, Item, M
 Aktionen: `attack`, `action`, `item`, `start`, `zoomIn`, `zoomOut`. `input.axis` = {x,y} normiert.
 `input.down(a)`, `input.pressed(a)` (nur ein Frame). Tastatur: WASD/Pfeile, J/Space=attack, K/E=action,
 L/Q=item, Enter/Esc=start, +/-/Mausrad=Zoom. Pinch-Zoom auf Touch (Renderer/Kamera).
+
+## Ergänzungen zum Asset-Vertrag
+
+- `tiles[id]` Array-Optionen: `arr.fps` (Animationsrate, Default 4), `arr.phase = true` (Phasenversatz pro Zelle),
+  `arr.mode = 'variant'` (statt Animation: Variante per Positions-Hash – für Gras-Variationen).
+- **Übergänge (Autotile-light):** `assets.edges[`${gruppe}_${seite}`]` = 16×16-Overlay (transparent) bzw. Frame-Array,
+  `assets.edgeGroup = { grass_dark: 'grass', ... }`, `assets.edgePriority = { grass: 5, path: 3, water: 1, ... }`.
+  Hat eine Nachbarzelle (gleiche Höhe) eine Gruppe mit höherer Priorität, malt der Renderer deren Kanten-Overlay
+  auf die zugewandte Seite dieser Zelle. `seite` ∈ n,s,w,e = Seite DIESER Zelle, an der der Nachbar liegt.
+  Beispiel: Wasserzelle mit Gras im Norden → `edges.grass_n` wird oben auf die Wasserzelle gemalt (Uferkante).
+- `faces.plinth_earth`, `faces.plinth_stone`: [Canvas] horizontal kachelbares Muster (z. B. 32×28) für den Diorama-Sockel.
+- Pixel-Font gehört dem UI-Agenten (`src/ui/font.js`), nicht der Art. `assets.font` darf null sein.

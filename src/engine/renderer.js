@@ -91,6 +91,7 @@ export function createRenderer(canvas, assets) {
     if (img) ctx.drawImage(img, px, py);
     else { ctx.fillStyle = '#f0f'; ctx.fillRect(px, py, TILE, TILE); }
     R.stats.tiles++;
+    drawEdges(world, tx, ty, h, id, px, py);
     // ambient occlusion: darken where higher neighbours meet this cell
     const hw = world.heightAt(tx - 1, ty), hn = world.heightAt(tx, ty - 1);
     if (hw > h && world.inside(tx - 1, ty)) { ctx.fillStyle = 'rgba(20,16,40,0.22)'; ctx.fillRect(px, py, 4, TILE); ctx.fillRect(px, py, 2, TILE); }
@@ -101,6 +102,25 @@ export function createRenderer(canvas, assets) {
       if (hn < h) { ctx.fillStyle = 'rgba(255,250,220,0.35)'; ctx.fillRect(px, py, TILE, 1); }
       if (hw < h) { ctx.fillStyle = 'rgba(255,250,220,0.22)'; ctx.fillRect(px, py, 1, TILE); }
       if (he < h) { ctx.fillStyle = 'rgba(20,16,40,0.35)'; ctx.fillRect(px + TILE - 1, py, 1, TILE); }
+    }
+  }
+
+  // Terrain transitions: a neighbour (same height) with a higher edge priority paints an edge overlay
+  // onto this cell's side facing it. assets.edges[`${group}_${side}`] = Canvas | Canvas[] (16x16, transparent).
+  const SIDES = [['n', 0, -1], ['s', 0, 1], ['w', -1, 0], ['e', 1, 0]];
+  function drawEdges(world, tx, ty, h, id, px, py) {
+    const edges = assets.edges;
+    if (!edges) return;
+    const grp = assets.edgeGroup || {}, pri = assets.edgePriority || {};
+    const g0 = grp[id] || id, p0 = pri[g0] ?? 0;
+    for (const [side, dx, dy] of SIDES) {
+      const nx = tx + dx, ny = ty + dy;
+      if (!world.inside(nx, ny) || world.heightAt(nx, ny) !== h) continue;
+      const nid = world.tileAt(nx, ny), g1 = grp[nid] || nid;
+      if (g1 === g0 || (pri[g1] ?? 0) <= p0) continue;
+      let e = edges[`${g1}_${side}`];
+      if (Array.isArray(e)) e = e[Math.floor(time * (e.fps || 4)) % e.length];
+      if (e) ctx.drawImage(e, px, py);
     }
   }
 
