@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DRIFT – Animations-Demo</title>
+<style>
+  :root { --bg: #0d0f1c; --panel: #283048; --text: #f8f8f8; --dim: #b0a898; --accent: #f8e058; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 12px/1.3 ui-monospace, monospace; }
+  #bar { position: sticky; top: 0; z-index: 2; background: var(--panel); padding: 6px 10px; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; border-bottom: 2px solid #181020; }
+  #bar .grp { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+  #bar b { color: var(--accent); margin-right: 2px; }
+  button { font: inherit; background: #303858; color: var(--text); border: 1px solid #506080; padding: 2px 6px; cursor: pointer; }
+  button.on { background: #58b828; color: #181020; }
+  button:hover { border-color: var(--accent); }
+  #c { display: block; image-rendering: pixelated; }
+  #info { color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="bar">
+  <div class="grp" id="fxbtns"><b>FX</b></div>
+  <div class="grp" id="sfxbtns"><b>SFX</b></div>
+  <div class="grp" id="musbtns"><b>Musik</b></div>
+  <div class="grp"><b>Tempo</b><input id="speed" type="range" min="0.1" max="2" step="0.05" value="1"><span id="spv">1.00×</span>
+    <button id="amb" class="on">Ambiente</button><button id="pause">Pause</button></div>
+  <span id="info"></span>
+</div>
+<canvas id="c"></canvas>
+<script type="module">
+import { buildAssets } from '../art/index.js';
+import { createRenderer } from '../engine/renderer.js';
+import { createWorld } from '../engine/world.js';
+import { Animator, createFX, drawPixelText, ANIM_DEFS, Wobble, Squash, HitFlash, Blink, Knockback, itemGetArc, chestPop, bob, Hop, drawSquash } from './index.js';
+import { createSFX } from '../audio/index.js';
+
+const Q = new URLSearchParams(location.search);
+const assets = buildAssets();
+const S = assets.sprites || {};
+const DIRS = ['down', 'up', 'left', 'right'];
+const SCALE = +(Q.get('scale') || 2);
+
+// ---------- discover animation groups (defs ∪ sprite keys) ----------
+const groups = new Map(); // key name|action -> { name, action, dirs }
+const defNames = Object.keys(ANIM_DEFS).sort((a, b) => b.length - a.length);
+function addGroup(name, action, directional) {
+  const k = name + '|' + action;
+  if (!groups.has(k)) groups.set(k, { name, action, directional });
+  else if (directional) groups.get(k).directional = true;
+}
+for (const name of Object.keys(ANIM_DEFS)) for (const [action, d] of Object.entries(ANIM_DEFS[name])) {
+  if (name.startsWith('fx_')) continue;
+  addGroup(name, action, d.dir !== false && !d.key);
+}
+for (const key of Object.keys(S)) {
+  if (key.startsWith('fx_')) continue;
+  let base = key, dir = null;
+  const m = /_(down|up|left|right)$/.exec(key);
+  if (m) { dir = m[1]; base = key.slice(0, -m[0].length); }
+  const name = defNames.find((n) => base === n || base.startsWith(n + '_'));
+  if (name && base !== name) addGroup(name, base.slice(name.length + 1), !!dir);
+  else if (name && base === name && ANIM_DEFS[name].idle?.key) addGroup(name, 'idle', false);
+  else if (!name) { const i = base.indexOf('_'); if (dir && i > 0) addGroup(base.slice(0, i), base.slice(i + 1), true); else addGroup(base, 'idle', !!dir); }
+}
+
+// ---------- layout ----------
+const W = 52 * 16;
+const FXH = 7 * 16;
+const cells = [];
+let cx = 8, cy = FXH + 34;
+const CW = 34, RH = 52;
+for (const g of groups.values()) {
+  const label = `${g.name} ${g.action}`;
+  const w = Math.max((g.directional ? 4 : 1) * CW + 8, label.length * 4 + 8);
+  if (cx + w > W - 8) { cx = 8; cy += RH; }
+  cells.push({ g, x: cx, y: cy, w });
+  cx += w;
+}
+const JUICE_Y = cy + RH + 30;
+const H = JUICE_Y + 40;
+const tw = Math.ceil(W / 16), th = Math.ceil(H / 16);
+const ground = [], height = [];
+for (let y = 0; y < th; y++) for (let x = 0; x < tw; x++) {
+  let id = (x + y) % 9 === 0 ? 'grass_dark' : 'grass', h = 0;
+  if (y < 7 && x >= 18 && x < 26 && y >= 1 && y < 6) id = 'water';
+  if (y < 7 && x >= 30 && x < 40 && y >= 1 && y < 6) { h = 1; id = y === 5 && x === 34 ? 'stairs' : 'grass'; }
+  if (y < 7 && x >= 42 && y >= 1 && y < 6) id = 'dungeon_floor';
+  if (y === 6 || (y >= 7 && (y - 7) % 26 === 0 && false)) id = 'path';
+  ground.push(id); height.push(h);
+}
+const world = createWorld({ id: 'demo', w: tw, h: th, ground, height, face: 'rock', plinth: 'earth' });
+
+const canvas = document.getElementById('c');
+canvas.width = W * SCALE; canvas.height = (H + 32) * SCALE;
+canvas.style.width = canvas.width / (devicePixelRatio || 1) * (devicePixelRatio || 1) + 'px';
+const renderer = createRenderer(canvas, assets);
+renderer.tiltShift = false; renderer.vignette = false;
+const cam = { x: W / 2, y: (H + 32) / 2, ox: 0, oy: 0, scale: SCALE, viewW: canvas.width, viewH: canvas.height, shake(a, t) { this.sh = Math.max(this.sh || 0, t); this.amp = a; } };
+
+const fx = createFX(assets);
+const sfx = createSFX();
+window.__demo = { fx, sfx, assets, groups, cam };
+
+// ---------- entities ----------
+const ents = [];
+const labels = [];
+for (const c of cells) {
+  const { g } = c;
+  const dirs = g.directional ? DIRS : ['down'];
+  dirs.forEach((dir, i) => {
+    const a = new Animator(assets, g.name);
+    a.play(g.action, dir, { restart: true });
+    const e = { x: c.x + (c.w - dirs.length * CW) / 2 + CW / 2 + i * CW, y: c.y, z: 0, shadow: 5, a, g, dir, wait: 0, flash: 0,
+      draw(ctx, r) { this.a.draw(r, this.x, this.y, 0, { flash: this.flash > 0 }); } };
+    a.onEvent = (ev) => {
+      if (ev === 'step' || ev === 'stomp') { fx.spawn('dust', e.x, e.y, { dir }); }
+      else if (ev === 'hit') { const v = { down: [0, 12], up: [0, -14], left: [-12, 0], right: [12, 0] }[dir]; fx.spawn('spark', e.x + v[0], e.y + v[1], { hop: 8 }); fx.spawn('text', e.x, e.y - 22, { text: 'HIT', color: '#f8e058', life: 0.5, hop: 0 }); }
+      else if (Q.has('events')) fx.spawn('text', e.x, e.y - 22, { text: ev, color: '#98f0f0', life: 0.5, hop: 0 });
+    };
+    ents.push(e);
+  });
+  const real = new Animator(assets, g.name).play(g.action, 'down').has(g.action, 'down');
+  labels.push({ x: c.x + c.w / 2, y: c.y - 30, text: `${g.name} ${g.action}`, real });
+}
+
+// juice row
+const juice = [];
+{
+  let x = 30;
+  const mk = (label, o) => { o.x = x; o.y = JUICE_Y; o.z = 0; juice.push(o); ents.push(o); labels.push({ x, y: JUICE_Y - 30, text: label, real: true }); x += 60; return o; };
+  const bushImg = () => (S.bush || [null])[0];
+  mk('bush wobble', { shadow: 6, w: new Wobble(), t: 0, upd(dt) { this.t += dt; if (this.t > 1.6) { this.t = 0; this.w.hit(Math.random() < 0.5 ? -1 : 1); sfx.play('cut_grass'); } this.w.update(dt); },
+    draw(ctx, r) { const img = bushImg(); if (img) this.w.draw(r, img, this.x, this.y, 0); else { ctx.fillStyle = '#48a050'; ctx.fillRect(this.x - 7 + this.w.px, this.y - 12, 14, 12); } } });
+  mk('chest pop', { shadow: 7, t: 0, open: false, upd(dt) { this.t += dt; if (this.t > 2.4) { this.t = 0; } this.open = this.t > 0.6; },
+    draw(ctx, r) { const img = (S[this.open ? 'chest_open' : 'chest_closed'] || [null])[0]; const tt = this.t - 0.6;
+      const p = this.open ? chestPop(tt) : { hop: 0, squash: 0 };
+      if (img) drawSquash(r, img, this.x, this.y, 0, p.squash, { hop: p.hop }); else { ctx.fillStyle = '#985038'; ctx.fillRect(this.x - 7, this.y - 11, 14, 11); }
+      if (this.open) { const a = itemGetArc(tt); const it = (S.rupee_blue || S.key_small || [null])[0]; if (it) r.sprite(it, this.x, this.y - 4, 0, { hop: a.hop, alpha: a.alpha }); if (tt > 0.4 && tt < 0.45) fx.spawn('sparkle', this.x, this.y - 4, { hop: a.hop + 4 }); } } });
+  mk('slime squash', { shadow: 5, sq: new Squash(), hop: new Hop({ bounce: 0 }), t: 0, upd(dt) { this.t += dt; if (this.hop.landed && this.t > 0.9) { this.t = 0; this.sq.jump(0.35); this.hop.launch(110); } this.hop.update(dt); if (this.hop.justLanded) { this.sq.land(0.4); fx.spawn('dust', this.x, this.y, {}); } this.sq.update(dt); },
+    draw(ctx, r) { const img = (S.slime_idle || [null])[0]; if (img) drawSquash(r, img, this.x, this.y, 0, this.sq.s, { hop: this.hop.px }); else { ctx.fillStyle = '#8848b8'; ctx.fillRect(this.x - 6, this.y - 10 - this.hop.px, 12, 10); } } });
+  mk('hit+knockback', { shadow: 6, a: new Animator(assets, 'soldier'), fl: new HitFlash(), bl: new Blink(), kb: new Knockback(), t: 0, x0: 0,
+    upd(dt) { this.x0 ||= this.x; this.t += dt; if (this.t > 2) { this.t = 0; this.x = this.x0; this.kb.start(this.x, this.y, this.x - 10, this.y); this.fl.trigger(); this.bl.start(); fx.spawn('spark', this.x - 6, this.y, { hop: 8 }); sfx.play('enemy_hit'); this.a.play('hurt', 'left', { restart: true }); }
+      const d = this.kb.update(dt); this.x += d.dx; this.fl.update(dt); this.bl.update(dt); if (!this.kb.active && this.a.action === 'hurt' && !this.fl.active) this.a.play('walk', 'left'); this.a.update(dt); },
+    draw(ctx, r) { if (!this.bl.visible) return; this.a.draw(r, this.x, this.y, 0, { flash: this.fl.on }); } });
+  mk('pickup bob', { shadow: 3, t: 0, upd(dt) { this.t += dt; }, draw(ctx, r) { const img = (S.heart_container || S.heart_pickup || [null])[0]; if (img) r.sprite(img, this.x, this.y, 0, { hop: 3 + bob(this.t, 1, 3) }); } });
+}
+
+// ---------- controls ----------
+const FX_TYPES = ['slash', 'poof', 'leaves', 'grass', 'spark', 'splash', 'dust', 'sparkle', 'explosion', 'heart_pop', 'rocks', 'shards', 'ripple', 'damage_number', 'text'];
+let sel = 'leaves', speed = 1, paused = false, ambientOn = true;
+const SPOT = { splash: [22 * 16, 3 * 16 + 8], ripple: [22 * 16, 3 * 16 + 8] };
+function spawnFx(t, x, y) {
+  if (x == null) { [x, y] = SPOT[t] || [9 * 16, 4 * 16]; }
+  const z = world.heightAtPx(x, y);
+  const o = { z, camera: cam };
+  if (t === 'slash') { DIRS.forEach((d, i) => fx.spawn('slash', x - 48 + i * 32, y, { z, dir: d })); sfx.play('sword'); return; }
+  if (t === 'damage_number') o.value = 1 + ((Math.random() * 9) | 0);
+  if (t === 'text') o.text = 'DRIFT!';
+  fx.spawn(t, x, y, o);
+  const snd = { poof: 'enemy_die', leaves: 'cut_grass', grass: 'cut_grass', spark: 'hit', splash: 'splash', sparkle: 'rupee', explosion: 'explosion', heart_pop: 'heart', rocks: 'shatter', shards: 'shatter' }[t];
+  if (snd) sfx.play(snd);
+}
+const fxb = document.getElementById('fxbtns');
+for (const t of FX_TYPES) {
+  const b = document.createElement('button'); b.textContent = t; if (t === sel) b.className = 'on';
+  b.onclick = () => { sfx.unlock(); sel = t; [...fxb.querySelectorAll('button')].forEach((x) => x.classList.toggle('on', x === b)); spawnFx(t); };
+  fxb.appendChild(b);
+}
+const sb = document.getElementById('sfxbtns');
+for (const n of sfx.names.length ? sfx.names : ['sword']) { const b = document.createElement('button'); b.textContent = n; b.onclick = async () => { await sfx.unlock(); sfx.play(n); }; sb.appendChild(b); }
+const mb = document.getElementById('musbtns');
+for (const n of [...(sfx.songs || []), null]) { const b = document.createElement('button'); b.textContent = n || 'stop'; b.onclick = async () => { await sfx.unlock(); sfx.music(n); [...mb.children].forEach((x) => x.classList.toggle('on', x === b && n)); }; mb.appendChild(b); }
+document.getElementById('speed').oninput = (e) => { speed = +e.target.value; document.getElementById('spv').textContent = speed.toFixed(2) + '×'; };
+document.getElementById('amb').onclick = (e) => { ambientOn = !ambientOn; e.target.classList.toggle('on', ambientOn); if (!ambientOn) fx.clear(true) || fx.clear(); };
+document.getElementById('pause').onclick = (e) => { paused = !paused; e.target.classList.toggle('on', paused); };
+canvas.addEventListener('pointerdown', (e) => {
+  sfx.unlock();
+  const rc = canvas.getBoundingClientRect();
+  const px = (e.clientX - rc.left) * (canvas.width / rc.width), py = (e.clientY - rc.top) * (canvas.height / rc.height);
+  const x = (px - cam.viewW / 2) / cam.scale + cam.x, y = (py - cam.viewH / 2) / cam.scale + cam.y;
+  spawnFx(sel, x, y);
+});
+
+if (Q.has('fx') || Q.has('snap')) {
+  // screenshot mode: spawn every type in a grid in the FX zone (splash/ripple on the pond)
+  const burst = () => FX_TYPES.forEach((t, i) => {
+    if (t === 'splash') return spawnFx(t, 20 * 16, 3 * 16);
+    if (t === 'ripple') return spawnFx(t, 24 * 16, 4 * 16);
+    const k = i - (i > FX_TYPES.indexOf('splash') ? 1 : 0) - (i > FX_TYPES.indexOf('ripple') ? 1 : 0);
+    spawnFx(t, 30 + (k % 5) * 54 + (t === 'slash' ? 50 : 0), 30 + Math.floor(k / 5) * 34);
+  });
+  burst();
+  if (Q.has('snap')) { const n = Math.round(+Q.get('snap') * 60); for (let i = 0; i < n; i++) update(1 / 60); paused = true; }
+  else setInterval(burst, +(Q.get('fx') || 1200));
+}
+
+// ---------- loop ----------
+const STEP = 1 / 60;
+let acc = 0, last = performance.now();
+function update(dt) {
+  for (const e of ents) { if (e.upd) { e.upd(dt); continue; }
+    e.a.update(dt);
+    if (e.a.done) { e.wait += dt; if (e.wait > 0.45) { e.wait = 0; e.a.play(e.g.action, e.dir, { restart: true }); } }
+  }
+  if (ambientOn) fx.ambient(world, { x: cam.x, y: cam.y, viewW: cam.viewW, viewH: cam.viewH, scale: cam.scale }, { outdoor: true, density: 2 });
+  fx.update(dt);
+  if (cam.sh > 0) { cam.sh -= dt; cam.ox = (Math.random() * 2 - 1) * cam.amp; cam.oy = (Math.random() * 2 - 1) * cam.amp; } else cam.ox = cam.oy = 0;
+}
+function overlay(ctx) {
+  for (const l of labels) drawPixelText(ctx, l.text, l.x, l.y, l.real ? '#f8f8f8' : '#f88830', '#181020');
+  drawPixelText(ctx, 'FX-ZONE: KLICK = ' + sel, 9 * 16, 8, '#f8e058');
+  drawPixelText(ctx, 'WEISS = ECHTE ART   ORANGE = FALLBACK-SPRITE', W / 2 + 120, FXH - 12, '#f8f8f8');
+}
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (!paused) { acc += dt * speed; while (acc >= STEP) { update(STEP); acc -= STEP; } }
+  renderer.render(world, [...ents, ...fx.drawables()], cam, paused ? 0 : dt, overlay);
+  document.getElementById('info').textContent = `${groups.size} Animationen · ${fx.count} Partikel`;
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
