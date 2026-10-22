@@ -20,8 +20,9 @@ function rampAt(R, t) { let u = R._u; if (!u) { u = R._u = Uint32Array.from(R.ma
 function hf(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
 function vnoise(x, y, period, s) {
   const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
-  const w = (v) => ((v % period) + period) % period;
-  const a = hf(w(xi), w(yi), s), b = hf(w(xi + 1), w(yi), s), c = hf(w(xi), w(yi + 1), s), d = hf(w(xi + 1), w(yi + 1), s);
+  const x0 = ((xi % period) + period) % period, y0 = ((yi % period) + period) % period;
+  const x1 = x0 + 1 === period ? 0 : x0 + 1, y1 = y0 + 1 === period ? 0 : y0 + 1;
+  const a = hf(x0, y0, s), b = hf(x1, y0, s), c = hf(x0, y1, s), d = hf(x1, y1, s);
   const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
