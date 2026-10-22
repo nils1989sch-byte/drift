@@ -329,17 +329,19 @@ function texWood() {
 
 export function buildDeco() {
   const S = {};
-  S.deco_grass_1 = [decoGrass(1, 20, 26, 15, GR)];
-  S.deco_grass_2 = [decoGrass(2, 16, 20, 11, GR)];
-  S.deco_grass_3 = [decoGrass(3, 24, 32, 19, GR)];
-  S.deco_grass_4 = [decoGrass(4, 18, 23, 13, GR)];
-  S.deco_grass_dark_1 = [decoGrass(5, 18, 22, 13, GR_DARK)];
-  S.deco_grass_dark_2 = [decoGrass(6, 16, 18, 11, GR_DARK)];
-  S.deco_bush_leafy = [leafyBush()];
-  S.deco_flower_white = [decoFlower(1, P.white, P.gold_md)];
-  S.deco_flower_yellow = [decoFlower(2, P.fx_yellow, P.fx_orange)];
-  S.deco_flower_pink = [decoFlower(3, P.heart_hi, P.red_md)];
-  S.deco_flower_purple = [decoFlower(4, P.purple_lt, P.purple_md)];
+  // entries replaced by decohd.js / hd.js are skipped (kept in code for the 2D fallback history)
+  const SKIP = true;
+  if (!SKIP) S.deco_grass_1 = [decoGrass(1, 20, 26, 15, GR)];
+  if (!SKIP) S.deco_grass_2 = [decoGrass(2, 16, 20, 11, GR)];
+  if (!SKIP) S.deco_grass_3 = [decoGrass(3, 24, 32, 19, GR)];
+  if (!SKIP) S.deco_grass_4 = [decoGrass(4, 18, 23, 13, GR)];
+  if (!SKIP) S.deco_grass_dark_1 = [decoGrass(5, 18, 22, 13, GR_DARK)];
+  if (!SKIP) S.deco_grass_dark_2 = [decoGrass(6, 16, 18, 11, GR_DARK)];
+  if (!SKIP) S.deco_bush_leafy = [leafyBush()];
+  if (!SKIP) S.deco_flower_white = [decoFlower(1, P.white, P.gold_md)];
+  if (!SKIP) S.deco_flower_yellow = [decoFlower(2, P.fx_yellow, P.fx_orange)];
+  if (!SKIP) S.deco_flower_pink = [decoFlower(3, P.heart_hi, P.red_md)];
+  if (!SKIP) S.deco_flower_purple = [decoFlower(4, P.purple_lt, P.purple_md)];
   S.deco_fern_1 = [decoFern(1, 16, 12)];
   S.deco_fern_2 = [decoFern(2, 14, 10)];
   S.deco_reed_1 = [decoReed(1, 12, 24)];
@@ -350,12 +352,12 @@ export function buildDeco() {
   S.tree_autumn = [bigTree([P.wood_dk, P.gold_dk, P.gold_md, P.fx_yellow, P.gold_lt], P.wood_ink, 4)];
   S.tree_pine = [pineTree(5)];
   S.bush = [lushBush()];
-  S.tex_wall_plaster = [texPlaster()];
-  S.tex_wall_stone = [texStone()];
-  S.tex_roof = [texRoof()];
-  S.tex_roof_edge = [texRoofEdge()];
-  S.tex_door = [texDoor()];
-  S.tex_window = [texWindow()];
+  if (!SKIP) S.tex_wall_plaster = [texPlaster()];
+  if (!SKIP) S.tex_wall_stone = [texStone()];
+  if (!SKIP) S.tex_roof = [texRoof()];
+  if (!SKIP) S.tex_roof_edge = [texRoofEdge()];
+  if (!SKIP) S.tex_door = [texDoor()];
+  if (!SKIP) S.tex_window = [texWindow()];
   S.tex_wood = [texWood()];
   return S;
 }

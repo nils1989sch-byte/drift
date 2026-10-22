@@ -430,6 +430,17 @@ S('stairs_side_exit', async ({ page, assert, ev }) => {
       __qa.run(30, () => ({ x: off > 0 ? -1 : 1, y: 0 }));   // towards the stairs centre
       out.push({ name, start, stuck, snap, canLeave: Math.hypot(p.x - x0, p.y - y0) > 3 });
     }
+    // natural approach: walk down from the plateau above the stairs, 3..7 px off-centre, then try to escape in 8 directions
+    for (const off of [-7, -5, -4, 3, 4, 5]) {
+      __qa.tp('overworld', 9, 12, true);
+      p.x = 9 * 16 + 8 + off;
+      let stuckAt = null;
+      __qa.run(80, () => ({ y: 1 }), () => { const s = __qa.playerStuck(); if (s && !stuckAt) stuckAt = { s, snap: __qa.snap() }; return null; });
+      const x0 = p.x, y0 = p.y;
+      const esc = [];
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]]) { p.x = x0; p.y = y0; __qa.run(20, () => ({ x: dx, y: dy })); esc.push(Math.hypot(p.x - x0, p.y - y0) > 2); }
+      out.push({ name: `walk down nord stairs, off ${off}px`, stuck: stuckAt?.s || null, snap: stuckAt?.snap, canLeave: esc.some(Boolean), escapes: esc.filter(Boolean).length });
+    }
     return out;
   });
   for (const c of r) { assert(!c.stuck, `${c.name}: walking straight down off misaligned (4px) stairs does not get stuck`, c); assert(c.canLeave, `${c.name}: can step back towards the stairs centre`, c.snap); }
@@ -893,6 +904,38 @@ S('boss_fight', async ({ page, assert, note, ev }) => {
   assert(r.portal, 'portal appears after the ending');
   assert(r.afterPortal.map === 'overworld' && !r.afterPortalStuck, 'portal → overworld, free spawn', r.afterPortal);
   assert(!r.reenter.boss, 'boss does not respawn', r.reenter);
+});
+
+// Crude balance probe: a naive bot (walks at the nearest enemy, swings every 16 frames) with 999 HP.
+S('balance_bot', async ({ page, note, assert, ev }) => {
+  await newGame(page);
+  const r = await ev(async () => {
+    const g = __drift.game, p = __qa.p(), out = {};
+    const bot = (maxF, done) => {
+      let f = 0, taken = 0, last = p.hp;
+      for (; f < maxF && !done(); f++) {
+        const live = g.enemies.filter((q) => !q.dead && q.state !== 'dying');
+        if (p.hp < last) taken += last - p.hp; last = p.hp;
+        if (p.hp < 50) p.hp = 999;
+        if (!live.length) { __qa.frame({}); continue; }
+        const e = live.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+        const dx = e.x - p.x, dy = e.y - p.y, d = Math.hypot(dx, dy);
+        if (d > (e.boss ? 20 : 15)) __qa.frame({ x: dx / d, y: dy / d });
+        else { p.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'left' : 'right') : (dy < 0 ? 'up' : 'down'); __qa.frame({ keys: f % 16 === 0 ? ['attack'] : [] }); }
+      }
+      return { seconds: +(f / 60).toFixed(1), halfHeartsLost: taken };
+    };
+    p.maxHp = 999; p.hp = 999;
+    __qa.tp('dungeon_3'); out.room3 = bot(60 * 90, () => g.enemies.every((e) => e.dead));
+    __qa.tp('dungeon_1'); out.room1 = bot(60 * 60, () => g.enemies.every((e) => e.dead));
+    __qa.tp('dungeon_4'); const boss = g.enemies.find((e) => e.boss);
+    out.boss = bot(60 * 180, () => boss.dead || boss.state === 'dying');
+    out.boss.killed = boss.dead || boss.state === 'dying';
+    __qa.tp('overworld', 36, 12); out.heightsSoldiers = bot(60 * 60, () => g.enemies.filter((e) => e.name === 'soldier').every((e) => e.dead));
+    return out;
+  });
+  note('naive bot: seconds / half-hearts lost (start HP is 6 half-hearts)', r);
+  assert(r.boss.killed, 'naive bot can kill the golem within 3 min', r.boss);
 });
 
 S('warps_roundtrip', async ({ page, assert, note, ev }) => {
