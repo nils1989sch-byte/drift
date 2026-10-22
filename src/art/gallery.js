@@ -3,6 +3,7 @@
 import { buildAssets, palette } from './index.js';
 import { parseMap } from '../engine/world.js';
 import { createRenderer } from '../engine/renderer.js';
+import { createRenderer3D, webglAvailable } from '../engine/renderer3d.js';
 
 const q = new URLSearchParams(location.search);
 const only = (q.get('only') || '').split(',').filter(Boolean);
@@ -118,7 +119,8 @@ function scene() {
   const world = parseMap({ id: 'gallery', rows, heights, face: 'rock', plinth: 'earth' });
   const S = 3, W = world.pxW * S + 120, H = (world.pxH + 60) * S;
   const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
-  const r = createRenderer(cv, A); r.tiltShift = false; r.vignette = false;
+  const use3d = q.get('r3d') === '1' && webglAvailable();
+  const r = use3d ? createRenderer3D(cv, A) : createRenderer(cv, A); r.tiltShift = false; r.vignette = false;
   const cam = { x: world.pxW / 2, y: world.pxH / 2 + 4, ox: 0, oy: 0, scale: S, viewW: W, viewH: H };
   const spr = (key, x, y, z = 0, shadow = 0, fps = 6) => ({ x, y, z, shadow, draw(ctx, R) { const a = A.sprites[key]; if (!a) return; R.sprite(a[Math.floor(R.time * fps) % a.length], x, y, z); } });
   const ents = [
@@ -129,7 +131,7 @@ function scene() {
     spr('heart_pickup', 186, 140, 0, 3), spr('fence_h', 16, 112, 0, 0), spr('fence_h', 32, 112, 0, 0), spr('lilypad', 24, 152, 0, 0),
     spr('npc_elder_idle_down', 130, 120, 0, 6, 2), spr('torch', 280, 90, 1, 0, 8), spr('stump', 96, 100, 0, 0),
   ];
-  const h = document.createElement('h2'); h.textContent = 'Diorama-Szene (echter Renderer, 3×)';
+  const h = document.createElement('h2'); h.textContent = `Diorama-Szene (echter ${use3d ? '3D-' : '2D-'}Renderer, 3×) – ?r3d=1 für Three.js`;
   const wrap = document.createElement('div'); wrap.id = 'scene'; wrap.appendChild(cv);
   root.appendChild(h); root.appendChild(wrap);
   let last = performance.now();

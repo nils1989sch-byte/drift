@@ -12,11 +12,11 @@ Isolierter Prüfstand: `src/ui/demo.html` (Fake-Game). Parameter: `?screen=title
 | `index.js` | `createUI()`, Overlay-Canvas, Skalierung, Safe-Area, Tipp-Weiterleitung, Zustände |
 | `font.js` | Pixel-Font 5×7 (proportional, Unterlängen, ÄÖÜäöüß, Satzzeichen, Pfeile ▶▼◀, ×, ♥, ≡), gecachtes Rendering |
 | `hud.js` | Item-Box, Zähler, Herzen, Low-Health-Puls, Gebietsname-Banner, Toasts |
-| `dialog.js` | Dialogbox mit Schreibmaschine, Seiten, Sprecher-Schild, Auswahl |
+| `dialog.js` | Pergament-Sprechblase mit Zeiger (anchor), Schreibmaschine, Seiten, Namensreiter, Auswahl |
 | `screens.js` | Titelbild (Logo „DRIFT“), Pause-Menü (Inventar, Optionen, Steuerung), Game Over |
 | `touch.js` | Virtueller Stick und Buttons (DOM-Trefferflächen, Grafik auf dem UI-Canvas) |
 | `icons.js` | Ersatz-Icons, falls in `assets.icons` ein Schlüssel fehlt |
-| `theme.js` | Palette (aus dem Style Guide; übernimmt `assets.palette`), Panel- und Kreis-Helfer |
+| `theme.js` | Palette, `panel()` (dunkel, edel), `plaque()` (HUD), `bubble()` (Pergament mit unregelmäßigem Rand), Kreise |
 
 ## API
 
@@ -45,7 +45,16 @@ ui.dialog('Ein Text.');                                         // → true
 ui.dialog(['Seite 1 …', 'Seite 2 …']);                          // jedes Element beginnt eine neue Seite
 ui.dialog({ text: 'Truhe öffnen?', speaker: 'Ältester', choices: ['Ja', 'Nein'] });  // → 0 | 1
 ui.dialog(lines, { speaker: 'Wache', choices: ['Ja', 'Nein'] });
+// Sprechblase mit Zeiger zur Figur (anchor, auch pro Zeile als {text, anchor}):
+ui.dialog('Hallo!', { speaker: 'Ältester', anchor: { x, y } });                   // Gerätepixel des Game-Canvas
+ui.dialog('Hallo!', { anchor: { x, y, space: 'css' } });                        // CSS-Pixel
+ui.dialog('Hallo!', { anchor: { x: npc.x, y: npc.y, z: npc.z, world: true } }); // über renderer.worldToScreen(x,y,z)
+ui.dialog('Hallo!', { anchor: () => ({ x, y, bottom }) });                       // Funktion, jedes Frame neu ausgewertet
 ```
+Mit `anchor` steht die Blase über der Figur und der Zeiger zeigt auf den Ankerpunkt (am besten den Kopf). Ist darüber
+zu wenig Platz, rutscht die Blase unter die Figur, nämlich unter `bottom` (Füße, sonst `y + 30` UI-px), damit sie die
+Figur nicht verdeckt. Ohne `anchor` sitzt die Blase unten in der Mitte. `worldToScreen` darf `{x, y}` oder `[x, y]` in
+Gerätepixeln zurückgeben, bei `{space: 'css'}` in CSS-Pixeln.
 `\n` erzwingt einen Zeilenumbruch. Die Box zeigt 3 Zeilen und bricht automatisch auf die nächste Seite um.
 Text läuft mit 36 Zeichen/s, bei gehaltener Taste dreimal so schnell. Bei jedem zweiten Zeichen spielt
 `sfx.play('text_blip')`. A/B bzw. ein Tippen zeigt die Seite sofort ganz und blättert dann weiter. Sind mehrere
@@ -80,12 +89,26 @@ so groß gezeichnet.
 `text_blip`, `text_next`, `menu_open`, `menu_close`, `menu_move`, `menu_select`, `menu_start`, `game_over`,
 `music('title')`. Unbekannte Namen sollten keinen Fehler auslösen.
 
+## Look (HD-2D / Octopath-Stil)
+- **Dialog:** Die Sprechblase ist leicht transparentes Pergament bzw. Stein in warmem Grau-Beige (`#d9cfbd`, 94 %) mit
+  Papierkorn und Licht von oben. Der Rand ist dunkel (`#3a2e2a`), 2–3 px breit und unregelmäßig gezackt (fester Seed,
+  dadurch flackert nichts). Oben links sitzt ein dunkler Namensreiter mit elfenbeinfarbener Schrift. Der Text ist dunkel
+  (`#2a2026`) auf hellem Grund, der Weiter-Pfeil rotbraun. Die Auswahl steht in einer eigenen kleinen Blase.
+- **HUD:** dunkle, halbtransparente Plaketten (`#141019`, 58 %) mit feiner goldener Haarlinie, Zahlen in Elfenbein,
+  dazu ein zurückhaltendes Label „LEBEN“.
+- **Menüs und Game Over:** dunkles, durchscheinendes Panel mit goldener Haarlinie und kleinen Eck-Nieten, über dem
+  Spiel eine weiche Vignette.
+- **Titel:** Das 3D-Diorama läuft sichtbar weiter (nur oben und unten eine leichte Vignette). Das Logo ist elfenbein
+  bis hellgold, hat einen Glanz-Sweep und einen **weichen, pulsierenden Glow**. Der Glow entsteht durch Herunter- und
+  wieder Hochskalieren mit Glättung und funktioniert daher auch ohne `ctx.filter`. Die Logo-Pixel selbst bleiben scharf.
+- **Gebietsname:** Ein Band, das zu den Rändern hin ausblendet, mit goldenen Haarlinien und Text in Elfenbein.
+
 ## Darstellung
 - Ein eigenes Canvas `.drift-ui` liegt über `#game`, hat volle Gerätepixel und `pointer-events: none`.
   Gezeichnet wird mit `setTransform(S)` für ein ganzzahliges S und nur an ganzzahligen UI-Koordinaten, ohne
   Glättung. Die Pixel bleiben dadurch immer scharf, Zoom und Tilt-Shift wirken nicht auf die UI.
-- Die Farben kommen aus dem Style Guide (`ink` #181020, `night` #283048, `ui_frame` #d8c8a0, Herztöne, Gold). Es
-  gibt kein reines Schwarz. Text ist `white` mit `ink`-Schatten unten rechts.
+- Die Farben kommen aus dem Style Guide (`ink` #181020 ist die dunkelste Farbe, kein reines Schwarz), ergänzt um die
+  HD-2D-Materialtöne in `theme.js`.
 - Safe-Area: Ein Mess-`div` liest `env(safe-area-inset-*)` aus. HUD, Dialog, Menüs und Touch-Elemente halten diesen
   Abstand ein.
 
