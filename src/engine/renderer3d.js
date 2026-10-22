@@ -29,7 +29,15 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
   const scene = new THREE.Scene();
   const BG = new THREE.Color('#141a2c');
-  const HAZE = new THREE.Color('#7f93a0');
+  const HAZE = new THREE.Color('#a8bcc8');
+  // sky gradient behind the haze (screen-space background)
+  const SKY = (() => {
+    const c = document.createElement('canvas'); c.width = 4; c.height = 128;
+    const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 0, 0, 128);
+    gr.addColorStop(0, '#8fb0c8'); gr.addColorStop(0.55, '#c8d4d0'); gr.addColorStop(1, '#d8e0d8');
+    g.fillStyle = gr; g.fillRect(0, 0, 4, 128);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  })();
   scene.background = BG;
   scene.fog = new THREE.Fog(BG, 600, 1800);
   const camera = new THREE.PerspectiveCamera(30, 16 / 9, 8, 4000);
@@ -44,7 +52,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   sun.shadow.normalBias = 1.2;
   sun.shadow.radius = 2.5;
   scene.add(sun, sun.target);
-  const SUN_DIR = new THREE.Vector3(-0.6, 1.0, 0.3).normalize(); // top-left, slightly from the front
+  const SUN_DIR = new THREE.Vector3(-0.6, 0.52, 0.3).normalize(); // top-left, slightly from the front, ~38° high: long shadows
   const torchLights = [];
   for (let i = 0; i < 4; i++) {
     const l = new THREE.PointLight('#ffa040', 0, 110, 1.6);
@@ -365,7 +373,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   }
   const windUniforms = { uTime: { value: 0 } };
   function decoMaterial(img) {
-    const m = new THREE.MeshLambertMaterial({ map: tex(img), alphaTest: 0.5, side: THREE.DoubleSide });
+    const t = tex(img);
+    const m = new THREE.MeshLambertMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide, emissive: '#ffffff', emissiveMap: t, emissiveIntensity: 0.22 });
     m.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = windUniforms.uTime;
       sh.vertexShader = 'uniform float uTime;\n' + sh.vertexShader.replace('#include <begin_vertex>', `
@@ -604,7 +613,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     float viewZ(vec2 uv){ float d = texture2D(tDepth, uv).x; return (uNear * uFar) / ((uFar - uNear) * d - uFar); }
     float coc(vec2 uv){
       float z = -viewZ(uv);
-      float c = clamp(abs(z - uFocus) / uRange - 0.15, 0.0, 1.0);
+      float c = clamp((abs(z - uFocus) - uRange * 0.3) / uRange, 0.0, 1.0);
       float t = clamp((abs(uv.y - 0.47) - 0.2) * 2.6, 0.0, 1.0) * uTilt;
       return clamp(max(c, t), 0.0, 1.0);
     }`;
@@ -651,17 +660,20 @@ export function createRenderer3D(canvas, assets, opts = {}) {
         c = aces(c);
         if (uGrade > 0.5) {
           float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-          c = clamp((c - 0.45) * 1.12 + 0.45, 0.0, 1.0);             // contrast
-          c = mix(vec3(l), c, 0.96);                                  // saturation
-          c += (1.0 - l) * vec3(-0.012, 0.004, 0.022) * 1.4;           // teal shadows
-          c *= mix(vec3(1.0), vec3(1.06, 1.0, 0.9), smoothstep(0.35, 0.9, l)); // warm highlights
+          c.g *= 0.96;                                                 // remove green cast
+          c = clamp((c - 0.45) * 1.08 + 0.45, 0.0, 1.0);             // contrast
+          float hl = smoothstep(0.4, 0.85, l), sh = 1.0 - smoothstep(0.08, 0.4, l);
+          c = mix(vec3(l), c, 0.92 + 0.18 * hl - 0.12 * sh);          // saturation: richer lights, calmer shadows
+          c += sh * vec3(0.0, 0.025, 0.035);                          // teal shadows
+          c *= mix(vec3(1.0), vec3(1.06, 1.0, 0.9), hl);              // warm highlights
+          c = 0.04 + c * 0.96;                                         // lifted black point
           c = clamp(c, 0.0, 1.0);
         }
         vec3 o = toSRGB(c);
         if (uVignette > 0.5) {
           vec2 q = (vUv - 0.5) * vec2(uAspect, 1.0);
-          float v = smoothstep(1.05, 0.45, length(q));
-          o *= mix(vec3(0.3, 0.26, 0.42), vec3(1.0), v);
+          float v = smoothstep(1.0, 0.45, length(q));
+          o *= mix(vec3(0.82, 0.84, 0.86), vec3(1.0), v);
         }
         // fine film grain keeps gradients from banding
         float n = fract(sin(dot(vUv * (uTime + 1.0), vec2(12.9898, 78.233))) * 43758.5453);
@@ -680,7 +692,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     rtComp.setSize(sw, sh);
     rtBlur.setSize(Math.max(1, sw >> 1), Math.max(1, sh >> 1));
     ov.width = w; ov.height = h;
-    if (!bloom) bloom = new UnrealBloomPass(new THREE.Vector2(sw, sh), 0.32, 0.55, 0.82);
+    if (!bloom) bloom = new UnrealBloomPass(new THREE.Vector2(sw, sh), 0.22, 0.5, 0.9);
     else bloom.setSize(sw, sh);
     camera.aspect = w / h; camera.updateProjectionMatrix();
   }
@@ -712,7 +724,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const t = tex(img);
       if (mat.map !== t) { mat.map = t; mat.emissiveMap = t; mat.needsUpdate = mat._hadMap !== true; mat._hadMap = true; if (m.customDepthMaterial) { m.customDepthMaterial.map = t; m.customDepthMaterial.needsUpdate = true; } }
       mat.opacity = a;
-      mat.emissiveIntensity = o.flash ? 1.6 : 0;
+      mat.emissiveIntensity = o.flash ? 1.6 : 0.2;
       // img.ws = world units per sprite pixel (high-density HD sprites use 0.5); anchors stay in sprite pixels
       const ws = img.ws ?? 1;
       const w = img.width * ws, h = img.height * ws;
@@ -839,11 +851,11 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   function placeCamera(cam, world) {
     const base = cam.base || 3;
     const zf = cam.scale / base;                         // 1 = default zoom
-    const elev = THREE.MathUtils.clamp(36 - (zf - 1) * 10 + (zf < 1 ? (1 - zf) * 40 : 0), 26, 70) * DEG;
+    const elev = THREE.MathUtils.clamp(32 - (zf - 1) * 8 + (zf < 1 ? (1 - zf) * 44 : 0), 24, 70) * DEG;
     stretch = THREE.MathUtils.clamp(Math.tan(elev) * 1.25, 1, 1.5);
     const fov = 30;
     camera.fov = fov;
-    const dist = 120 / Math.tan((fov / 2) * DEG) / zf * (H / Math.max(W, H) < 0.7 ? 1 : 1.15);
+    const dist = 120 / Math.tan((fov / 2) * DEG) / zf * 0.6 * (H / Math.max(W, H) < 0.7 ? 1 : 1.25);
     const f = cam.follow;
     const fy = f ? ((f.z || 0) * LEVEL) : 0;
     if (!camY.init) { camY.v = fy; camY.init = true; }
@@ -854,7 +866,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     camera.lookAt(look);
     camera.near = Math.max(4, dist * 0.2); camera.far = dist * 6 + 1500;
     camera.updateProjectionMatrix();
-    scene.fog.near = dist * 1.1; scene.fog.far = dist * 3.2;
+    scene.fog.near = dist * 1.2; scene.fog.far = dist * 4.2;
     // sun follows the view so the shadow map stays sharp where we look
     const span = Math.min(1100, dist * 1.4 + 120);
     sun.position.copy(look).addScaledVector(SUN_DIR, 900);
@@ -892,7 +904,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
     // lighting mood per map
     if (cur.dark) { hemi.intensity = 0.55; hemi.color.set('#8090c8'); sun.intensity = 0.9; sun.color.set('#c8c8ff'); scene.fog.color.copy(BG); scene.background = BG; }
-    else { hemi.intensity = 0.95; hemi.color.set('#9ec4e8'); hemi.groundColor.set('#3a3020'); sun.intensity = 3.4; sun.color.set('#ffe6b8'); scene.fog.color.copy(HAZE); scene.background = HAZE; }
+    else { hemi.intensity = 0.8; hemi.color.set('#a8c4e0'); hemi.groundColor.set('#4a4030'); sun.intensity = 3.2; sun.color.set('#ffd8a0'); scene.fog.color.copy(HAZE); scene.background = SKY; }
 
     // collect billboards
     used.solid = used.trans = used.floor = 0; blobUsed = 0; order = 0; torchSpots.length = 0;
@@ -926,7 +938,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     gl.render(scene, camera);
 
     const post = R.tiltShift || R.bloom || R.grade || R.vignette;
-    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.42, uTilt: R.tiltShift ? 0.9 : 0, uMaxCoc: (mobile ? 5 : 8) * (rtBlur.width / 640) };
+    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.5, uTilt: R.tiltShift ? 0.45 : 0, uMaxCoc: 3.5 * (rtScene.height / 540) };
     let src = rtScene;
     if (R.tiltShift && R.dof) {
       Object.entries(u).forEach(([k, v]) => { blurMat.uniforms[k].value = v; compMat.uniforms[k].value = v; });
@@ -939,7 +951,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       src = rtComp;
     }
     if (R.bloom && bloom) {
-      bloom.strength = cur.dark ? 0.55 : 0.3;
+      bloom.strength = cur.dark ? 0.45 : 0.22;
       bloom.render(gl, null, src, dt, false);
     }
     gradeMat.uniforms.tColor.value = src.texture;
@@ -947,7 +959,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     gradeMat.uniforms.uGrade.value = R.grade ? 1 : 0;
     gradeMat.uniforms.uTime.value = time % 10;
     gradeMat.uniforms.uAspect.value = W / H;
-    gradeMat.uniforms.uExposure.value = cur.dark ? 1.1 : 1.0;
+    gradeMat.uniforms.uExposure.value = cur.dark ? 1.15 : 1.23;
     pass(gradeMat, null);
     void post;
 
