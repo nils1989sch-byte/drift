@@ -427,12 +427,12 @@ S('stairs_side_exit', async ({ page, assert, ev }) => {
       const snap = __qa.snap();
       // can we still walk away?
       const x0 = p.x, y0 = p.y;
-      __qa.run(30, () => ({ x: off > 0 ? 1 : -1, y: 1 }));
+      __qa.run(30, () => ({ x: off > 0 ? -1 : 1, y: 0 }));   // towards the stairs centre
       out.push({ name, start, stuck, snap, canLeave: Math.hypot(p.x - x0, p.y - y0) > 3 });
     }
     return out;
   });
-  for (const c of r) assert(!c.stuck, `${c.name}: stepping off the stairs does not leave a foot corner inside the plateau`, c);
+  for (const c of r) { assert(!c.stuck, `${c.name}: walking straight down off misaligned (4px) stairs does not get stuck`, c); assert(c.canLeave, `${c.name}: can step back towards the stairs centre`, c.snap); }
 });
 
 S('ledge_jump', async ({ page, assert, ev }) => {

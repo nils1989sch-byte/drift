@@ -20,7 +20,7 @@ function blade(p, x0, base, h, lean, R, seed) {
   for (let k = 0; k < h; k++) {
     const t = k / Math.max(1, h - 1);
     const x = x0 + lean * t * t, y = base - k;
-    const w = t < 0.3 ? 3 : t < 0.75 ? 2 : 1;
+    const w = t < 0.25 ? 4 : t < 0.55 ? 3 : t < 0.85 ? 2 : 1;
     for (let i = 0; i < w; i++) {
       let tone = 0.15 + t * 0.72 + (r() - 0.5) * 0.06;
       if (i === 0 && w > 1) tone += 0.14;          // lit rim
@@ -33,10 +33,11 @@ function blade(p, x0, base, h, lean, R, seed) {
 function tuft(seed, W, H, n, R) {
   const r = rng(seed), p = new Pix(W, H), cx = W / 2;
   const bl = [];
+  n = Math.round(n * 1.6);
   for (let i = 0; i < n; i++) {
     const s = n === 1 ? 0 : i / (n - 1) - 0.5;
     const h = Math.round(H * (0.55 + 0.42 * (1 - Math.abs(s) * 1.4) * (0.75 + r() * 0.25)));
-    bl.push([cx + s * W * 0.38 + (r() - 0.5) * 3, Math.min(H - 2, h), s * W * 0.7 + (r() - 0.5) * 4]);
+    bl.push([cx + s * W * 0.32 + (r() - 0.5) * 3, Math.min(H - 2, h), s * W * 0.62 + (r() - 0.5) * 5]);
   }
   bl.sort((a, b) => a[1] - b[1]);
   bl.forEach(([x, h, lean], i) => blade(p, x, H - 1, h, lean, R, seed * 31 + i));

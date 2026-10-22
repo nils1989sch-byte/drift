@@ -373,7 +373,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   }
   const windUniforms = { uTime: { value: 0 } };
   function decoMaterial(img) {
-    const t = tex(img);
+    const t = img._tex || tex(img);
     const m = new THREE.MeshLambertMaterial({ map: t, alphaTest: 0.5, side: THREE.DoubleSide, emissive: '#ffffff', emissiveMap: t, emissiveIntensity: 0.22 });
     m.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = windUniforms.uTime;
@@ -408,20 +408,21 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const rnd = (i) => (hash(tx * 31 + i, ty * 17 - i) % 1000) / 1000;
       const nearWater = SIDES.some(([, dx, dy]) => TILE_DEFS[world.tileAt(tx + dx, ty + dy)]?.water);
       let n = 0, keys = [];
-      if (id === 'grass_tall') { n = 5; keys = ['deco_grass_1', 'deco_grass_2', 'deco_grass_3', 'deco_grass_4']; }
-      else if (id === 'grass') { n = (h0 % 100) < 22 * dense ? 1 + (h0 % 2) : 0; keys = ['deco_grass_1', 'deco_grass_2', 'deco_grass_3']; }
-      else if (id === 'grass_dark') { n = (h0 % 100) < 45 * dense ? 2 : 0; keys = ['deco_grass_dark_1', 'deco_grass_dark_2', 'deco_fern_1']; }
+      if (id === 'grass_tall') { n = 3; keys = ['deco_grass_1', 'deco_grass_2', 'deco_grass_3', 'deco_grass_4']; }
+      else if (id === 'grass') { n = (h0 % 100) < 7 * dense ? 1 : 0; keys = ['deco_grass_1', 'deco_grass_2', 'deco_grass_3']; }
+      else if (id === 'grass_dark') { n = (h0 % 100) < 14 * dense ? 1 : 0; keys = ['deco_grass_dark_1', 'deco_grass_dark_2', 'deco_fern_1']; }
       else if (id === 'grass_flowers') { n = 2; keys = ['deco_flower_white', 'deco_flower_yellow', 'deco_flower_pink', 'deco_flower_purple', 'deco_grass_1']; }
       if (nearWater && (id === 'grass' || id === 'sand' || id === 'grass_dark') && (h0 % 3) === 0) { n = Math.max(n, 2); keys = ['deco_reed_1', 'deco_reed_2', 'deco_grass_2']; }
       n = Math.round(n * (id === 'grass_tall' ? 1 : dense));
       for (let i = 0; i < n; i++) {
         let key = keys[hash(tx + i * 13, ty) % keys.length];
         if (!sp(key) && key.startsWith('deco_')) key = key.includes('dark') || key.includes('fern') ? 'deco_grass_dark_1' : 'deco_grass_1';
-        add(key, tx * TILE + 2 + rnd(i) * 12, ty * TILE + 2 + rnd(i + 5) * 12, z, 0.8 + rnd(i + 9) * 0.45);
+        add(key, tx * TILE + 2 + rnd(i) * 12, ty * TILE + 2 + rnd(i + 5) * 12, z, (key.startsWith('deco_flower') ? 0.6 : 0.42) + rnd(i + 9) * 0.22);
       }
     }
     cur.deco = [];
     const dummy = new THREE.Object3D();
+    buildBlades(world, blocked, dummy);
     for (const [key, { img, list }] of Object.entries(kinds)) {
       const w = img.width, h = img.height, ax = img.ax ?? w / 2, ay = img.ay ?? h - 1;
       const geo = new THREE.PlaneGeometry(1, 1);
@@ -443,6 +444,49 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       cur.deco.push(mesh);
     }
     cur.decoStretch = stretch;
+  }
+  // ----- grass blades: thousands of thin, individually swaying blades (one instanced draw call) -----
+  let bladeTex = null;
+  function buildBlades(world, blocked, dummy) {
+    if (!bladeTex) {
+      const c = document.createElement('canvas'); c.width = 3; c.height = 10;
+      const g = c.getContext('2d');
+      const col = ['#f0f4c8', '#d8e890', '#b8d468', '#98bc50', '#78a040', '#5c8434', '#46682a', '#36522a', '#2a4224', '#22361e'];
+      for (let y = 0; y < 10; y++) { g.fillStyle = col[y]; y < 3 ? g.fillRect(1, y, 1, 1) : g.fillRect(y < 6 ? 0 : 0, y, y < 6 ? 2 : 3, 1); }
+      bladeTex = tex(c);
+    }
+    const pts = [];
+    const per = mobile ? 7 : 16;
+    for (let ty = 0; ty < world.h; ty++) for (let tx = 0; tx < world.w; tx++) {
+      const id = world.tileAt(tx, ty);
+      const grp = (assets.edgeGroup || {})[id] || id;
+      if (grp !== 'grass' && grp !== 'grass_dark' && !id.startsWith('grass')) continue;
+      if (blocked.has(tx + ',' + ty)) continue;
+      const tall = id === 'grass_tall', dark = id === 'grass_dark';
+      const n = tall ? per * 2 : dark ? per : Math.round(per * 0.8);
+      const z = world.heightAt(tx, ty) * LEVEL;
+      for (let i = 0; i < n; i++) {
+        const r = (k) => (hash(tx * 97 + i * 7 + k, ty * 61 - i * 3) % 1000) / 1000;
+        const hgt = tall ? 6 + r(1) * 6 : 2.5 + r(1) * 3.5 + (r(5) < 0.08 ? 3 : 0);
+        pts.push([tx * TILE + r(2) * TILE, ty * TILE + r(3) * TILE, z, hgt, (r(4) - 0.5) * 1.6, dark ? 0.62 + r(6) * 0.2 : 0.8 + r(6) * 0.35]);
+      }
+    }
+    if (!pts.length) return;
+    const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, 0.5, 0); billboardNormals(geo);
+    const mat = decoMaterial({ width: 3, height: 10, _tex: bladeTex });
+    const mesh = new THREE.InstancedMesh(geo, mat, pts.length);
+    const color = new THREE.Color();
+    pts.forEach(([x, y, z, hgt, rot, tone], i) => {
+      dummy.position.set(x, z, y); dummy.rotation.set(0, rot, 0);
+      dummy.scale.set(1.1 + (i % 3) * 0.25, hgt * stretch, 1);
+      dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+      // slight hue/value variation per blade (olive ↔ yellow-green)
+      color.setRGB(tone * (0.95 + ((i * 7) % 10) / 60), tone, tone * (0.85 + ((i * 3) % 10) / 70));
+      mesh.setColorAt(i, color);
+    });
+    dummy.rotation.set(0, 0, 0);
+    mesh.receiveShadow = true; mesh.castShadow = false;
+    cur.group.add(mesh); cur.deco.push(mesh);
   }
   function billboardNormals(geo) {
     // upright sprites are lit like the ground (soft top light) instead of by their facing direction

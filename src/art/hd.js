@@ -76,10 +76,10 @@ function bladeLayer(p, field, R, seed, count, opts = {}) {
   for (let i = 0; i < count; i++) {
     const x = r.int(W), y = r.int(H);
     const t = field[y * W + x];
-    const base = Math.max(0, Math.min(1, t + (r() - 0.5) * 0.35 + (opts.bias || 0)));
+    const base = Math.max(0, Math.min(1, t + (r() - 0.5) * (opts.spread ?? 0.22) + (opts.bias || 0)));
     const h = r.range(hmin, hmax), lean = r() < 0.3 ? (r() < 0.5 ? -1 : 1) : 0;
     for (let k = 0; k < h; k++) {
-      const tt = Math.min(0.999, base + (k / h) * 0.28 - 0.1);
+      const tt = Math.min(0.999, base + (k / h) * 0.18 - 0.06);
       const xx = wrap(x + (k === h - 1 ? lean : 0), W), yy = wrap(y - k, H);
       p.put(xx, yy, toU(rampAt(R, tt)));
     }
@@ -98,10 +98,10 @@ function grassTex(seed, R = GRASS, opts = {}) {
   const W = RES, p = new Pix(W, W);
   const raw = variantField(common('grass' + (opts.key || ''), 7000, 4), fbmField(W, W, seed, 4, 4, 0.65), W, W);
   const f = new Float32Array(raw.length); for (let i = 0; i < raw.length; i++) f[i] = 0.5 + (raw[i] - 0.5) * 1.1;
-  fillField(p, f, R.slice(1, Math.ceil(R.length * 0.8)), 0.35, seed);
+  fillField(p, f, R.slice(opts.lo ?? 2, Math.ceil(R.length * (opts.hi ?? 0.8))), 0.25, seed);
   // dark gaps
   const r = rng(seed + 1);
-  for (let i = 0; i < 90; i++) { const x = r.int(W), y = r.int(W); if (f[y * W + x] < 0.45) p.put(x, y, toU(R[0])); }
+  for (let i = 0; i < 30; i++) { const x = r.int(W), y = r.int(W); if (f[y * W + x] < 0.4) p.put(x, y, toU(R[1])); }
   bladeLayer(p, f, R, seed + 2, opts.blades ?? 1500, { hmin: 2, hmax: opts.hmax ?? 4 });
   // a few clover leaves / tiny flowers
   for (let i = 0; i < (opts.clover ?? 3); i++) {
@@ -125,10 +125,10 @@ function pebble(p, x, y, w, h, light, mid, dark) {
 }
 function earthTex(seed, R, opts = {}) {
   const W = RES, p = new Pix(W, W), r = rng(seed);
-  const f = stretch(variantField(common('earth' + opts.key, 7100 + (opts.key?.length || 0)), fbmField(W, W, seed, 4, 4), W, W), 0.2, 0.8);
-  fillField(p, f, R, 0.45, seed);
+  const f = stretch(variantField(common('earth' + opts.key, 7100 + (opts.key?.length || 0)), fbmField(W, W, seed, 4, 4), W, W), opts.lo ?? 0.1, opts.hi ?? 0.9);
+  fillField(p, f, R, opts.jit ?? 0.3, seed);
   // grain: single pixels lighter/darker
-  for (let i = 0; i < 380; i++) { const x = r.int(W), y = r.int(W), t = f[y * W + x]; p.put(x, y, toU(rampAt(R, Math.min(0.999, Math.max(0, t + (r() < 0.5 ? -0.3 : 0.3)))))); }
+  for (let i = 0; i < 300; i++) { const x = r.int(W), y = r.int(W), t = f[y * W + x]; p.put(x, y, toU(rampAt(R, Math.min(0.999, Math.max(0, t + (r() < 0.5 ? -0.18 : 0.18)))))); }
   // cracks
   for (let c = 0; c < (opts.cracks ?? 2); c++) {
     let x = r.int(W), y = r.int(W);
@@ -147,9 +147,9 @@ function earthTex(seed, R, opts = {}) {
 function cobbleTex(seed) {
   const W = RES, p = new Pix(W, W), r = rng(9090);
   const pts = [];
-  for (let gy = 0; gy < 5; gy++) for (let gx = 0; gx < 5; gx++) pts.push([(gx + 0.5 + (r() - 0.5) * 0.7 + (gy % 2) * 0.3) * W / 5, (gy + 0.5 + (r() - 0.5) * 0.6) * W / 5]);
+  for (let gy = 0; gy < 6; gy++) for (let gx = 0; gx < 6; gx++) pts.push([(gx + 0.5 + (r() - 0.5) * 0.6 + (gy % 2) * 0.4) * W / 6, (gy + 0.5 + (r() - 0.5) * 0.5) * W / 6]);
   const rv = rng(seed);
-  const tone = pts.map(() => 0.22 + rv() * 0.5);
+  const tone = pts.map(() => 0.42 + rv() * 0.22);
   const moss = hx('#3d5a24'), mossL = hx('#56742e');
   const f = fbmField(W, W, seed + 3, 6, 3);
   const cell = (x, y) => {
@@ -164,13 +164,13 @@ function cobbleTex(seed) {
   for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
     const [id, edge, dist] = cell(x + 0.5, y + 0.5);
     const i = y * W + x;
-    if (edge < 1.6) { p.d[i] = toU(f[i] > 0.62 ? (f[i] > 0.72 ? mossL : moss) : shadeC(STONE[0], 0.55 + f[i] * 0.3)); continue; }
+    if (edge < 1.3) { p.d[i] = toU(f[i] > 0.66 ? (f[i] > 0.74 ? mossL : moss) : STONE[1]); continue; }
     // dome shading: lighter toward the up-left of the stone centre
     const [cx, cy] = pts[id];
     let dx = x + 0.5 - cx, dy = y + 0.5 - cy; if (dx > W / 2) dx -= W; if (dx < -W / 2) dx += W; if (dy > W / 2) dy -= W; if (dy < -W / 2) dy += W;
-    const lit = (-dx - dy) / (W / 5) * 0.35;
-    let t = tone[id] + lit + (f[i] - 0.5) * 0.35 + (rv() - 0.5) * 0.12;
-    if (edge < 2.6) t -= 0.18;
+    const lit = (-dx - dy) / (W / 6) * 0.17;
+    let t = tone[id] + lit + (f[i] - 0.5) * 0.17 + (rv() - 0.5) * 0.06;
+    if (edge < 2.3) t -= 0.09;
     p.d[i] = toU(rampAt(STONE, Math.max(0, Math.min(0.999, t))));
     void dist;
   }
@@ -273,6 +273,9 @@ export function buildTilesHD() {
   t.grass_flowers = frames([cv(fl), cv(fl2)], { fps: 2, phase: true });
   const tall = (k) => { const p = grassTex(7040, GRASS, { blades: 2400, hmax: 7, clover: 0 }); bladeLayer(p, fbmField(RES, RES, 7041, 3, 3), GRASS, 7042 + k, 500, { hmin: 5, hmax: 9, bias: 0.15 }); return cv(p); };
   t.grass_tall = frames([tall(0), tall(1)], { fps: 2, phase: true });
+  const GLIGHT = GRASS.map((c) => [c[0] * 1.08 + 10, c[1] * 1.05 + 6, c[2] * 0.95]);
+  t.grass_light = frames([1, 2, 3].map((s) => cv(grassTex(7060 + s, GLIGHT, { key: 'light', blades: 900, clover: 2, lo: 4, hi: 0.95, hmax: 3 }))), { mode: 'variant' });
+  t.clearing = frames([1, 2].map((s) => cv(earthTex(7130 + s, PATH.slice(2), { key: 'clear', pebbles: 4, cracks: 0, lo: 0.3, hi: 0.7, jit: 0.15 }))), { mode: 'variant' });
   t.dirt = frames([1, 2, 3].map((s) => cv(earthTex(7100 + s, DIRT, { key: 'dirt', pebbles: 9, cracks: 2 }))), { mode: 'variant' });
   t.path = frames([1, 2, 3].map((s) => cv(earthTex(7110 + s, PATH, { key: 'path', pebbles: 14, cracks: 1 }))), { mode: 'variant' });
   t.sand = frames([1, 2].map((s) => cv(earthTex(7120 + s, SAND, { key: 'sand', pebbles: 3, cracks: 0, pebbleCols: [hx('#f0e0c0'), hx('#c8b088'), hx('#8a7454')] }))), { mode: 'variant' });
@@ -351,6 +354,8 @@ export function buildEdgesHD(tilesPix) {
   const edges = Object.assign({},
     edgeHD('grass', tilesPix.grass, { seed: 100, base: 6, amp: 4, fringe: GRASS, targets: water }),
     edgeHD('grass_dark', tilesPix.grass_dark, { seed: 150, base: 7, amp: 5, fringe: MOSS, targets: water }),
+    edgeHD('grass_light', tilesPix.grass_light, { seed: 170, base: 6, amp: 4, fringe: GRASS.slice(3), targets: water }),
+    edgeHD('clearing', tilesPix.clearing, { seed: 180, base: 6, amp: 4 }),
     edgeHD('path', tilesPix.path, { seed: 200, base: 5, amp: 3, rim: null }),
     edgeHD('dirt', tilesPix.dirt, { seed: 300, base: 5, amp: 3, targets: water }),
     edgeHD('sand', tilesPix.sand, { seed: 400, base: 6, amp: 4, targets: water }),
@@ -587,21 +592,24 @@ function stone64() {
   return p.canvas(0, 63);
 }
 function roof64() {
+  // gold-ochre roof tiles as relief: each row = rounded tiles, top edge light, bottom edge dark, overlap shadow
   const W = 64, p = new Pix(W, W), f = fbmField(W, W, 9800, 4, 3), r = rng(9801);
-  const RF = ramp(['#4a2c10', '#6a4014', '#8a5818', '#a8701e', '#c08a26', '#d4a232', '#e4b844', '#f0cc60', '#f8de84']);
+  const RF = ramp(['#4a3010', '#6a4616', '#8a601c', '#a87a26', '#c09232', '#d4a842', '#e2bc56', '#eed070', '#f6e090']);
   for (let row = 0; row < 8; row++) {
-    const y0 = row * 8, off = row % 2 ? 5 : 0;
-    let x = -off;
-    while (x < W) {
-      const w = r.range(8, 11), tone = 0.45 + (r() - 0.5) * 0.3;
-      for (let yy = 0; yy < 8; yy++) for (let xx = 0; xx < w; xx++) {
-        const X = wrap(x + xx, W), Y = y0 + yy, i = Y * W + X;
-        let t = tone + (f[i] - 0.5) * 0.2 + (1 - yy / 8) * 0.25 + (r() - 0.5) * 0.08;
-        if (xx === 0) t = 0.08; else if (yy === 7) t = 0.02; else if (yy === 6) t -= 0.3; else if (yy === 0) t += 0.2;
-        if (xx === w - 1) t -= 0.15;
+    const y0 = row * 8, off = row % 2 ? 4 : 0;
+    for (let s = -1; s < 9; s++) {
+      const x0 = s * 8 + off, tone = 0.5 + (hf(s, row, 3) - 0.5) * 0.18;
+      for (let yy = 0; yy < 8; yy++) for (let xx = 0; xx < 8; xx++) {
+        const X = wrap(x0 + xx, W), Y = y0 + yy, i = Y * W + X;
+        const cxn = (xx - 3.5) / 4; // -1..1 across the tile (rounded profile)
+        let t = tone + (1 - yy / 7) * 0.22 - cxn * 0.12 - cxn * cxn * 0.15 + (f[i] - 0.5) * 0.1 + (r() - 0.5) * 0.04;
+        if (yy === 0) t = 0.95;                    // edge light
+        else if (yy === 7) t = 0.02;               // row underside
+        else if (yy === 6) t -= 0.25;
+        if (xx === 0) t = Math.min(t, 0.18);       // gap between tiles
+        if (yy >= 5 && (xx === 0 || xx === 7)) t = 0.05; // rounded lower corners
         p.d[i] = toU(rampAt(RF, Math.max(0, Math.min(0.999, t))));
       }
-      x += w;
     }
   }
   return p.canvas(0, 63);
@@ -664,6 +672,6 @@ export function tilePixHD(tiles) {
   // re-read variant 0 of each group back into Pix buffers for edge texturing
   const get = (c) => { const p = new Pix(c.width, c.height); const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; p.d.set(new Uint32Array(d.buffer)); return p; };
   const o = {};
-  for (const k of ['grass', 'grass_dark', 'path', 'dirt', 'sand', 'shallow', 'water', 'stone_floor']) o[k] = get(tiles[k][0]);
+  for (const k of ['grass', 'grass_dark', 'grass_light', 'clearing', 'path', 'dirt', 'sand', 'shallow', 'water', 'stone_floor']) if (tiles[k]) o[k] = get(tiles[k][0]);
   return o;
 }
