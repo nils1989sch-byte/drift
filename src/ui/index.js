@@ -163,7 +163,7 @@ export function createUI({ root, input, assets, sfx, camera } = {}) {
     return { x, y };
   }
 
-  let lastState, lastZoom = null, pauseCooldown = 0;
+  let lastState, lastZoom = null, pauseCooldown = 0, lastHudH = HUD_H;
 
   const ui = {
     canvas, U,
@@ -205,6 +205,7 @@ export function createUI({ root, input, assets, sfx, camera } = {}) {
         if (wasBlocking && modals.size === 0) pauseCooldown = 0.1;
         hud.update(dt);
         touch.update(dt);
+        if (U.hudHeight !== lastHudH) { lastHudH = U.hudHeight; touch.layout(); } // keep menu/zoom row below the hearts
         // zoom toast
         const z = camera?.target;
         if (z != null) {

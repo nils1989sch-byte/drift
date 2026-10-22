@@ -99,9 +99,12 @@ export function createHUD(U) {
 
     // hearts
     const hf = U.icon('heart_full'), hh = U.icon('heart_half'), he = U.icon('heart_empty');
-    const hw = (hf?.width || 8) <= 8 ? 8 : hf.width; // 8×8 grid
+    const base = (hf?.width || 8) <= 8 ? 8 : hf.width; // 8×8 grid
     const right = W - R - 6;
     const avail = right - (cx + 2);
+    // wide screens (landscape / desktop): hearts one step larger (2×) if a full row fits; portrait stays 1×
+    const hs = W > H && W >= 400 && avail >= Math.min(hearts, 10) * base * 2 + 4 ? 2 : 1;
+    const hw = base * hs;
     let perRow = clamp(Math.floor(avail / hw), 5, 10);
     const rows = Math.ceil(hearts / perRow);
     const rowW = Math.min(hearts, perRow) * hw;
@@ -109,7 +112,9 @@ export function createHUD(U) {
     let hy = top + 1;
     const lw = measure('LEBEN');
     const pw = Math.max(rowW, rows === 1 ? lw : 0) + 10;
-    plaque(ctx, right - pw + 5, top, pw, rows === 1 ? 21 : rows * (hw + 1) + 5, 0.4);
+    const ph = rows === 1 ? 13 + hw : rows * (hw + 1) + 5;
+    plaque(ctx, right - pw + 5, top, pw, ph, 0.4);
+    U.hudHeight = Math.max(28, top - T + ph + 2);
     if (rows === 1) {
       drawText(ctx, 'LEBEN', right + 5 - Math.floor(pw / 2), top - 1, { align: 'center', color: C.ivoryDim, shadow: C.ink });
       hy = top + 10;
@@ -129,11 +134,12 @@ export function createHUD(U) {
       if (st.low && i === lastIdx) dy = Math.sin(st.pulse * 9) > 0.2 ? -1 : 0;
       if (st.healT > 0 && i === lastIdx) dy = -1;
       ctx.globalAlpha = flash && fillv > 0 ? 0.45 : 1;
-      ctx.drawImage(ic, x + Math.floor((hw - ic.width) / 2), y + dy + Math.floor((hw - ic.height) / 2));
+      const iw = ic.width * hs, ih = ic.height * hs;
+      ctx.drawImage(ic, x + Math.floor((hw - iw) / 2), y + dy * hs + Math.floor((hw - ih) / 2), iw, ih);
       ctx.globalAlpha = 1;
       if (st.low && i === lastIdx && Math.sin(st.pulse * 9) > 0.6) {
         ctx.globalCompositeOperation = 'lighter';
-        ctx.globalAlpha = 0.35; ctx.drawImage(ic, x + Math.floor((hw - ic.width) / 2), y + dy + Math.floor((hw - ic.height) / 2)); ctx.globalAlpha = 1;
+        ctx.globalAlpha = 0.35; ctx.drawImage(ic, x + Math.floor((hw - ic.width * hs) / 2), y + dy * hs + Math.floor((hw - ic.height * hs) / 2), ic.width * hs, ic.height * hs); ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = 'source-over';
       }
     }

@@ -221,19 +221,19 @@ function grassTallSprite(f) {
 }
 function statue() {
   const p = new Pix(16, 32);
-  const ramp = [P.stone_dk, P.stone_md, P.stone_lt, P.stone_hi];
+  const ramp = [P.rock_dk, P.rock_md, P.rock_lt, P.rock_hi];
   // pedestal
-  p.rect(1, 22, 14, 9, P.stone_md); p.hline(1, 14, 22, P.stone_hi); p.hline(1, 14, 23, P.stone_lt); p.vline(14, 23, 30, P.stone_dk); p.hline(1, 14, 30, P.stone_dk);
-  p.hline(3, 12, 26, P.stone_dk);
+  p.rect(1, 22, 14, 9, P.rock_md); p.hline(1, 14, 22, P.rock_hi); p.hline(1, 14, 23, P.rock_lt); p.vline(14, 23, 30, P.rock_dk); p.hline(1, 14, 30, P.rock_dk);
+  p.hline(3, 12, 26, P.rock_dk);
   // owl body
   p.ball(8, 15, 6, 7, ramp);
   p.ball(8, 7, 5, 4.5, ramp);
-  p.set(4, 3, P.stone_md); p.set(3, 2, P.stone_lt); p.set(12, 3, P.stone_md); p.set(13, 2, P.stone_md); // ears
-  p.rect(5, 6, 2, 2, P.stone_hi); p.rect(9, 6, 2, 2, P.stone_hi); p.set(6, 7, P.stone_ink); p.set(10, 7, P.stone_ink);
+  p.set(4, 3, P.rock_md); p.set(3, 2, P.rock_lt); p.set(12, 3, P.rock_md); p.set(13, 2, P.rock_md); // ears
+  p.rect(5, 6, 2, 2, P.rock_hi); p.rect(9, 6, 2, 2, P.rock_hi); p.set(6, 7, P.rock_ink); p.set(10, 7, P.rock_ink);
   p.set(8, 9, P.gold_md);
-  for (const y of [14, 17]) { p.set(6, y, P.stone_dk); p.set(8, y + 1, P.stone_dk); p.set(10, y, P.stone_dk); }
-  p.line(3, 13, 4, 19, P.stone_dk); p.line(13, 13, 12, 19, P.stone_dk);
-  p.outline(P.stone_ink);
+  for (const y of [14, 17]) { p.set(6, y, P.rock_dk); p.set(8, y + 1, P.rock_dk); p.set(10, y, P.rock_dk); }
+  p.line(3, 13, 4, 19, P.rock_dk); p.line(13, 13, 12, 19, P.rock_dk);
+  p.outline(P.rock_ink);
   return p.canvas();
 }
 function torch(f) {

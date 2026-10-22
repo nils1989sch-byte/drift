@@ -207,9 +207,51 @@ function portal(f) {
   return p.canvas(16, 16);
 }
 
+function tools() {
+  // shovel + pitchfork leaning against a wall (lean to the right)
+  const p = new Pix(16, 28);
+  for (let k = 0; k < 20; k++) { const x = 3 + Math.round(k * 0.18), y = 2 + k; p.put(x, y, P.wood_lt); p.put(x + 1, y, P.wood_dk); }
+  p.rect(5, 22, 4, 5, P.metal_md); p.vline(5, 22, 26, P.metal_lt); p.hline(5, 8, 26, P.metal_dk); p.put(6, 21, P.metal_dk);
+  for (let k = 0; k < 18; k++) { const x = 10 + Math.round(k * 0.12), y = 1 + k; p.put(x, y, P.wood_md); p.put(x + 1, y, P.wood_dk); }
+  p.hline(9, 14, 19, P.metal_md);
+  for (const x of [9, 11, 13, 14]) p.vline(x, 20, 26, x === 9 ? P.metal_lt : P.metal_md);
+  p.outline(P.wood_ink);
+  return p.canvas(8, 27);
+}
+function hay() {
+  const p = new Pix(24, 16), r = rng(21);
+  p.rect(1, 3, 22, 12, P.gold_md);
+  p.ellipse(12, 3, 11, 2.5, P.gold_lt);
+  for (let i = 0; i < 40; i++) { const x = r.range(1, 22), y = r.range(3, 14); p.put(x, y, r() < 0.5 ? P.gold_dk : P.gold_lt); }
+  p.vline(1, 4, 14, P.gold_lt); p.vline(22, 4, 14, P.gold_dk); p.hline(1, 22, 14, P.gold_dk);
+  for (const x of [7, 16]) { p.vline(x, 2, 14, P.wood_dk); p.vline(x + 1, 3, 14, P.wood_md); }
+  p.outline(P.wood_ink);
+  return p.canvas(12, 15);
+}
+function bench() {
+  const p = new Pix(32, 14);
+  p.rect(1, 4, 30, 3, P.wood_md); p.hline(1, 30, 4, P.wood_hi); p.hline(1, 30, 6, P.wood_dk);
+  p.rect(1, 0, 30, 2, P.wood_md); p.hline(1, 30, 0, P.wood_lt);
+  for (const x of [3, 27]) { p.rect(x, 2, 2, 11, P.wood_dk); p.vline(x, 2, 12, P.wood_md); }
+  p.outline(P.wood_ink);
+  return p.canvas(16, 13);
+}
+function flowerbox() {
+  const p = new Pix(24, 14), r = rng(31);
+  p.rect(1, 7, 22, 6, P.wood_md); p.hline(1, 22, 7, P.wood_lt); p.hline(1, 22, 12, P.wood_dk); p.vline(22, 7, 12, P.wood_dk);
+  for (let i = 0; i < 16; i++) { const x = r.range(2, 21), y = r.range(3, 6); p.put(x, y, r() < 0.5 ? P.grass_md : P.grass_lt); p.put(x, y + 1, P.grass_dk); }
+  for (let i = 0; i < 7; i++) { const x = r.range(3, 20), y = r.range(1, 4), c = r.pick([P.heart_hi, P.white, P.fx_yellow, P.red_lt]); p.put(x, y, c); p.put(x + 1, y, c); p.put(x, y + 1, P.gold_md); }
+  p.outline(P.wood_ink);
+  return p.canvas(12, 13);
+}
+
 export function buildProps() {
   const S = {};
   S.barrel = [barrel()];
+  S.tools = [tools()];
+  S.hay = [hay()];
+  S.bench = [bench()];
+  S.flowerbox = [flowerbox()];
   S.crate = [crate()];
   S.sack = [sack()];
   S.cart = [cart()];
