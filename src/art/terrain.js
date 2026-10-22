@@ -25,33 +25,87 @@ const TUFTS = [
 ];
 function tuftAt(p, x, y, kind, dk, lt) { for (const [dx, dy, c] of TUFTS[kind]) p.set(x + dx, y + dy, c === 'd' ? dk : lt); }
 
-// Octopath-like saturated yellow-green: field = grass_lt, tufts grass_md, glints grass_hi
-export const G = { base: P.grass_lt, tuft: P.grass_md, glint: P.grass_hi, shade: P.grass_dk, ink: P.grass_ink };
-function grassVariant(seed, n, base = G.base, dk = P.grass_dk, lt = G.glint, mix = null) {
+// Octopath-like ground: muted green field with dense fine blade noise in 4–5 tones (not neon)
+export const G = { base: P.grass_md, tuft: P.grass_dk, glint: P.grass_lt, shade: P.grass_dk, ink: P.grass_ink };
+function noiseGrass(seed, tones) {
+  // tones: { base, dark, light, hi, deep, earth } – vertical 1×2 blade strokes give the grassy grain
+  const r = rng(seed);
+  return T((p) => {
+    p.fill(tones.base);
+    for (let i = 0; i < 46; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, tones.light); if (r() < 0.6) p.put(x, (y + 1) & 15, tones.light); }
+    for (let i = 0; i < 38; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, tones.dark); if (r() < 0.5) p.put(x, (y + 1) & 15, tones.dark); }
+    for (let i = 0; i < 8; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, tones.hi); }
+    for (let i = 0; i < 6; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, tones.deep); }
+    for (let i = 0; i < 3; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, tones.earth); }
+  });
+}
+const GRASS_TONES = { base: P.grass_md, dark: P.grass_dk, light: P.grass_lt, hi: P.grass_hi, deep: P.grass_ink, earth: P.dirt_md };
+const MOSS_TONES = { base: P.grass_dk, dark: P.grass_ink, light: P.grass_md, hi: P.grass_lt, deep: P.grass_ink, earth: P.dirt_dk };
+function grassVariant(seed, n) { return noiseGrass(seed, GRASS_TONES); }
+export function grassTiles() {
+  const g = [11, 12, 13, 14, 15, 16].map((s) => cv(noiseGrass(s, GRASS_TONES)));
+  const d = [21, 22, 23, 24].map((s) => cv(noiseGrass(s, MOSS_TONES)));
+  return { grass: frames(g, { mode: 'variant' }), grass_dark: frames(d, { mode: 'variant' }) };
+}
+// dirt / path: warm red-brown, dense grain + pebbles
+function grainTile(seed, base, dark, light, hi, pebbles) {
   const r = rng(seed);
   return T((p) => {
     p.fill(base);
-    // fine blade grain (texture detail for the lit 3D ground): short vertical strokes in 2 tones
-    for (let i = 0; i < 26; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, mix ? dk : P.grass_md); if (r() < 0.5) p.put(x, (y + 1) & 15, mix ? dk : P.grass_md); }
-    for (let i = 0; i < 7; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, lt); }
-    for (const [x, y] of scatter(r, n, 6, [1, 2, 12, 13])) {
-      const k = r.chance(0.22) ? 3 : r.chance(0.3) ? 1 : r.chance(0.3) ? 2 : 0;
-      tuftAt(p, x, y, k, mix && r.chance(0.3) ? mix : dk, lt);
+    for (let i = 0; i < 40; i++) p.put(r.int(16), r.int(16), dark);
+    for (let i = 0; i < 30; i++) p.put(r.int(16), r.int(16), light);
+    for (let i = 0; i < 6; i++) p.put(r.int(16), r.int(16), hi);
+    for (const [x, y] of scatter(r, pebbles, 5, [1, 1, 13, 13])) {
+      const w = r.range(1, 2);
+      p.hline(x, x + w - 1, y, P.rock_lt); if (w === 2) p.put(x, y, P.rock_hi);
+      p.hline(x, x + w, y + 1, P.rock_md); p.put(x + w, y + 1, dark); p.hline(x, x + w, y + 2, dark);
     }
   });
 }
-export function grassTiles() {
-  const g = [[11, 2], [12, 1], [13, 3], [14, 2], [15, 0], [16, 2], [17, 1], [18, 3]].map(([s, n]) => cv(grassVariant(s, n)));
-  const d = [[21, 3], [22, 2], [23, 4], [24, 3]].map(([s, n]) => {
-    const p = grassVariant(s, n, P.grass_md, P.grass_dk, P.grass_lt, P.grass_lt);
-    const r = rng(s * 7); for (let i = 0; i < 2; i++) p.set(r.range(1, 14), r.range(1, 14), P.grass_lt);
-    return cv(p);
-  });
-  return { grass: frames(g, { mode: 'variant' }), grass_dark: frames(d, { mode: 'variant' }) };
+export function dirtTiles() {
+  return {
+    dirt: frames([41, 42, 43].map((s) => cv(grainTile(s, P.dirt_md, P.dirt_dk, P.dirt_lt, P.wood_md, 2))), { mode: 'variant' }),
+    path: frames([51, 52, 53].map((s) => cv(grainTile(s, P.dirt_lt, P.dirt_md, P.dirt_hi, P.sand, 3))), { mode: 'variant' }),
+  };
+}
+// cobblestones: torus-Voronoi cells (seamless), lit top-left
+export function cobbleTiles() {
+  const mk = (seed, pts) => {
+    const r = rng(seed);
+    const cellAt = (x, y) => {
+      let best = 1e9, sec = 1e9, id = -1;
+      pts.forEach(([px, py], i) => {
+        const dx = Math.min(Math.abs(x - px), 16 - Math.abs(x - px)), dy = Math.min(Math.abs(y - py), 16 - Math.abs(y - py));
+        const d = dx * dx + dy * dy * 1.3;
+        if (d < best) { sec = best; best = d; id = i; } else if (d < sec) sec = d;
+      });
+      return [id, Math.sqrt(sec) - Math.sqrt(best)];
+    };
+    const tone = pts.map(() => (r() < 0.4 ? P.rock_md : P.rock_lt));
+    return T((p) => {
+      for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+        const [id, edge] = cellAt(x + 0.5, y + 0.5);
+        if (edge < 0.9) { p.put(x, y, hash2(x, y, seed) < 0.3 ? P.rock_ink : P.rock_dk); continue; }
+        const [, eu] = cellAt(x + 0.5, y - 0.5), [, el] = cellAt(x - 0.5, y + 0.5), [, ed] = cellAt(x + 0.5, y + 1.5), [, er] = cellAt(x + 1.5, y + 0.5);
+        const idU = cellAt(x + 0.5, y - 0.5)[0], idL = cellAt(x - 0.5, y + 0.5)[0], idD = cellAt(x + 0.5, y + 1.5)[0], idR = cellAt(x + 1.5, y + 0.5)[0];
+        let c = tone[id];
+        if ((idU !== id || eu < 0.9) || (idL !== id || el < 0.9)) c = tone[id] === P.rock_lt ? P.rock_hi : P.rock_lt;
+        else if ((idD !== id || ed < 0.9) || (idR !== id || er < 0.9)) c = tone[id] === P.rock_lt ? P.rock_md : P.rock_dk;
+        if (c === P.rock_md && (idD !== id || ed < 0.9)) c = P.rock_md;
+        p.put(x, y, c);
+      }
+      for (let i = 0; i < 4; i++) { const x = r.int(16), y = r.int(16); if (p.get(x, y) !== p.get(-1, 0)) p.put(x, y, P.rock_md); }
+      for (let i = 0; i < 2; i++) { const x = r.int(16), y = r.int(16); p.put(x, y, P.grass_dk); }
+    });
+  };
+  const pts = [];
+  const r = rng(909);
+  for (let gy = 0; gy < 4; gy++) for (let gx = 0; gx < 3; gx++) pts.push([gx * 5.33 + r() * 2.5 + (gy % 2) * 2.6, gy * 4 + r() * 1.5]);
+  return frames([cv(mk(1, pts)), cv(mk(2, pts))], { mode: 'variant' });
 }
 export function grassFlowers() {
-  const base = grassVariant(31, 1);
-  const fl = [[4, 4, P.white], [11, 7, P.fx_yellow], [6, 12, P.heart_hi]];
+  const base = noiseGrass(31, { ...GRASS_TONES, deep: P.grass_dk, earth: P.grass_dk });
+  const fl = [[4, 4, P.white], [11, 7, P.fx_yellow], [6, 12, P.white]];
   return frames([0, 1].map((f) => {
     const p = base.clone();
     for (const [x, y, c] of fl) {
@@ -165,19 +219,21 @@ const shore = (shadowCol, foamCol) => (u, side) => (side === 'n' || side === 'w'
 export function buildEdges() {
   const water = { water: shore(P.water_ink, P.foam), shallow: shore(P.water_md, P.foam) };
   const edges = Object.assign({},
-    edgeSet({ group: 'grass', seed: 100, base: 2, amp: 3, fill: G.base, rim: G.tuft, targets: water,
-      tex: (u, t, d) => (t === 0 && hash2(u, 3) < 0.12 ? G.glint : null) }),
-    edgeSet({ group: 'grass_dark', seed: 150, base: 2, amp: 2, fill: P.grass_md,
-      beyond: (u) => (u % 2 === 0 ? P.grass_md : null), targets: { ...water, grass: (u) => (u % 2 === 0 ? P.grass_md : null) } }),
+    edgeSet({ group: 'grass', seed: 100, base: 2, amp: 3, fill: G.base, rim: P.grass_dk, targets: water,
+      tex: (u, t, d, c) => { if (c !== G.base) return null; const h = hash2(u, t * 7 + 1); return h < 0.28 ? P.grass_lt : h < 0.48 ? P.grass_dk : null; } }),
+    edgeSet({ group: 'grass_dark', seed: 150, base: 2, amp: 2, fill: P.grass_dk,
+      tex: (u, t) => { const h = hash2(u, t * 5 + 2); return h < 0.25 ? P.grass_md : h < 0.4 ? P.grass_ink : null; },
+      beyond: (u) => (u % 2 === 0 ? P.grass_dk : null), targets: { ...water, grass: (u) => (u % 2 === 0 ? P.grass_dk : null) } }),
     edgeSet({ group: 'path', seed: 200, base: 2, amp: 2, fill: P.dirt_lt, rim: P.dirt_md,
-      tex: (u, t) => (t === 0 && hash2(u, 9) < 0.15 ? P.dirt_hi : null) }),
-    edgeSet({ group: 'dirt', seed: 300, base: 2, amp: 2, fill: P.dirt_md, rim: P.dirt_dk, targets: water }),
+      tex: (u, t, d, c) => { if (c !== P.dirt_lt) return null; const h = hash2(u, t * 3 + 9); return h < 0.18 ? P.dirt_md : h < 0.3 ? P.dirt_hi : null; } }),
+    edgeSet({ group: 'dirt', seed: 300, base: 2, amp: 2, fill: P.dirt_md, rim: P.dirt_dk, targets: water,
+      tex: (u, t, d, c) => { if (c !== P.dirt_md) return null; const h = hash2(u, t * 3 + 4); return h < 0.2 ? P.dirt_dk : h < 0.35 ? P.dirt_lt : null; } }),
     edgeSet({ group: 'sand', seed: 400, base: 2, amp: 3, fill: P.sand, rim: P.dirt_lt, targets: water,
       tex: (u, t) => (t === 0 && hash2(u, 5) < 0.15 ? P.dirt_hi : null) }),
     edgeSet({ group: 'shallow', seed: 500, base: 2, amp: 2, fill: P.water_lt, rim: P.water_md,
       tex: (u, t) => ((u + t) % 4 === 0 && t < 1 ? P.sand : null) }),
     edgeSet({ group: 'water', seed: 600, base: 1, amp: 1, fill: P.water_dk, rim: P.water_md }),
-    edgeSet({ group: 'stone_floor', seed: 700, base: 2, amp: 0, fill: P.stone_lt, rim: P.stone_dk }),
+    edgeSet({ group: 'stone_floor', seed: 700, base: 2, amp: 1, fill: P.rock_lt, rim: P.rock_dk, tex: (u, t) => (u % 5 === 0 ? P.rock_dk : t === 0 ? P.rock_hi : null) }),
   );
   const edgeGroup = { grass_flowers: 'grass', grass_tall: 'grass', water_edge_n: 'water' };
   const edgePriority = {
@@ -211,33 +267,35 @@ function cliffPiece(seed, kind) {
   const p = new Pix(FW, FH);
   const J = new Uint8Array(FW * FH);
   const setJ = (x, y) => { if (x >= 0 && x < FW && y >= 0 && y < FH) J[y * FW + x] = 1; };
-  const isJ = (x, y) => (y < 0 || y >= FH ? false : x < 0 ? false : x >= FW ? true : J[y * FW + x] === 1);
+  const isJ = (x, y) => (y < 0 || y >= FH ? false : J[y * FW + ((x % FW) + FW) % FW] === 1);
   let y0 = 0, lipD = null;
   if (kind === 'top') { lipD = lip(p, seed, { fill: G.base, under: P.grass_md, blade: G.glint }); y0 = 3; }
-  // seam at x = 0 (shared port across all variants at the piece boundaries)
-  const off = r() < 0.55 ? [r.range(3, 4), r.range(7, 8)] : null;
-  for (let y = y0; y < FH; y++) if (!off || y < off[0] || y > off[1]) setJ(0, y);
-  // interior seams from ports 6 and 11, bulging up to 2 px between rows a..b
-  const s1 = r() < 0.5 ? -1 : 1, s2 = s1 === 1 ? 1 : r() < 0.5 ? -1 : 1;
+  // 2–3 vertical/slanted seams at random positions per piece (no shared grid → no 16-px stripe rhythm)
+  const nSeams = r.chance(0.5) ? 3 : 2;
+  const xsList = [];
+  for (let t = 0; t < 40 && xsList.length < nSeams; t++) { const x = r.range(1, 14); if (xsList.every((o) => Math.min(Math.abs(o - x), 16 - Math.abs(o - x)) >= 4)) xsList.push(x); }
+  xsList.sort((a, b) => a - b);
   const seamX = [];
-  [[6, s1], [11, s2]].forEach(([px, s], j) => {
-    const a = r.range(y0 + 1, y0 + 3), b = r.range(Math.max(a + 2, 6), 9);
+  xsList.forEach((px, j) => {
+    const s = r.pick([-1, 1]), a = r.range(y0, y0 + 4), b = r.range(Math.max(a + 2, 5), FH - 1);
+    const gapA = r.chance(0.35) ? r.range(y0 + 2, FH - 4) : -9, gapB = gapA + r.range(2, 3);
     const xs = [];
     let prev = px;
     for (let y = 0; y < FH; y++) {
       const o = y >= a && y <= b ? s * Math.min(2, y - a + 1, b - y + 1) : 0;
-      const x = Math.max(2, Math.min(14, px + o));
+      const x = Math.max(1, Math.min(14, px + o));
       xs.push(x);
-      if (y >= y0) { setJ(x, y); if (x !== prev && y > y0) setJ(prev, y); }
+      if (y >= y0 && (y < gapA || y > gapB)) { setJ(x, y); if (x !== prev && y > y0) setJ(prev, y); }
       prev = x;
     }
     seamX[j] = xs;
   });
   // horizontal/slanted splits inside each column, staggered between columns
-  const colEdges = (y) => [[0, seamX[0][y]], [seamX[0][y], seamX[1][y]], [seamX[1][y], FW]];
-  const nSplit = kind === 'bot' ? [1, 2, 1] : kind === 'top' ? [r.range(0, 1), r.range(0, 1), r.range(0, 1)] : [r.range(0, 1), r.range(1, 1), r.range(0, 1)];
+  const colEdges = (y) => { const e = [-1, ...seamX.map((xs) => xs[y]), FW]; return e.slice(0, -1).map((v, i) => [v, e[i + 1]]); };
+  const nCol = seamX.length + 1;
+  const nSplit = Array.from({ length: nCol }, () => (kind === 'bot' ? r.range(1, 2) : kind === 'top' ? r.range(0, 1) : r.chance(0.6) ? 1 : 0));
   const used = [];
-  for (let c = 0; c < 3; c++) for (let k = 0; k < nSplit[c]; k++) {
+  for (let c = 0; c < nCol; c++) for (let k = 0; k < nSplit[c]; k++) {
     let ys, tries = 0;
     do { ys = r.range(kind === 'top' ? 6 : 2, kind === 'bot' ? 7 : 9); tries++; } while (tries < 20 && used.some(([uc, uy]) => Math.abs(uc - c) <= 1 && Math.abs(uy - ys) < 3));
     used.push([c, ys]);
@@ -256,7 +314,7 @@ function cliffPiece(seed, kind) {
     else if (isJ(x - 1, y)) c = kind === 'bot' ? 'md' : 'lt';
     else if (isJ(x + 1, y)) c = kind === 'bot' ? 'ink' : 'dk';
     else if (isJ(x, y + 1)) c = 'dk';
-    else if (kind === 'top' && isJ(x - 2, y)) c = 'lt';
+    else if (kind !== 'bot' && isJ(x - 2, y)) c = 'lt';
     else if (kind !== 'bot' && isJ(x + 2, y) && (x + y) % 3 === 0) c = 'dk';
     p.put(x, y, CL[c]);
   }
@@ -318,6 +376,67 @@ function faceSet(name, mk, cols, nMids = 4) {
   const out = { [name]: pack(top, mids, bot) };
   for (const side of ['l', 'r']) out[`${name}_${side}`] = pack(endPiece(top, side, 'top', cols), mids.map((m) => endPiece(m, side, 'mid', cols)), endPiece(bot, side, 'bot', cols));
   return out;
+}
+
+const GRASS32 = [P.grass_md, P.grass_dk, P.grass_lt].map((c) => c32(c));
+// earth wall (Octopath-like): vertical striations/cracks, faint horizontal strata, roots, moss ledges, grass overhang
+function earthWall(seed, kind, R) {
+  // R: { ink, dk, md, lt, hi }
+  const r = rng(seed), p = new Pix(FW, FH);
+  let y0 = 0;
+  if (kind === 'top') { lip(p, seed, { fill: P.grass_md, under: P.grass_dk, blade: P.grass_lt }); y0 = 3; }
+  // cracks every 2–4 columns, partial lengths
+  const crack = new Uint8Array(FW * FH);
+  let x = r.range(0, 2);
+  while (x < FW) {
+    const full = r.chance(0.45);
+    const a = full ? 0 : r.range(0, 6), b = full ? FH - 1 : Math.min(FH - 1, a + r.range(3, 8));
+    let cx = x;
+    for (let y = a; y <= b; y++) { crack[y * FW + cx] = 1; if (r() < 0.12) cx = Math.max(0, Math.min(FW - 1, cx + (r() < 0.5 ? -1 : 1))); }
+    x += r.range(2, 4);
+  }
+  const isC = (x, y) => crack[y * FW + ((x + FW) % FW)] === 1 && y >= 0 && y < FH;
+  const bandY = r.range(4, 8);
+  const dark = kind === 'bot' ? 1 : 0;
+  const ramp = [R.ink, R.dk, R.md, R.lt];
+  for (let y = y0; y < FH; y++) for (let xx = 0; xx < FW; xx++) {
+    let lvl = 2; // md
+    if (isC(xx, y)) lvl = hash2(xx, 0, seed) < 0.35 ? 0 : 1;
+    else if (isC(xx - 1, y)) lvl = hash2(xx, y >> 2, seed + 1) < 0.6 ? 3 : 2;   // lit ridge edge (light from the left)
+    else if (isC(xx + 1, y)) lvl = hash2(xx, y >> 1, seed + 2) < 0.5 ? 1 : 2;   // shadow side
+    else if (hash2(xx, y, seed) < 0.06) lvl = 3;
+    else if (hash2(xx, y, seed + 5) < 0.06) lvl = 1;
+    if (y === bandY || y === bandY + 1) lvl = Math.max(lvl === 0 ? 0 : 1, lvl - 1);   // strata band
+    lvl = Math.max(0, lvl - dark - (kind === 'bot' && y > 6 ? 1 : 0));
+    p.put(xx, y, ramp[lvl]);
+  }
+  // roots
+  if (kind !== 'bot') for (let i = 0; i < (kind === 'top' ? 2 : 1); i++) {
+    let rx = r.range(1, 14);
+    for (let y = y0; y < Math.min(FH, y0 + r.range(3, 7)); y++) { p.put(rx, y, P.wood_dk); if (r() < 0.35) rx = Math.max(0, Math.min(15, rx + (r() < 0.5 ? -1 : 1))); }
+  }
+  // moss ledges
+  const ledges = kind === 'bot' ? 0 : kind === 'top' ? (r.chance(0.5) ? 1 : 0) : (r.chance(0.6) ? 1 : 0);
+  for (let i = 0; i < ledges; i++) {
+    const lx = r.range(0, 11), ly = r.range(y0 + 2, FH - 3), w = r.range(3, 6);
+    for (let k = 0; k < w; k++) {
+      p.put((lx + k) % FW, ly, P.grass_md);
+      if (k > 0 && k < w - 1 && hash2(lx + k, ly) < 0.6) p.put((lx + k) % FW, ly - 1, P.grass_lt);
+      if (hash2(lx + k, ly, 3) < 0.4) p.put((lx + k) % FW, ly + 1, P.grass_dk);
+    }
+  }
+  if (kind === 'top') {
+    // shadow under the overhang
+    const lipD = [];
+    for (let xx = 0; xx < FW; xx++) { let d = 0; while (d < 3 && GRASS32.includes(p.get(xx, d))) d++; lipD.push(d); }
+    for (let xx = 0; xx < FW; xx++) { p.put(xx, lipD[xx], R.ink); p.put(xx, lipD[xx] + 1, R.dk); }
+  }
+  if (kind === 'bot') {
+    const stones = [[r.range(1, 3), 7, 3], [r.range(7, 9), 8, 3]];
+    for (const [sx, sy, w] of stones) { p.hline(sx, sx + w - 1, sy, R.lt); p.hline(sx, sx + w - 1, sy + 1, R.md); p.put(sx + w - 1, sy + 1, R.dk); }
+    p.rect(0, FH - 2, FW, 2, R.ink);
+  }
+  return p;
 }
 
 // dirt cliff: horizontal strata, stones, hanging roots
@@ -429,7 +548,8 @@ export function buildFaces() {
   const dirtCols = { ink: P.dirt_dk, lt: P.dirt_lt, dk: P.dirt_dk, md: P.dirt_md, grass: G.base, under: P.grass_md };
   const brickCols = { ink: P.stone_ink, lt: P.stone_lt, dk: P.stone_dk, md: P.stone_md, grass: P.stone_lt, under: P.stone_hi };
   const faces = Object.assign({},
-    faceSet('rock', (k, s) => cliffPiece(1000 + s * 31, k), rockCols),
+    faceSet('rock', (k, s) => earthWall(1000 + s * 31, k, CL), rockCols),
+    faceSet('boulder', (k, s) => cliffPiece(1500 + s * 31, k), rockCols),
     faceSet('dirt', (k, s) => dirtPiece(2000 + s * 17, k), dirtCols, 3),
     faceSet('brick', (k, s) => brickPiece(3000 + s * 7, k), brickCols, 3),
   );

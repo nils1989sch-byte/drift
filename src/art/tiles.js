@@ -1,7 +1,7 @@
 // Ground tiles, transition edges, cliff faces and diorama plinths. All 16×16, opaque (tiles) / 0-or-1 alpha (edges).
 import { Pix, rng, frames } from './core.js';
 import { palette as P } from './palette.js';
-import { grassTiles, grassFlowers, grassTallFrames, shallowFrames as shallowV2, stairsTile as stairsV2 } from './terrain.js';
+import { dirtTiles, cobbleTiles, grassTiles, grassFlowers, grassTallFrames, shallowFrames as shallowV2, stairsTile as stairsV2 } from './terrain.js';
 export { buildEdges, buildFaces } from './terrain.js';
 
 const T = (fn) => { const p = new Pix(16, 16); fn(p); return p; };
@@ -191,16 +191,7 @@ export function buildTiles() {
   Object.assign(tiles, grassTiles());
   tiles.grass_flowers = grassFlowers();
   tiles.grass_tall = grassTallFrames();
-  tiles.dirt = frames([
-    speckTile(41, P.dirt_md, [P.dirt_dk, P.dirt_dk, P.dirt_lt], 34, 3, P.dirt_lt, P.dirt_dk),
-    speckTile(42, P.dirt_md, [P.dirt_dk, P.dirt_lt], 30, 2, P.dirt_lt, P.dirt_dk),
-    speckTile(43, P.dirt_md, [P.dirt_dk, P.dirt_dk, P.dirt_lt], 32, 3, P.dirt_lt, P.dirt_dk),
-  ].map(cv), { mode: 'variant' });
-  tiles.path = frames([
-    speckTile(51, P.dirt_lt, [P.dirt_md, P.dirt_hi, P.sand], 22, 4, P.rock_lt, P.dirt_md),
-    speckTile(52, P.dirt_lt, [P.dirt_md, P.sand], 18, 3, P.rock_hi, P.dirt_md),
-    speckTile(53, P.dirt_lt, [P.dirt_hi, P.dirt_md, P.sand], 24, 4, P.rock_lt, P.dirt_md),
-  ].map(cv), { mode: 'variant' });
+  Object.assign(tiles, dirtTiles());
   tiles.sand = frames([
     speckTile(61, P.sand, [P.dirt_lt, P.dirt_lt, P.dirt_hi], 14, 0),
     speckTile(62, P.sand, [P.dirt_lt, P.dirt_hi], 11, 1, P.dirt_hi, P.dirt_lt),
@@ -211,10 +202,7 @@ export function buildTiles() {
   tiles.shallow = shallowV2();
   tiles.stairs = [stairsV2()];
   tiles.bridge = [cv(bridgeTile())];
-  tiles.stone_floor = frames([
-    slabTile(71, P.stone_lt, P.stone_hi, P.stone_md, P.stone_dk, 1, false),
-    slabTile(72, P.stone_lt, P.stone_hi, P.stone_md, P.stone_dk, 1, true),
-  ].map(cv), { mode: 'variant' });
+  tiles.stone_floor = cobbleTiles();
   tiles.dungeon_floor = frames([
     slabTile(81, P.stone_dk, P.stone_md, P.stone_ink, P.stone_ink, 0, false),
     slabTile(82, P.stone_dk, P.stone_md, P.stone_ink, P.stone_ink, 1, true),

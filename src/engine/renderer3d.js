@@ -28,6 +28,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
   const scene = new THREE.Scene();
   const BG = new THREE.Color('#141a2c');
+  const HAZE = new THREE.Color('#7f93a0');
   scene.background = BG;
   scene.fog = new THREE.Fog(BG, 600, 1800);
   const camera = new THREE.PerspectiveCamera(30, 16 / 9, 8, 4000);
@@ -273,11 +274,60 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     table.receiveShadow = true;
     group.add(table);
 
-    scene.add(group);
     const dark = world.dark ?? (world.face === 'brick' || world.plinth === 'stone');
+    // open world look: the land continues beyond the map edge (grass + forest ring, fading into haze)
+    const surround = !dark && world.surround !== false;
+    if (surround) buildSurround(world, group);
+    table.visible = !surround;
+
+    scene.add(group);
     cur = { world, group, groundCanvas: gc, groundCtx: g, groundTex, animCells, deco: null, frameKey: -1, dark, version: world.version };
     buildDeco(world, drawables);
     world.dirty.length = 0;
+  }
+
+  function buildSurround(world, group) {
+    const W = world.pxW, H = world.pxH, M = 1400;
+    const gimg = assets.tiles.grass_dark?.[0] || assets.tiles.grass?.[0];
+    const gt = gimg ? tex(gimg, true).clone() : null;
+    if (gt) { gt.wrapS = gt.wrapT = THREE.RepeatWrapping; gt.repeat.set((W + 2 * M) / 16, (H + 2 * M) / 16); gt.needsUpdate = true; }
+    // four strips around the map (a single plane would cover recessed water inside the map)
+    const gmat = new THREE.MeshLambertMaterial(gt ? { map: gt, color: '#c8c8b0' } : { color: '#3a5a2a' });
+    for (const [x0, z0, x1, z1] of [[-M, -M, W + M, 0], [-M, H, W + M, H + M], [-M, 0, 0, H], [W, 0, W + M, H]]) {
+      const geo = new THREE.PlaneGeometry(x1 - x0, z1 - z0);
+      const uv = geo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) uv.setXY(i, (x0 + M + uv.getX(i) * (x1 - x0)) / (W + 2 * M), (M + (H + M - z1) + uv.getY(i) * (z1 - z0)) / (H + 2 * M));
+      const ground = new THREE.Mesh(geo, gmat);
+      ground.rotation.x = -Math.PI / 2; ground.position.set((x0 + x1) / 2, -0.6, (z0 + z1) / 2);
+      ground.receiveShadow = true;
+      group.add(ground);
+    }
+    // forest ring: instanced tree billboards around the map
+    const keys = ['tree_pine', 'tree', 'tree_autumn', 'tree_small'].filter((k) => sp(k));
+    if (!keys.length) return;
+    const dummy = new THREE.Object3D();
+    keys.forEach((key, ki) => {
+      const img = sp(key);
+      const pts = [];
+      for (let i = 0; i < 900; i++) {
+        const hsh = hash(i * 7 + ki * 1013, 91);
+        if (hsh % keys.length !== ki && keys.length > 1) continue;
+        const r1 = (hash(i, 17 + ki) % 10000) / 10000, r2 = (hash(i, 29 + ki) % 10000) / 10000;
+        const x = -260 + r1 * (W + 520), z = -300 + r2 * (H + 560);
+        const inside = (x > -12 && x < W + 12 && z > -6) || z > H - 40; // keep the camera side (south) open
+        if (inside) continue;
+        pts.push([x, z, 0.85 + ((hsh >> 8) % 100) / 180]);
+      }
+      const w = img.width, h = img.height, ax = img.ax ?? w / 2, ay = img.ay ?? h - 1;
+      const geo = new THREE.PlaneGeometry(1, 1);
+      geo.translate(0.5 - ax / w, 0.5 + (ay + 1 - h) / h + (h - 1 - ay) / h, 0);
+      billboardNormals(geo);
+      const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ map: tex(img), alphaTest: 0.5, side: THREE.DoubleSide }), pts.length);
+      pts.forEach(([x, z, sc], i) => { dummy.position.set(x, -0.6, z); dummy.scale.set(w * sc * (i & 1 ? -1 : 1), h * sc, 1); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix); });
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex(img), alphaTest: 0.5 });
+      group.add(mesh);
+    });
   }
 
   // ----- foliage: instanced, wind-swept billboards scattered on grass -----
@@ -551,7 +601,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
         c = aces(c);
         if (uGrade > 0.5) {
           float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
-          c = mix(vec3(l), c, 1.12);                                  // saturation
+          c = clamp((c - 0.45) * 1.12 + 0.45, 0.0, 1.0);             // contrast
+          c = mix(vec3(l), c, 0.96);                                  // saturation
           c += (1.0 - l) * vec3(-0.012, 0.004, 0.022) * 1.4;           // teal shadows
           c *= mix(vec3(1.0), vec3(1.06, 1.0, 0.9), smoothstep(0.35, 0.9, l)); // warm highlights
           c = clamp(c, 0.0, 1.0);
@@ -655,8 +706,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   function placeCamera(cam, world) {
     const base = cam.base || 3;
     const zf = cam.scale / base;                         // 1 = default zoom
-    const elev = THREE.MathUtils.clamp(52 - (zf - 1) * 12 + (zf < 1 ? (1 - zf) * 22 : 0), 36, 72) * DEG;
-    stretch = THREE.MathUtils.clamp(Math.tan(elev), 1, 1.5);
+    const elev = THREE.MathUtils.clamp(36 - (zf - 1) * 10 + (zf < 1 ? (1 - zf) * 40 : 0), 26, 70) * DEG;
+    stretch = THREE.MathUtils.clamp(Math.tan(elev) * 1.25, 1, 1.5);
     const fov = 30;
     camera.fov = fov;
     const dist = 120 / Math.tan((fov / 2) * DEG) / zf * (H / Math.max(W, H) < 0.7 ? 1 : 1.15);
@@ -670,7 +721,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     camera.lookAt(look);
     camera.near = Math.max(4, dist * 0.2); camera.far = dist * 6 + 1500;
     camera.updateProjectionMatrix();
-    scene.fog.near = dist * 1.25; scene.fog.far = dist * 4.5;
+    scene.fog.near = dist * 1.1; scene.fog.far = dist * 3.2;
     // sun follows the view so the shadow map stays sharp where we look
     const span = Math.min(1100, dist * 1.4 + 120);
     sun.position.copy(look).addScaledVector(SUN_DIR, 900);
@@ -706,8 +757,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (Math.abs(stretch - (cur.decoStretch || 1)) > 0.04) buildDeco(world, drawables);
 
     // lighting mood per map
-    if (cur.dark) { hemi.intensity = 0.55; hemi.color.set('#8090c8'); sun.intensity = 0.9; sun.color.set('#c8c8ff'); }
-    else { hemi.intensity = 0.9; hemi.color.set('#9ec4e8'); sun.intensity = 2.1; sun.color.set('#fff0d8'); }
+    if (cur.dark) { hemi.intensity = 0.55; hemi.color.set('#8090c8'); sun.intensity = 0.9; sun.color.set('#c8c8ff'); scene.fog.color.copy(BG); scene.background = BG; }
+    else { hemi.intensity = 0.62; hemi.color.set('#9ec4e8'); hemi.groundColor.set('#3a3020'); sun.intensity = 3.1; sun.color.set('#ffe6b8'); scene.fog.color.copy(HAZE); scene.background = HAZE; }
 
     // collect billboards
     used.solid = used.trans = used.floor = 0; blobUsed = 0; order = 0; torchSpots.length = 0;
@@ -738,7 +789,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     gl.render(scene, camera);
 
     const post = R.tiltShift || R.bloom || R.grade || R.vignette;
-    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.55, uTilt: R.tiltShift ? 0.9 : 0, uMaxCoc: (mobile ? 4 : 6) * (rtBlur.width / 640) };
+    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.32, uTilt: R.tiltShift ? 0.9 : 0, uMaxCoc: (mobile ? 5 : 8) * (rtBlur.width / 640) };
     let src = rtScene;
     if (R.tiltShift && R.dof) {
       Object.entries(u).forEach(([k, v]) => { blurMat.uniforms[k].value = v; compMat.uniforms[k].value = v; });
@@ -759,7 +810,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     gradeMat.uniforms.uGrade.value = R.grade ? 1 : 0;
     gradeMat.uniforms.uTime.value = time % 10;
     gradeMat.uniforms.uAspect.value = W / H;
-    gradeMat.uniforms.uExposure.value = cur.dark ? 1.1 : 0.92;
+    gradeMat.uniforms.uExposure.value = cur.dark ? 1.1 : 1.0;
     pass(gradeMat, null);
     void post;
 
