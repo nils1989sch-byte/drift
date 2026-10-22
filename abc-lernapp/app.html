@@ -284,6 +284,7 @@ svg.bruno.mo:not([data-mood=cheer]) .b-mouth-happy{display:inline}
 .party.still{background:center/cover no-repeat}
 .party.vid .rays,.party.vid .br,.party.vid h2,.party.vid .row5,.party.still .rays,.party.still .br,.party.still h2,.party.still .row5{display:none}
 .party .row.wait{visibility:hidden}
+.party.vid .row{bottom:calc(36px + var(--ex)*.25)}
 
 /* ---------- fx layer ---------- */
 .fx{position:absolute;inset:0;z-index:60;pointer-events:none;overflow:hidden}
@@ -787,7 +788,11 @@ function renderGrid(){
   $('#abcGrid').innerHTML=LETTERS.map(([L,w])=>{const g=S.caseMode==='upper'?L:S.caseMode==='lower'?L.toLowerCase():`${L}<i>${L.toLowerCase()}</i>`;
     return`<button class="tile press${L===today?' is-today':''}" data-testid="letter-tile-${L}" data-letter="${L}" aria-label="${S.caseMode==='upper'?L:S.caseMode==='lower'?L.toLowerCase():L+L.toLowerCase()}: ${L} wie ${w}"><span class="lv lv${level(L)}"></span><span class="gl">${g}</span><span class="pi">${ART.ill[L]}</span></button>`}).join('');
 }
-function enterAbc(){renderGrid();if(reduced())return;
+let gridSig='';
+function enterAbc(){
+  /* the 26 tiles are built once (after start-up) and only rebuilt when case mode / letter of the day change */
+  const sig=S.caseMode+letterOfDay(); if(sig!==gridSig||!$('#abcGrid').children.length){renderGrid();gridSig=sig}else paintTileLevels();
+  if(reduced())return;
   $$('#abcGrid .tile').forEach((t,i)=>anim(t,[{opacity:0,transform:'translateY(18px) scale(.94)'},{opacity:1,transform:'none'}],{duration:420,delay:40+i*14,easing:E.soft,fill:'backwards'}))}
 $('#abcGrid').addEventListener('click',e=>{const t=e.target.closest('.tile');if(!t)return;const n=performance.now();if(n-(lastTap.get(t)||0)<300)return;lastTap.set(t,n);openDetail(t.dataset.letter)});
 let dIdx=0, detailOpen=false;
@@ -978,7 +983,7 @@ async function setupTrace(announce){
   const gl=traceGlyph(), font=fs=>`600 ${fs}px Fredoka, "Arial Rounded MT Bold", Nunito, sans-serif`;
   /* size the letter like the mock: font-size ≈ 84 % of the board height (cap height ≈ 60 %), never wider than
      70 % of the board, and never so tall that it runs into the meter strip */
-  const g=$('#guide').getContext('2d'); let fs=bh*.84; g.font=font(fs);
+  const g=$('#guide').getContext('2d'); let fs=Math.min(bh*.84,500); g.font=font(fs);
   let m=g.measureText(gl), ih=(m.actualBoundingBoxAscent+m.actualBoundingBoxDescent)||fs*.72, iw=(m.actualBoundingBoxRight+m.actualBoundingBoxLeft)||m.width;
   const sc=Math.min(1,(bh-120)/ih,(bw*.7)/iw); fs*=sc; g.font=font(fs); m=g.measureText(gl);
   ih=(m.actualBoundingBoxAscent+m.actualBoundingBoxDescent)||fs*.72; iw=(m.actualBoundingBoxRight+m.actualBoundingBoxLeft)||m.width;
@@ -1128,7 +1133,7 @@ function openParents(){
 }
 function closeParents(instant){
   const p=$('#parents'); if(p.hidden)return; $('#setName').blur(); paintName(); paintToday();
-  if(current==='abc')renderGrid();
+  if(current==='abc')enterAbc();
   if(instant||reduced()){p.hidden=true;return}
   anim($('#psheet'),[{opacity:1,transform:'translateY(-50%)'},{opacity:0,transform:'translateY(-50%) scale(.96)'}],{duration:200,easing:'ease-in',fill:'forwards'});
   anim($('.dim',p),[{opacity:1},{opacity:0}],{duration:220,easing:'ease-in',fill:'forwards'});
@@ -1190,6 +1195,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)hush()});
 let rzT=0; addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{const was=LAND;fit();if(current==='trace')setupTrace(false)},120)});
 RMQ.addEventListener&&RMQ.addEventListener('change',()=>{});
 paintName(); paintStars(); paintToday();
+setTimeout(()=>{if(!$('#abcGrid').children.length){renderGrid();gridSig=S.caseMode+letterOfDay()}},400);
 $('#tabs').style.setProperty('--ti',0);
 setTimeout(()=>{if(current==='home')happy(BR.home)},500);
 </script>
