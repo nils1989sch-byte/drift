@@ -1,5 +1,5 @@
 {
- "date": "2026-10-22T21:31:46.806Z",
+ "date": "2026-10-22T21:37:23.588Z",
  "seed": 1,
  "frames": 2000,
  "results": [
@@ -43,7 +43,7 @@
      "msg": "player moves with real keyboard after intro",
      "data": {
       "from": 88,
-      "to": 52.47
+      "to": 53.83
      }
     },
     {
@@ -59,7 +59,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 8487
+   "ms": 6439
   },
   {
    "name": "movement_8dir",
@@ -243,8 +243,8 @@
      "ok": true,
      "msg": "keyboard diagonal (D+S) moves diagonally & normalized",
      "data": {
-      "dx": 32.93000000000001,
-      "dy": 31.560000000000002
+      "dx": 34.06,
+      "dy": 34.06
      }
     }
    ],
@@ -252,7 +252,7 @@
     "diagonal facing: {\"dr\":\"down\",\"dl\":\"down\",\"ur\":\"up\",\"ul\":\"up\"}"
    ],
    "errors": [],
-   "ms": 4972
+   "ms": 3675
   },
   {
    "name": "corner_slide",
@@ -325,11 +325,11 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 4652
+   "ms": 2805
   },
   {
    "name": "random_walk_collision",
-   "ok": true,
+   "ok": false,
    "checks": [
     {
      "ok": true,
@@ -343,12 +343,12 @@
     },
     {
      "ok": true,
-     "msg": "random walk overworld@7,9: player never inside solid (2000 frames, 55 cells)",
+     "msg": "random walk overworld@7,9: player never inside solid (2000 frames, 54 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk overworld@38,11: player never inside solid (2000 frames, 79 cells)",
+     "msg": "random walk overworld@38,11: player never inside solid (2000 frames, 80 cells)",
      "data": null
     },
     {
@@ -360,6 +360,13 @@
      "ok": true,
      "msg": "random walk overworld@14,27: player never inside solid (2000 frames, 73 cells)",
      "data": null
+    },
+    {
+     "ok": false,
+     "msg": "random walk overworld@14,27: walker enemies inside solid tiles",
+     "data": [
+      "slime: tile(41,20)=grass h1 vs lvl0"
+     ]
     },
     {
      "ok": true,
@@ -378,7 +385,7 @@
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_2@7,9: player never inside solid (2000 frames, 57 cells)",
+     "msg": "random walk dungeon_2@7,9: player never inside solid (2000 frames, 59 cells)",
      "data": null
     },
     {
@@ -400,7 +407,7 @@
     "random walk dungeon_3@7,10: warped through: [\"dungeon_3\",\"house_elder\"]"
    ],
    "errors": [],
-   "ms": 18961
+   "ms": 14199
   },
   {
    "name": "stairs_height",
@@ -517,7 +524,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 3663
+   "ms": 2949
   },
   {
    "name": "ledge_jump",
@@ -708,7 +715,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 3391
+   "ms": 2667
   },
   {
    "name": "sword_vs_enemies",
@@ -851,11 +858,11 @@
     }
    ],
    "notes": [
-    "slime drops: [\"rupee\"]",
-    "drop table (300 rolls): {\"none\":91,\"rupee\":143,\"heart\":36,\"rupee5\":30}"
+    "slime drops: [\"rupee5\"]",
+    "drop table (300 rolls): {\"none\":98,\"rupee\":149,\"heart\":31,\"rupee5\":22}"
    ],
    "errors": [],
-   "ms": 3765
+   "ms": 2611
   },
   {
    "name": "player_damage_knockback",
@@ -909,10 +916,10 @@
     }
    ],
    "notes": [
-    "knockback towards pit (dungeon_2): {\"map\":\"dungeon_2\",\"x\":201.39,\"y\":137.41,\"tx\":12,\"ty\":8,\"lvl\":0,\"z\":0,\"state\":\"fall\",\"dir\":\"up\",\"hp\":4,\"maxHp\":6,\"keys\":0,\"bombs\":0,\"rupees\":0,\"carry\":null,\"gstate\":\"play\",\"ui\":\"hud\"}"
+    "knockback towards pit (dungeon_2): {\"map\":\"dungeon_2\",\"x\":218.92,\"y\":110.87,\"tx\":13,\"ty\":6,\"lvl\":0,\"z\":0,\"state\":\"normal\",\"dir\":\"up\",\"hp\":4,\"maxHp\":6,\"keys\":0,\"bombs\":0,\"rupees\":0,\"carry\":null,\"gstate\":\"play\",\"ui\":\"hud\"}"
    ],
    "errors": [],
-   "ms": 4003
+   "ms": 2824
   },
   {
    "name": "death_gameover_continue",
@@ -1025,7 +1032,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 4471
+   "ms": 2764
   },
   {
    "name": "pits_fall",
@@ -1138,11 +1145,11 @@
     "holding → into a pit for 3 s (respawn next to the pit): {\"falls\":4,\"hpLeft\":14}"
    ],
    "errors": [],
-   "ms": 3151
+   "ms": 2653
   },
   {
    "name": "bush_cut_lift_throw",
-   "ok": true,
+   "ok": false,
    "checks": [
     {
      "ok": true,
@@ -1177,9 +1184,9 @@
      }
     },
     {
-     "ok": true,
+     "ok": false,
      "msg": "thrown object lands/breaks",
-     "data": 0
+     "data": 1
     },
     {
      "ok": true,
@@ -1206,7 +1213,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 3223
+   "ms": 2641
   },
   {
    "name": "chest_sign_npc",
@@ -1259,11 +1266,11 @@
     "merchant purchase without a yes/no choice: {\"rupees\":30,\"bombs\":6}"
    ],
    "errors": [],
-   "ms": 3531
+   "ms": 2810
   },
   {
    "name": "dungeon_full_run",
-   "ok": false,
+   "ok": true,
    "checks": [
     {
      "ok": true,
@@ -1369,59 +1376,62 @@
     },
     {
      "ok": true,
-     "msg": "killing all enemies sets d3_clear (542 frames)"
+     "msg": "killing all enemies sets d3_clear (402 frames)"
     },
     {
-     "ok": false,
+     "ok": true,
      "msg": "bomb chest gives bombs",
-     "data": 0
+     "data": {
+      "bombs": 10,
+      "chestVisible": true
+     }
     },
     {
-     "ok": false,
+     "ok": true,
      "msg": "bomb opens the cracked wall (d3_wall)",
      "data": {
       "at": {
        "map": "dungeon_3",
-       "x": 118.26,
-       "y": 42.91,
+       "x": 120,
+       "y": 42,
        "tx": 7,
        "ty": 2,
        "lvl": 0,
        "z": 0,
        "state": "normal",
-       "dir": "right",
-       "hp": 2,
+       "dir": "up",
+       "hp": 6,
        "maxHp": 6,
        "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
+       "bombs": 10,
+       "rupees": 1,
        "carry": null,
        "gstate": "play",
        "ui": "hud"
       },
-      "bombsLeft": 0
+      "bombsLeft": 9
      }
     },
     {
-     "ok": false,
+     "ok": true,
      "msg": "through the bombed wall → boss room",
      "data": {
-      "map": "dungeon_3",
+      "map": "dungeon_4",
       "snap": {
-       "map": "dungeon_3",
-       "x": 105.66,
-       "y": 37.16,
-       "tx": 6,
-       "ty": 2,
+       "map": "dungeon_4",
+       "x": 136,
+       "y": 198,
+       "tx": 8,
+       "ty": 12,
        "lvl": 0,
        "z": 0,
        "state": "normal",
        "dir": "up",
-       "hp": 1,
+       "hp": 6,
        "maxHp": 6,
        "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
+       "bombs": 9,
+       "rupees": 1,
        "carry": null,
        "gstate": "play",
        "ui": "hud"
@@ -1432,7 +1442,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 4184
+   "ms": 2925
   },
   {
    "name": "boss_fight",
@@ -1440,14 +1450,14 @@
    "checks": [
     {
      "ok": true,
-     "msg": "golem is beatable with sword + godMode (2343 frames ≈ 39 s, 119 swings)",
+     "msg": "golem is beatable with sword + godMode (2295 frames ≈ 38 s, 116 swings)",
      "data": {
       "sleep": 70,
       "roar": 66,
-      "walk": 786,
+      "walk": 743,
       "throw": 396,
       "leap": 570,
-      "tired": 307,
+      "tired": 302,
       "dying": 148
      }
     },
@@ -1521,7 +1531,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 4607
+   "ms": 3364
   },
   {
    "name": "warps_roundtrip",
@@ -2305,7 +2315,7 @@
     "walking into Mia's house door: {\"arrived\":false,\"to\":\"overworld\"}"
    ],
    "errors": [],
-   "ms": 3875
+   "ms": 3003
   },
   {
    "name": "bomb_cave",
@@ -2363,7 +2373,7 @@
     "HP when standing next to own bomb (hp before/after): [6,4]"
    ],
    "errors": [],
-   "ms": 4201
+   "ms": 3069
   },
   {
    "name": "pause_menu",
@@ -2404,7 +2414,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 7406
+   "ms": 5900
   },
   {
    "name": "zoom",
@@ -2450,7 +2460,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 7959
+   "ms": 6954
   },
   {
    "name": "touch_390x844",
@@ -2627,7 +2637,7 @@
      "msg": "virtual stick left moves the player left",
      "data": {
       "a": 88,
-      "b": 21.24
+      "b": 21.12
      }
     },
     {
@@ -2635,7 +2645,7 @@
      "msg": "virtual stick up moves the player up",
      "data": {
       "b": 104,
-      "c": 51.34
+      "c": 51.53
      }
     },
     {
@@ -2673,7 +2683,7 @@
     "≡ button visible while paused (to close it again): false"
    ],
    "errors": [],
-   "ms": 30387
+   "ms": 23714
   },
   {
    "name": "touch_844x390",
@@ -2850,7 +2860,7 @@
      "msg": "virtual stick left moves the player left",
      "data": {
       "a": 88,
-      "b": 21.09
+      "b": 21.54
      }
     },
     {
@@ -2858,7 +2868,7 @@
      "msg": "virtual stick up moves the player up",
      "data": {
       "b": 104,
-      "c": 51.64
+      "c": 51.38
      }
     },
     {
@@ -2896,7 +2906,7 @@
     "≡ button visible while paused (to close it again): false"
    ],
    "errors": [],
-   "ms": 31730
+   "ms": 25120
   },
   {
    "name": "input_quick_tap",
@@ -2915,7 +2925,7 @@
     "tap inside one frame registered?: {\"attack\":false,\"pause\":false}"
    ],
    "errors": [],
-   "ms": 4169
+   "ms": 3819
   },
   {
    "name": "bomb_throw_realloop",
@@ -2929,8 +2939,8 @@
      "ok": false,
      "msg": "game loop keeps running after throwing a bomb",
      "data": {
-      "f0": 151,
-      "f1": 151
+      "f0": 150,
+      "f1": 150
      }
     },
     {
@@ -2951,7 +2961,27 @@
    "errors": [
     "pageerror: Cannot set properties of undefined (setting 'carried')"
    ],
-   "ms": 6195
+   "ms": 6178
+  },
+  {
+   "name": "perf_2d",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "2D renderer > 15 fps headless",
+     "data": {
+      "overworld@12,24": 21.5,
+      "overworld@38,8": 23,
+      "dungeon_1@8,10": 30
+     }
+    }
+   ],
+   "notes": [
+    "2D FPS (headless, software canvas): {\"overworld@12,24\":21.5,\"overworld@38,8\":23,\"dungeon_1@8,10\":30}"
+   ],
+   "errors": [],
+   "ms": 10456
   },
   {
    "name": "memory_room_changes",
@@ -2969,17 +2999,17 @@
      "ok": true,
      "msg": "fx drawables stable",
      "data": {
-      "first": 6,
-      "last": 11
+      "first": 2,
+      "last": 12
      }
     }
    ],
    "notes": [
-    "overworld entity counts per cycle: [{\"k\":0,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":6,\"timers\":0,\"heap\":14},{\"k\":0,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":10,\"timers\":0,\"heap\":14},{\"k\":0,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":14,\"timers\":0,\"heap\":14},{\"k\":1,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":17,\"timers\":0,\"heap\":14},{\"k\":1,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":17,\"timers\":0,\"heap\":14},{\"k\":1,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":12,\"timers\":0,\"heap\":14},{\"k\":2,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":15,\"timers\":0,\"heap\":14},{\"k\":2,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":15,\"timers\":0,\"heap\":14},{\"k\":2,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":10,\"timers\":0,\"heap\":14},{\"k\":3,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":15,\"timers\":0,\"heap\":14},{\"k\":3,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":17,\"timers\":0,\"heap\":14},{\"k\":3,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":11,\"timers\":0,\"heap\":14}]",
-    "JS heap MB first/last: [14,14]"
+    "overworld entity counts per cycle: [{\"k\":0,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":2,\"timers\":0,\"heap\":15},{\"k\":0,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":6,\"timers\":0,\"heap\":15},{\"k\":0,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":6,\"timers\":0,\"heap\":15},{\"k\":1,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":10,\"timers\":0,\"heap\":15},{\"k\":1,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":14,\"timers\":0,\"heap\":15},{\"k\":1,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":5,\"timers\":0,\"heap\":15},{\"k\":2,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":9,\"timers\":0,\"heap\":15},{\"k\":2,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":15,\"timers\":0,\"heap\":15},{\"k\":2,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":12,\"timers\":0,\"heap\":15},{\"k\":3,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":15,\"timers\":0,\"heap\":15},{\"k\":3,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":16,\"timers\":0,\"heap\":15},{\"k\":3,\"ents\":342,\"objs\":325,\"enemies\":13,\"pickups\":0,\"fx\":12,\"timers\":0,\"heap\":15}]",
+    "JS heap MB first/last: [15,15]"
    ],
    "errors": [],
-   "ms": 3063
+   "ms": 2843
   },
   {
    "name": "save_continue",
@@ -3016,7 +3046,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 6372
+   "ms": 5308
   },
   {
    "name": "3d_screens_and_fps",
@@ -3024,38 +3054,19 @@
    "checks": [
     {
      "ok": false,
-     "msg": "3D: player walks",
-     "data": {
-      "a": 344,
-      "b": 360.4
-     }
-    },
-    {
-     "ok": false,
-     "msg": "3D renders frames everywhere (>3 fps in SwiftShader)",
-     "data": {
-      "3d_village": 0.4,
-      "3d_cliffs": 0.4,
-      "3d_heights": 0.5,
-      "3d_house": 2.2,
-      "3d_dungeon1": 1.9,
-      "3d_boss": 1.9
-     }
+     "msg": "EXCEPTION in scenario: page.screenshot: Timeout 30000ms exceeded. | Call log: | \u001b[2m  - taking page screenshot\u001b[22m"
     }
    ],
-   "notes": [
-    "3D FPS (SwiftShader software GL – not representative of real GPUs): {\"3d_village\":0.4,\"3d_cliffs\":0.4,\"3d_heights\":0.5,\"3d_house\":2.2,\"3d_dungeon1\":1.9,\"3d_boss\":1.9}",
-    "renderer stats: {\"tiles\":0,\"sprites\":97}"
-   ],
+   "notes": [],
    "errors": [],
-   "ms": 129565
+   "ms": 77762
   },
   {
    "name": "3d_touch_portrait",
-   "ok": false,
+   "ok": true,
    "checks": [
     {
-     "ok": false,
+     "ok": true,
      "msg": "3D mobile renders",
      "data": 1
     }
@@ -3064,7 +3075,7 @@
     "3D mobile FPS (SwiftShader, DPR 3): 1"
    ],
    "errors": [],
-   "ms": 51534
+   "ms": 49754
   }
  ]
 }
