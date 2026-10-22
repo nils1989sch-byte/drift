@@ -121,6 +121,13 @@ class Sel {
     return p.locator(css);
   }
 
+  /** Plain CSS selector for a (non-parametrised) key, for use inside page.evaluate. */
+  css(key) {
+    if (this.mode === 'testid') return `[data-testid="${key}"]`;
+    const s = LEGACY[key];
+    return typeof s === 'function' ? s() : s;
+  }
+
   /** Letter (A–Z, uppercase) carried by an element: data-letter, else data-l, else first letter of text. */
   async letterOf(locator) {
     const v = (await locator.getAttribute('data-letter')) || (await locator.getAttribute('data-l'));

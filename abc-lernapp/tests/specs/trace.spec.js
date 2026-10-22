@@ -59,7 +59,8 @@ async function letterRuns(app, rowStep = 14) {
 async function traceLetter(app) {
   const runs = await letterRuns(app);
   if (runs) {
-    for (const r of runs) await touch.touchStroke(app.page, [{ x: r.x1 + 2, y: r.y }, { x: r.x2 - 2, y: r.y }], { stepPx: 30 });
+    for (const r of runs) await touch.touchStroke(app.page, [{ x: r.x1 + 2, y: r.y }, { x: r.x2 - 2, y: r.y }], { stepPx: 30, settleMs: 0 });
+    await app.page.waitForTimeout(400);
     return 'guide-sampled';
   }
   const b = await app.$('trace-board').boundingBox();

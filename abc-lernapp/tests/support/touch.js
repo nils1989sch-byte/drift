@@ -33,10 +33,11 @@ async function touchHold(page, locator, ms) {
   await touchDown(page, c.x, c.y);
   await page.waitForTimeout(ms);
   await touchUp(page);
+  await page.waitForTimeout(400);
 }
 
 /** One continuous finger stroke through the given viewport points (CSS px). */
-async function touchStroke(page, points, { stepPx = 12 } = {}) {
+async function touchStroke(page, points, { stepPx = 12, settleMs = 400 } = {}) {
   if (!points.length) return;
   await touchDown(page, points[0].x, points[0].y);
   let prev = points[0];
@@ -46,6 +47,9 @@ async function touchStroke(page, points, { stepPx = 12 } = {}) {
     prev = p;
   }
   await touchUp(page);
+  // Chromium's gesture detector swallows the click of a tap that follows a drag too closely
+  // (seen in emulation only). A real child also lifts the finger before the next tap.
+  await page.waitForTimeout(settleMs);
 }
 
 module.exports = { touchDown, touchMove, touchUp, touchHold, touchStroke, center };

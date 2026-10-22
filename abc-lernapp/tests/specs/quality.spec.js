@@ -18,8 +18,14 @@ test.describe('Layout quality', () => {
     test(`tap targets >= 64px: ${name}${child ? '' : ' (report only)'}`, async ({ app }) => {
       const layer = await STATES[name](app);
       await app.page.waitForTimeout(400);
-      const small = await smallTargets(app, layer, 64);
+      // the parent gate is deliberately grown-up sized; it is reported separately
+      const gate = app.sel.css('parent-gate');
+      const small = await smallTargets(app, layer, 64, child ? gate : null);
       if (small.length) app.note(child ? 'tap-offenders' : 'tap-offenders-parent', `${name}: ${small.join('; ')}`);
+      if (child && !layer) {
+        const g = await smallTargets(app, null, 44).then((all) => all.filter((x) => /gate|Eltern/i.test(x)));
+        if (g.length) app.note('tap-offenders-parent', `${name}: parent gate below 44px: ${g.join('; ')}`);
+      }
       if (child) expect(small, 'child-facing targets smaller than 64x64 CSS px').toEqual([]);
     });
   }

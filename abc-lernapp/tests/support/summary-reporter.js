@@ -40,13 +40,20 @@ class SummaryReporter {
       for (const f of this.failures) lines.push(`- [${f.project}] ${f.title}\n    ${f.msg}`);
     }
     if (this.notes.length) {
-      lines.push('', 'REPORTS (non-gating details)');
-      const seen = new Set();
+      lines.push('', 'REPORTS (non-gating details; [projects] where seen)');
+      const hosts = new Set();
+      const groups = new Map();
       for (const n of this.notes) {
-        const key = `${n.project}|${n.title}|${n.type}|${n.description}`;
-        if (seen.has(key)) continue; seen.add(key);
-        lines.push(`- [${n.project}] ${n.type}: ${n.description}`);
+        if (n.type === 'external-requests') { n.description.split(', ').forEach((h) => hosts.add(h)); continue; }
+        const key = `${n.type}: ${n.description}`;
+        if (!groups.has(key)) groups.set(key, new Set());
+        groups.get(key).add(n.project);
       }
+      const all = this.projects.length;
+      const order = ['metric', 'tap-offenders', 'tap-offenders-parent', 'a11y', 'note', 'console-errors'];
+      const sorted = [...groups].sort((a, b) => order.indexOf(a[0].split(':')[0]) - order.indexOf(b[0].split(':')[0]));
+      for (const [key, ps] of sorted) lines.push(`- ${ps.size === all ? '[all]' : `[${[...ps].join(',')}]`} ${key}`);
+      if (hosts.size) lines.push(`- [all] external hosts requested (served from tests/.netcache): ${[...hosts].join(', ')}`);
     }
     const text = lines.join('\n');
     console.log(text);

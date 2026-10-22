@@ -23,13 +23,14 @@ const STATES = {
 const CHILD_STATES = ['home', 'abc', 'detail', 'find', 'celebration', 'trace'];
 
 /** Interactive elements in the top layer that are smaller than `min` CSS px in either dimension. */
-async function smallTargets(app, layerKey, min = 64) {
+async function smallTargets(app, layerKey, min = 64, exclude = null) {
   const scope = layerKey ? app.$(layerKey) : app.page.locator('body');
-  return scope.evaluate((root, min) => {
+  return scope.evaluate((root, [min, exclude]) => {
     const q = 'button, a[href], input:not([type=hidden]), select, textarea, [role=button], [role=tab], [role=link], [role=switch], [role=radio], [tabindex]:not([tabindex="-1"])';
     const out = [];
     for (const el of root.querySelectorAll(q)) {
       if (el.closest('[hidden], [aria-hidden="true"], [inert]')) continue;
+      if (exclude && el.closest(exclude)) continue;
       const cs = getComputedStyle(el);
       if (cs.visibility === 'hidden' || cs.display === 'none' || cs.pointerEvents === 'none') continue;
       const r = el.getBoundingClientRect();
@@ -41,7 +42,7 @@ async function smallTargets(app, layerKey, min = 64) {
       }
     }
     return [...new Set(out)];
-  }, min);
+  }, [min, exclude]);
 }
 
 /** Horizontal overflow: page wider than viewport, or any scroll container scrolling sideways. */
