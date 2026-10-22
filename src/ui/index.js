@@ -194,6 +194,7 @@ export function createUI({ root, input, assets, sfx, camera } = {}) {
           if (s === 'gameover' && !screens.over.active) screens.showGameOver(null);
           lastState = s;
         }
+        screens.checkTitle();
         pauseCooldown = Math.max(0, pauseCooldown - dt);
         const wasBlocking = modals.size > 0;
         if (screens.title.active || screens.over.active || screens.pause.active) screens.update(dt);
@@ -233,6 +234,7 @@ export function createUI({ root, input, assets, sfx, camera } = {}) {
     showArea(name) { hud.showArea(name); },
     showTitle(onStart) { screens.showTitle(onStart); },
     showGameOver(onRetry) { screens.showGameOver(onRetry); },
+    closeTitle() { screens.closeTitle(); },
     openPause() { screens.openPause(); },
     closePause() { screens.closePause(); },
     closeDialog() { dialog.close(); },

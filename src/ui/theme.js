@@ -9,7 +9,7 @@ export const C = {
   red_md: '#c84040', red_lt: '#f08060', blue_md: '#4868c8', blue_lt: '#90b0f0',
   dim: '#b8b0c8', bg0: '#0d0f1c', bg1: '#2d3550',
   // HD-2D / Octopath-like UI materials
-  parch: '#d9cfbd', parchLt: '#ece4d4', parchDk: '#bdb09a', parchSh: '#a89a84', edge: '#3a2e2a', edgeLt: '#5a4a40',
+  parch: '#d4cdbf', parchLt: '#ece4d4', parchDk: '#bdb09a', parchSh: '#a89a84', edge: '#3a2e2a', edgeLt: '#5a4a40',
   textDk: '#2a2026', textSh: '#c4b8a2', accent: '#8a3a2a', plaque: '#141019', hair: '#c8b07a', ivory: '#f4ecd8', ivoryDim: '#c8c0b0',
 };
 
@@ -69,56 +69,59 @@ export function plaque(ctx, x, y, w, h, a = 0.58) {
 // ---- parchment / stone speech bubble with an irregular dark rim (cached per size) ----------
 const hash = (n) => { n = (n ^ 61) ^ (n >>> 16); n = (n + (n << 3)) | 0; n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); return (n ^ (n >>> 15)) >>> 0; };
 const bubbleCache = new Map();
+/** Row inset of the bubble outline: chamfered corners + shallow chevron points on the left/right sides. */
+export function bubbleInset(y, h, chev = 4, cham = 5) {
+  const mid = (h - 1) / 2;
+  const cv = Math.round(chev * Math.abs(y - mid) / mid);
+  const top = Math.max(0, cham - y), bot = Math.max(0, cham - (h - 1 - y));
+  return cv + Math.max(top, bot);
+}
 export function bubble(w, h, seed = 7) {
   const key = w + 'x' + h + ':' + seed;
   if (bubbleCache.has(key)) return bubbleCache.get(key);
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const g = c.getContext('2d');
-  const R = 4;
-  const corner = (i, n) => { const d = Math.min(i, n - 1 - i); if (d >= R) return 0; const t = R - d - 0.5; return Math.round(R - Math.sqrt(Math.max(0, R * R - t * t))); };
-  const jit = (i, side) => (hash(i * 7 + side * 131 + seed * 977) % 5 === 0 ? 1 : 0);
-  // rows: rim with jitter, then parchment inside
+  const jit = (i, side) => (hash(i * 7 + side * 131 + seed * 977) % 6 === 0 ? 1 : 0);
+  const fill = [[0xe2, 0xdc, 0xd0], [0xc2, 0xb9, 0xaa]]; // top -> bottom
+  const img = g.createImageData(w, h), d = img.data;
+  const ed = [0x2e, 0x26, 0x24];
+  const set = (x, y, col, a = 255) => { const o = (y * w + x) * 4; d[o] = col[0]; d[o + 1] = col[1]; d[o + 2] = col[2]; d[o + 3] = a; };
   for (let y = 0; y < h; y++) {
-    const ci = corner(y, h);
-    const l = ci + jit(y >> 1, 1), r = ci + jit(y >> 1, 2);
-    g.fillStyle = C.edge; g.fillRect(l, y, w - l - r, 1);
-  }
-  // top/bottom rim jitter (notches inward = rim thicker)
-  for (let x = 0; x < w; x++) {
-    const ci = corner(x, w);
-    const t = 2 + ci + jit(x >> 1, 3), b = 2 + ci + jit(x >> 1, 4);
-    g.fillStyle = C.parch;
-    const top = t, bot = h - b;
-    const li = 2 + ci; // keep side rim ≥ 2
-    if (x < 2 || x >= w - 2) continue;
-    void li;
-    g.fillRect(x, top, 1, Math.max(0, bot - top));
-  }
-  // side rim: repaint 2 px rim at left/right with jitter
-  for (let y = 0; y < h; y++) {
-    const ci = corner(y, h);
-    const l = ci + jit(y >> 1, 1), r = ci + jit(y >> 1, 2);
-    g.fillStyle = C.edge;
-    g.fillRect(l, y, 2 + jit(y, 5), 1); g.fillRect(w - r - 2 - jit(y, 6), y, 2 + jit(y, 6), 1);
-  }
-  // paper grain & light
-  const img = g.getImageData(0, 0, w, h), d = img.data;
-  const pr = [0xd9, 0xcf, 0xbd];
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const o = (y * w + x) * 4;
-    if (d[o + 3] === 0 || (d[o] !== pr[0] || d[o + 1] !== pr[1] || d[o + 2] !== pr[2])) continue;
-    const hv = hash(x * 92821 + y * 68917 + seed) % 23;
-    let k = hv === 0 ? -10 : hv === 1 ? 8 : hv === 2 ? -5 : 0;
-    k += Math.round(6 - (y / h) * 12); // light from above
-    d[o] += k; d[o + 1] += k; d[o + 2] += k;
+    const ins = bubbleInset(y, h);
+    const l = ins + jit(y >> 1, 1), r = w - 1 - ins - jit(y >> 1, 2);
+    const edgeRow = y < 2 || y >= h - 2;
+    const k = y / (h - 1);
+    const base = fill[0].map((v, i) => Math.round(v + (fill[1][i] - v) * k));
+    for (let x = l; x <= r; x++) {
+      // slanted parts get a thicker rim so the outline reads evenly
+      const ins1 = bubbleInset(Math.max(0, y - 1), h), ins2 = bubbleInset(Math.min(h - 1, y + 1), h);
+      const rimL = 2 + Math.max(0, Math.abs(ins1 - ins2) >> 1), rimR = rimL;
+      if (edgeRow || x < l + rimL || x > r - rimR) { set(x, y, ed); continue; }
+      const hv = hash(x * 92821 + y * 68917 + seed) % 29;
+      const n = hv === 0 ? -9 : hv === 1 ? 7 : hv === 2 ? -4 : 0;
+      set(x, y, base.map((v) => v + n));
+    }
   }
   g.putImageData(img, 0, 0);
-  // inner highlight under the top rim and shade above the bottom rim
-  g.globalAlpha = 0.5; g.fillStyle = C.parchLt; g.fillRect(6, 3, w - 12, 1);
-  g.fillStyle = C.parchSh; g.fillRect(6, h - 4, w - 12, 1); g.globalAlpha = 1;
+  g.globalAlpha = 0.45; g.fillStyle = '#f2eee6';
+  g.fillRect(bubbleInset(3, h) + 5, 3, w - (bubbleInset(3, h) + 5) * 2, 1);
+  g.globalAlpha = 1;
   bubbleCache.set(key, c);
   if (bubbleCache.size > 40) bubbleCache.delete(bubbleCache.keys().next().value);
   return c;
+}
+
+/** Elongated-hexagon name tab (Octopath-like): taupe fill, dark rim, pointed ends. */
+export function nameTab(ctx, x, y, w, h) {
+  const mid = (h - 1) / 2, P = Math.floor(h / 2) - 1;
+  for (let yy = 0; yy < h; yy++) {
+    const ins = Math.round(P * Math.abs(yy - mid) / mid);
+    ctx.fillStyle = '#2a2220'; ctx.fillRect(x + ins, y + yy, w - ins * 2, 1);
+    if (yy > 0 && yy < h - 1) {
+      ctx.fillStyle = yy < mid ? '#6c635b' : '#5a524b';
+      ctx.fillRect(x + ins + 2, y + yy, w - ins * 2 - 4, 1);
+    }
+  }
 }
 
 // Cache of pixel discs (filled circle with outline) rendered at UI resolution.

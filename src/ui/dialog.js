@@ -2,7 +2,7 @@
 // dark name tab top-left, optional tail pointing at the speaker (anchor), dark pixel text on light paper.
 // Typewriter 36 chars/s with 'text_blip', blinking continue arrow (2 Hz), optional choices (Ja/Nein).
 import { drawText, measure, wrap } from './font.js';
-import { C, bubble, clamp } from './theme.js';
+import { C, bubble, bubbleInset, nameTab, clamp } from './theme.js';
 
 const CPS = 36, LINES = 3, LH = 12, PADX = 11, PADY = 8;
 const TEXT = { color: C.textDk, shadow: C.textSh };
@@ -142,19 +142,20 @@ export function createDialog(U) {
     if (d.age > 0.18 && U.confirmPressed()) advance();
   }
 
+  // thin dark pointer line from the bubble edge to the speaker (tapers 3 px -> 1 px)
   function drawTail(ctx, L) {
     const t = L.tail; if (!t) return;
-    const bx = clamp(t.tx, L.x + 14, L.x + L.w - 14);
-    const by = t.up ? L.y + 2 : L.y + L.h - 3;
+    const bx = clamp(t.tx, L.x + 16, L.x + L.w - 16);
+    const by = t.up ? L.y + 1 : L.y + L.h - 2;
     const len = Math.abs(t.ty - by);
     if (len < 3) return;
+    ctx.fillStyle = C.edge;
     for (let i = 0; i <= len; i++) {
       const k = i / len;
       const cx = Math.round(bx + (t.tx - bx) * k);
       const yy = t.up ? by - i : by + i;
-      const hw = Math.round(5 * (1 - k));
-      ctx.fillStyle = C.edge; ctx.fillRect(cx - hw - 2, yy, hw * 2 + 4, 1);
-      if (hw >= 1 && i < len - 1) { ctx.fillStyle = C.parch; ctx.fillRect(cx - hw, yy, hw * 2, 1); }
+      const wv = k < 0.35 ? 3 : k < 0.75 ? 2 : 1;
+      ctx.fillRect(cx - (wv >> 1), yy, wv, 1);
     }
   }
 
@@ -178,14 +179,11 @@ export function createDialog(U) {
     ctx.globalAlpha = pa * pop;
     U.hit(L.x, L.y, L.w, L.h, () => advance());
     if (p.speaker) {
-      const sw = measure(p.speaker) + 14;
-      const tx = L.x + 8, ty = L.y - 11;
-      ctx.globalAlpha = pa * pop * 0.92;
-      ctx.fillStyle = C.edge; ctx.fillRect(tx + 1, ty, sw - 2, 15); ctx.fillRect(tx, ty + 1, sw, 13);
-      ctx.fillStyle = C.plaque; ctx.fillRect(tx + 1, ty + 1, sw - 2, 13);
-      ctx.globalAlpha = pa * pop * 0.6; ctx.fillStyle = C.hair; ctx.fillRect(tx + 2, ty + 13, sw - 4, 1);
+      const sw = measure(p.speaker) + 22;
+      const tx = L.x + bubbleInset(0, L.h) + 6, ty = L.y - 8;
       ctx.globalAlpha = pa * pop;
-      drawText(ctx, p.speaker, tx + 7, ty + 1, { color: C.ivory, shadow: C.ink });
+      nameTab(ctx, tx, ty, sw, 15);
+      drawText(ctx, p.speaker, tx + 11, ty + 1, { color: '#f4f0e8', shadow: '#2a2220' });
     }
     if (pop >= 1) {
       let left = Math.floor(d.chars);

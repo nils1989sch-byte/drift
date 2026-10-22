@@ -21,6 +21,7 @@ const BG = { grass: palette.grass_md, dark: palette.stone_dk, none: null };
 const pal = new Set(Object.values(palette).map((h) => h.toLowerCase()));
 const issues = [];
 function check(name, c, maxColors) {
+  const strict = maxColors !== Infinity;
   const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
   const cols = new Set();
   let semi = 0, off = new Set();
@@ -30,7 +31,7 @@ function check(name, c, maxColors) {
     if (a !== 255) semi++;
     const h = '#' + ((1 << 24) | (d[i] << 16) | (d[i + 1] << 8) | d[i + 2]).toString(16).slice(1);
     cols.add(h);
-    if (!pal.has(h)) off.add(h);
+    if (strict && !pal.has(h)) off.add(h);
   }
   if (semi) issues.push(`${name}: ${semi} semi-transparent px`);
   if (off.size) issues.push(`${name}: off-palette ${[...off].slice(0, 4).join(' ')}`);
@@ -140,19 +141,20 @@ function scene() {
 }
 
 scene();
-section('Tiles', A.tiles, 8);
-section('Edges', A.edges, 8);
-section('Faces', A.faces, 8);
+section('Tiles (HD, ' + (A.tileRes || 16) + ' px)', A.tiles, Infinity);
+section('Edges', A.edges, Infinity);
+section('Faces', A.faces, Infinity);
 const groups = [
   ['Held', (k) => k.startsWith('hero_')],
   ['Gegner', (k) => /^(octorok|soldier|slime|bat|boss)/.test(k)],
   ['NPC', (k) => k.startsWith('npc_')],
   ['FX', (k) => k.startsWith('fx_')],
   ['Deko-Billboards', (k) => k.startsWith('deco_')],
-  ['Haus-Texturen', (k) => k.startsWith('tex_')],
+
   ['Objekte & Pickups', (k) => !/^(hero_|octorok|soldier|slime|bat|boss|npc_|fx_|deco_|tex_)/.test(k)],
 ];
 for (const [t, f] of groups) section(t, A.sprites, 15, f);
+section('HD-Texturen (Haus, Leaf-Cards, Rinde)', A.sprites, Infinity, (k) => k.startsWith('tex_'));
 section('Icons', A.icons, 15);
 
 document.getElementById('info').innerHTML = `buildAssets ${ms} ms · tiles ${Object.keys(A.tiles).length} · sprites ${Object.keys(A.sprites).length} · icons ${Object.keys(A.icons).length} · ` +

@@ -9,7 +9,7 @@ function blade(p, x0, base, h, lean, ramp, w2 = false) {
   for (let k = 0; k < h; k++) {
     const t = k / Math.max(1, h - 1);
     const x = Math.round(x0 + lean * t * t);
-    const c = t < 0.18 ? ramp[0] : t < 0.45 ? ramp[1] : t < 0.8 ? ramp[2] : ramp[3];
+    const c = t < 0.12 ? ramp[0] : t < 0.4 ? ramp[1] : t < 0.78 ? ramp[2] : ramp[3];
     p.set(x, base - k, c);
     if (w2 && t < 0.35) p.set(x + 1, base - k, t < 0.18 ? ramp[0] : ramp[1]);
   }
@@ -29,7 +29,7 @@ function decoGrass(seed, W, H, n, ramp) {
   bl.sort((a, b) => a[1] - b[1]);
   for (const [x, h, lean] of bl) blade(p, x, H - 1, h, lean, ramp, r() < 0.4);
   // dark foot
-  for (let x = Math.floor(cx - 3); x <= Math.ceil(cx + 3); x++) if (p.op(x, H - 1)) p.put(x, H - 1, ramp === GR ? P.grass_ink : P.grass_ink);
+  for (let x = Math.floor(cx - 2); x <= Math.ceil(cx + 2); x++) if (p.op(x, H - 1)) p.put(x, H - 1, P.grass_ink);
   return p.canvas(W >> 1, H - 1);
 }
 
@@ -93,6 +93,49 @@ function decoPebble(seed, W, H) {
   return p.canvas(W >> 1, H - 1);
 }
 
+// ---------- leafy foliage: many small lit leaves over a dark core ----------
+// clusters: [cx, cy, rx, ry]; ramp dark→light (5); light from top-left, deep shade low-right
+function leafy(p, clusters, ramp, seed, density = 0.42) {
+  const r = rng(seed);
+  const inside = (x, y) => clusters.find(([cx, cy, rx, ry]) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1);
+  let area = 0;
+  const pts = [];
+  for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) if (inside(x + 0.5, y + 0.5)) { p.put(x, y, ramp[(x + y) % 3 === 0 ? 0 : 1]); area++; pts.push([x, y]); }
+  const n = Math.round(area * density);
+  const leaves = [];
+  for (let i = 0; i < n; i++) {
+    const [x, y] = pts[r.int(pts.length)];
+    const c = inside(x + 0.5, y + 0.5);
+    const nx = (x + 0.5 - c[0]) / c[2], ny = (y + 0.5 - c[1]) / c[3], nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+    // global light term too (whole crown lit top-left)
+    const gx = (x / p.w) - 0.5, gy = (y / p.h) - 0.45;
+    let L = -0.55 * nx - 0.6 * ny + 0.55 * nz - 0.6 * (gx + gy) + (r() - 0.5) * 0.35;
+    leaves.push([x, y, L]);
+  }
+  leaves.sort((a, b) => a[1] - b[1]);
+  for (const [x, y, L] of leaves) {
+    const idx = Math.max(1, Math.min(ramp.length - 1, Math.floor((L + 0.55) * 3.2)));
+    const shape = (x * 7 + y * 3) % 3;
+    const pix = shape === 0 ? [[0, 0], [1, 0], [0, 1]] : shape === 1 ? [[0, 0], [1, 0], [1, 1]] : [[0, 0], [0, 1], [1, 1]];
+    for (const [dx, dy] of pix) if (inside(x + dx + 0.5, y + dy + 0.5)) p.put(x + dx, y + dy, ramp[idx]);
+    if (inside(x + 1.5, y + 2.5) && idx >= 2) p.put(x + 1, y + 2, ramp[Math.max(0, idx - 2)]);
+  }
+}
+
+// irregular leafy silhouette: grow/carve the outer rim
+function roughen(p, seed, passes = 2) {
+  const r = rng(seed);
+  for (let k = 0; k < passes; k++) {
+    const src = p.clone();
+    for (let y = 1; y < p.h - 1; y++) for (let x = 1; x < p.w - 1; x++) {
+      const v = src.get(x, y);
+      const nb = [src.get(x - 1, y), src.get(x + 1, y), src.get(x, y - 1), src.get(x, y + 1)];
+      if (!v) { const n = nb.filter(Boolean); if (n.length && r() < 0.22 * n.length) p.put(x, y, n[r.int(n.length)]); }
+      else if (nb.some((c) => !c) && r() < 0.18) p.clear(x, y);
+    }
+  }
+}
+
 // ---------- big foliage tree ----------
 function leafMass(p, clusters, ramp, seed, smallCount) {
   const r = rng(seed);
@@ -112,38 +155,74 @@ function leafMass(p, clusters, ramp, seed, smallCount) {
   }
 }
 function bigTree(ramp, ink, seed) {
-  const W = 48, H = 64, p = new Pix(W, H);
+  const W = 64, H = 84, p = new Pix(W, H);
   // trunk + asymmetric roots
   const tr = new Pix(W, H);
-  for (let y = 38; y < 62; y++) {
-    const x0 = 20 - (y > 56 ? Math.min(4, y - 56) : 0), x1 = 27 + (y > 58 ? Math.min(2, y - 58) : 0);
-    for (let x = x0; x <= x1; x++) tr.put(x, y, x <= x0 + 1 ? P.wood_md : x >= x1 - 1 ? P.wood_ink : P.wood_dk);
+  for (let y = 50; y < 82; y++) {
+    const x0 = 27 - (y > 74 ? Math.min(5, y - 74) : 0) + (y < 58 ? 1 : 0), x1 = 37 + (y > 77 ? Math.min(3, y - 77) : 0) - (y < 58 ? 1 : 0);
+    for (let x = x0; x <= x1; x++) tr.put(x, y, x <= x0 + 1 ? P.wood_md : x >= x1 - 2 ? P.wood_ink : (x + y) % 5 === 0 ? P.wood_ink : P.wood_dk);
   }
-  // bark lines
-  for (const [x, y0, y1] of [[23, 44, 50], [25, 49, 55], [22, 52, 58]]) tr.vline(x, y0, y1, P.wood_ink);
-  // roots: left 3 px long, right 2 px
-  tr.hline(14, 19, 61, P.wood_dk); tr.hline(15, 19, 60, P.wood_md); tr.set(14, 60, P.wood_md);
-  tr.hline(28, 31, 61, P.wood_ink); tr.hline(28, 30, 60, P.wood_dk);
+  for (const [x, y0, y1] of [[31, 58, 66], [34, 64, 72], [30, 70, 76]]) tr.vline(x, y0, y1, P.wood_ink);
+  tr.hline(19, 26, 81, P.wood_dk); tr.hline(20, 26, 80, P.wood_md); tr.put(19, 80, P.wood_md);
+  tr.hline(38, 42, 81, P.wood_ink); tr.hline(38, 41, 80, P.wood_dk);
+  // a visible branch fork
+  tr.line(29, 54, 22, 46, P.wood_dk); tr.line(30, 54, 23, 46, P.wood_md); tr.line(35, 54, 43, 47, P.wood_ink); tr.line(36, 54, 44, 47, P.wood_dk);
   tr.outline(P.wood_ink);
-  for (let x = 13; x <= 33; x++) if (tr.op(x, 62)) tr.put(x, 62, P.grass_dk);
+  for (let x = 17; x <= 46; x++) if (tr.op(x, 82)) tr.put(x, 82, P.grass_dk);
   p.blit(tr, 0, 0);
   const crown = new Pix(W, H);
-  leafMass(crown, [
-    [24, 22, 20, 15], [13, 20, 10, 9], [35, 20, 10, 9], [24, 10, 13, 9], [15, 30, 10, 8], [33, 30, 10, 8], [24, 33, 13, 8], [9, 27, 6, 6], [39, 27, 6, 6], [24, 4, 8, 4],
-  ], ramp, seed, 46);
+  leafy(crown, [[32, 28, 26, 21], [16, 30, 13, 13], [47, 30, 13, 13], [32, 13, 17, 10], [22, 44, 13, 8], [42, 44, 13, 8], [9, 38, 6, 6], [55, 38, 6, 6]], ramp, seed);
+  // cut a couple of gaps so the trunk/branches show through at the bottom
+  for (const [cx, cy, rx, ry] of [[26, 52, 3, 2.5], [39, 51, 3, 2]]) crown.ellipse(cx, cy, rx, ry, 0) ;
+  for (let y = 48; y < 56; y++) for (let x = 24; x < 42; x++) if (((x - 32) / 7) ** 2 + ((y - 56) / 5) ** 2 < 1) crown.clear(x, y);
+  roughen(crown, seed + 9, 2);
   crown.outline(ink);
   p.blit(crown, 0, 0);
-  // crown shade on trunk top
-  p.hline(20, 27, 42, P.wood_ink); p.hline(21, 26, 43, P.wood_ink);
-  return p.canvas(24, 62);
+  return p.canvas(32, 82);
+}
+function pineTree(seed) {
+  const W = 32, H = 64, p = new Pix(W, H), r = rng(seed);
+  const tr = new Pix(W, H);
+  for (let y = 52; y < 63; y++) for (let x = 14; x <= 17; x++) tr.put(x, y, x === 14 ? P.wood_md : x === 17 ? P.wood_ink : P.wood_dk);
+  tr.outline(P.wood_ink); p.blit(tr, 0, 0);
+  const c = new Pix(W, H);
+  const ramp = [P.grass_ink, P.grass_ink, P.grass_dk, P.grass_md, P.grass_lt];
+  const tiers = [[3, 8, 4], [9, 18, 7], [16, 28, 10], [24, 39, 12.5], [33, 52, 15]]; // top y, bottom y, half width
+  for (const [t0, t1, hw] of tiers) {
+    for (let y = t0; y <= t1; y++) {
+      const f = (y - t0) / (t1 - t0), w = Math.max(1, hw * (0.25 + 0.75 * f));
+      for (let x = Math.round(16 - w); x <= Math.round(15 + w); x++) {
+        const side = (x - 15.5) / w; // -1 left (lit) .. 1 right
+        let idx = f > 0.85 ? 1 : side < -0.35 ? 4 : side < 0.15 ? 3 : side < 0.6 ? 2 : 1;
+        if (hash(x, y) < 0.18) idx = Math.max(1, idx - 1);
+        c.put(x, y, ramp[idx]);
+      }
+      // jagged needle hem
+      if (y === t1) for (let x = Math.round(16 - hw); x <= Math.round(15 + hw); x += 2) c.put(x, y + 1, ramp[1]);
+    }
+  }
+  void r;
+  c.outline(P.grass_ink);
+  p.blit(c, 0, 0);
+  return p.canvas(16, 62);
+  function hash(x, y) { return ((Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453) % 1 + 1) % 1; }
 }
 function lushBush() {
   const p = new Pix(16, 16);
   const ramp = [P.grass_ink, P.grass_dk, P.grass_md, P.grass_lt, P.grass_hi];
-  leafMass(p, [[8, 10, 6.5, 4.5], [4.5, 8, 3.5, 3.5], [11.5, 8, 3.5, 3.5], [8, 6, 4, 3.5]], ramp, 77, 12);
+  leafy(p, [[8, 9.5, 7, 5.5], [5, 7.5, 4, 4], [11, 7.5, 4, 4]], ramp, 77, 0.5);
   for (let x = 0; x < 16; x++) p.clear(x, 15);
   p.outline(P.grass_ink);
   return p.canvas();
+}
+function leafyBush() {
+  const p = new Pix(24, 20);
+  const ramp = [P.grass_ink, P.grass_dk, P.grass_md, P.grass_lt, P.grass_hi];
+  leafy(p, [[12, 12, 10, 6.5], [7, 9, 5.5, 5.5], [17, 9, 5.5, 5.5], [12, 7, 6, 4.5]], ramp, 91, 0.5);
+  roughen(p, 92, 1);
+  for (let x = 0; x < 24; x++) p.clear(x, 19);
+  p.outline(P.grass_ink);
+  return p.canvas(12, 18);
 }
 
 // ---------- house textures ----------
@@ -250,12 +329,13 @@ function texWood() {
 
 export function buildDeco() {
   const S = {};
-  S.deco_grass_1 = [decoGrass(1, 14, 18, 9, GR)];
-  S.deco_grass_2 = [decoGrass(2, 12, 14, 7, GR)];
-  S.deco_grass_3 = [decoGrass(3, 16, 22, 11, GR)];
-  S.deco_grass_4 = [decoGrass(4, 13, 16, 8, GR)];
-  S.deco_grass_dark_1 = [decoGrass(5, 14, 17, 9, GR_DARK)];
-  S.deco_grass_dark_2 = [decoGrass(6, 12, 14, 7, GR_DARK)];
+  S.deco_grass_1 = [decoGrass(1, 20, 26, 15, GR)];
+  S.deco_grass_2 = [decoGrass(2, 16, 20, 11, GR)];
+  S.deco_grass_3 = [decoGrass(3, 24, 32, 19, GR)];
+  S.deco_grass_4 = [decoGrass(4, 18, 23, 13, GR)];
+  S.deco_grass_dark_1 = [decoGrass(5, 18, 22, 13, GR_DARK)];
+  S.deco_grass_dark_2 = [decoGrass(6, 16, 18, 11, GR_DARK)];
+  S.deco_bush_leafy = [leafyBush()];
   S.deco_flower_white = [decoFlower(1, P.white, P.gold_md)];
   S.deco_flower_yellow = [decoFlower(2, P.fx_yellow, P.fx_orange)];
   S.deco_flower_pink = [decoFlower(3, P.heart_hi, P.red_md)];
@@ -268,6 +348,7 @@ export function buildDeco() {
   S.deco_pebble_2 = [decoPebble(2, 10, 5)];
   S.tree = [bigTree([P.grass_ink, P.grass_dk, P.grass_md, P.grass_lt, P.grass_hi], P.grass_ink, 3)];
   S.tree_autumn = [bigTree([P.wood_dk, P.gold_dk, P.gold_md, P.fx_yellow, P.gold_lt], P.wood_ink, 4)];
+  S.tree_pine = [pineTree(5)];
   S.bush = [lushBush()];
   S.tex_wall_plaster = [texPlaster()];
   S.tex_wall_stone = [texStone()];

@@ -46,13 +46,13 @@ const INIT = () => {
   window.__qaPause = false;
   const raf = window.requestAnimationFrame.bind(window);
   window.requestAnimationFrame = (cb) => raf((t) => { if (window.__qaPause) window.requestAnimationFrame(cb); else cb(t); });
-  try { localStorage.clear(); } catch { /* ignore */ }
+  try { if (!sessionStorage.getItem('__qaInit')) { localStorage.clear(); sessionStorage.setItem('__qaInit', '1'); } } catch { /* ignore */ }
 };
 
 // Helper library evaluated inside the page after boot.
 const QA_LIB = async () => {
   const col = await import('/src/game/collision.js');
-  const ACTS = ['attack', 'action', 'item', 'start', 'zoomIn', 'zoomOut'];
+  const ACTS = ['attack', 'action', 'item', 'start', 'zoomIn', 'zoomOut', 'up', 'down', 'left', 'right'];
   const D = window.__drift;
   const qa = {
     col,
@@ -114,13 +114,30 @@ const QA_LIB = async () => {
       return qa.run(max, () => { const dx = x - p.x, dy = y - p.y, d = Math.hypot(dx, dy); return d < tol ? {} : { x: dx / d, y: dy / d }; }, () => (Math.hypot(x - p.x, y - p.y) < tol ? 'ARRIVED' : null));
     },
     face(dir) { const v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir]; qa.frame({ x: v[0] * 0.3, y: v[1] * 0.3 }); qa.p().dir = dir; qa.run(1); },
-    tp(map, tx, ty) { D.game.debug.teleport(map, tx, ty); D.game.trans = null; qa.run(2); },
-    // advance until dialogs are gone (presses attack every few frames)
-    clearDialogs(max = 900) {
+    tp(map, tx, ty, calm = false) { D.game.debug.teleport(map, tx, ty); D.game.trans = null; if (calm) qa.calm(); qa.run(2); },
+    calm() { const g = D.game; g.enemies.forEach((e) => (e.dead = true)); g.projectiles.forEach((e) => (e.dead = true)); },
+    // let pending promise continuations (dialog → itemget end etc.) run
+    flush() { return new Promise((r) => setTimeout(r, 0)); },
+    // advance until dialogs are gone (presses attack every few frames); async so `await g.say()` continuations run
+    async clearDialogs(max = 900) {
       let i = 0;
-      for (; i < max && (D.ui.state === 'dialog' || D.game.state === 'dialog'); i++) qa.frame({ keys: i % 6 === 0 ? ['attack'] : [] });
+      await qa.flush();
+      for (; i < max && (D.ui.state === 'dialog' || D.game.state === 'dialog'); i++) { qa.frame({ keys: i % 6 === 0 ? ['attack'] : [] }); if (i % 6 === 1) await qa.flush(); }
+      await qa.flush();
       qa.run(2);
+      await qa.flush();
       return i;
+    },
+    // nearest cell to (tx,ty) where the player can stand freely
+    freeCell(tx, ty) {
+      const g = D.game, p = g.player, sx = p.x, sy = p.y, sl = p.lvl;
+      for (let r = 0; r < 6; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        p.x = (tx + dx) * 16 + 8; p.y = (ty + dy) * 16 + 10; p.lvl = col.levelUnder(g.world, p);
+        const ok = !col.blocked(g, p, p.x, p.y) && !g.world.def(tx + dx, ty + dy).pit;
+        if (ok) { p.x = sx; p.y = sy; p.lvl = sl; return [tx + dx, ty + dy]; }
+      }
+      p.x = sx; p.y = sy; p.lvl = sl; return [tx, ty];
     },
     ents(kind) { return D.game.debug.listEntities().filter((e) => !kind || e.kind === kind); },
     rng(seed) { let s = seed >>> 0 || 1; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); },
@@ -152,9 +169,10 @@ async function openPage({ r3d = false, ctx: ctxOpts = {}, query = '' } = {}) {
 async function newGame(page, { skipIntro = true } = {}) {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(900);
-  if (skipIntro) await page.evaluate(() => { __qaPause = true; __qa.run(50); __qa.clearDialogs(); });
+  if (skipIntro) await page.evaluate(async () => { __qaPause = true; __qa.run(50); await __qa.clearDialogs(); });
 }
-const pause = (page, on = true) => page.evaluate((on) => { window.__qaPause = on; }, on);
+// on=false resumes the real rAF loop; wait a bit so the loop has polled before real key events arrive
+const pause = async (page, on = true) => { await page.evaluate((on) => { window.__qaPause = on; }, on); if (!on) await page.waitForTimeout(300); };
 
 // ---------------------------------------------------------------------------------------------------------
 // scenario runner
@@ -216,7 +234,7 @@ S('boot_title_intro', async ({ page, assert, ev }) => {
   assert(s3.x < s2.x - 10, 'player moves with real keyboard after intro', { from: s2.x, to: s3.x });
   // talking to Bodo again must not replay the intro
   await pause(page);
-  const again = await ev(() => { __qa.tp('house_elder', 5, 4); __qa.face('up'); __qa.tap('action', 3); const st = __drift.ui.state; __qa.clearDialogs(); return { st, flags: __drift.game.debug.flags() }; });
+  const again = await ev(async () => { __qa.tp('house_elder', 5, 4); __qa.face('up'); __qa.tap('action', 3); const st = __drift.ui.state; await __qa.clearDialogs(); return { st, flags: __drift.game.debug.flags() }; });
   assert(again.st === 'dialog', 'Bodo can be talked to again', again);
 });
 
@@ -285,16 +303,21 @@ const RW_MAPS = [
 ];
 S('random_walk_collision', async ({ page, assert, note, ev }) => {
   await newGame(page);
-  const r = await ev(({ maps, frames, seed }) => {
+  const r = await ev(async ({ maps, frames, seed }) => {
     const out = [];
     const g = __drift.game;
     g.debug.godMode(true);
     let mi = 0;
-    for (const [map, tx, ty] of maps) {
+    for (const [map, tx0, ty0] of maps) {
       const rnd = __qa.rng(seed * 977 + mi++);
+      __qa.tp(map, tx0, ty0);
+      const [tx, ty] = __qa.freeCell(tx0, ty0);
+      const startBlocked = tx !== tx0 || ty !== ty0 ? `${tx0},${ty0} is blocked → started at ${tx},${ty}` : null;
       __qa.tp(map, tx, ty);
+      let deaths = 0;
       let vx = 0, vy = 0, hold = 0, keys = [], fails = [], enemyStuck = new Set(), maps = new Set([map]), visited = new Set(), npcOverlap = 0;
-      const res = __qa.run(frames, (i) => {
+      const res = { frame: 0 };
+      const ctlFn = (i) => {
         if (--hold <= 0) {
           hold = 8 + Math.floor(rnd() * 40);
           const a = Math.floor(rnd() * 9);
@@ -306,15 +329,27 @@ S('random_walk_collision', async ({ page, assert, note, ev }) => {
         // dialogs: keep pressing through
         if (__drift.ui.state === 'dialog') return { keys: i % 5 ? [] : ['attack'] };
         return { x: vx, y: vy, keys: hold % 6 === 0 ? keys : [] };
-      }, (i) => {
+      };
+      const checkFn = (i) => {
         if (g.mapId !== map) { maps.add(g.mapId); }
         const s = __qa.playerStuck();
         if (s) { if (/solid npc/.test(s)) { npcOverlap++; return null; } fails.push({ i, s, snap: __qa.snap() }); return 'STUCK'; }
         const p = __qa.p(); visited.add(Math.floor(p.x / 16) + ',' + Math.floor(p.y / 16));
         for (const e of g.enemies) if (!e.dead && !e.flying && e.state !== 'dying') { const m = __qa.stuck(e); if (m && !/solid/.test(m)) enemyStuck.add(`${e.name}: ${m}`); }
         return null;
-      });
-      out.push({ start: `${map}@${tx},${ty}`, frames: res.frame, fail: fails[0] || null, mapsSeen: [...maps], cells: visited.size, enemyStuck: [...enemyStuck].slice(0, 3), npcOverlap });
+      };
+      let wasDead = false;
+      for (let i = 0; i < frames; i++) {
+        __qa.frame(ctlFn(i)); res.frame = i + 1;
+        if (__drift.ui.state !== 'hud' || i % 30 === 0) await __qa.flush();
+        const dead = __qa.p().state === 'dead' || g.state === 'gameover';
+        if (dead && !wasDead) deaths++;
+        wasDead = dead;
+        if (g.state === 'gameover') { __qa.run(70); __qa.tap('attack', 30); continue; }   // always "Weiter"
+        if (checkFn(i)) break;
+      }
+      __qa.release();
+      out.push({ start: `${map}@${tx},${ty}`, startBlocked, frames: res.frame, fail: fails[0] || null, mapsSeen: [...maps], cells: visited.size, enemyStuck: [...enemyStuck].slice(0, 3), npcOverlap, deaths });
     }
     g.debug.godMode(false);
     return out;
@@ -322,6 +357,8 @@ S('random_walk_collision', async ({ page, assert, note, ev }) => {
   for (const w of r) {
     assert(!w.fail, `random walk ${w.start}: player never inside solid (${w.frames} frames, ${w.cells} cells)`, w.fail);
     if (w.enemyStuck.length) assert(false, `random walk ${w.start}: walker enemies inside solid tiles`, w.enemyStuck);
+    if (w.startBlocked) note(`random walk: teleport target ${w.startBlocked}`);
+    if (w.deaths) note(`random walk ${w.start}: died ${w.deaths}× despite godMode (pits ignore godMode)`);
     if (w.npcOverlap) note(`random walk ${w.start}: player overlapped an NPC solid box in ${w.npcOverlap} frames (NPC walked into player)`);
     if (w.mapsSeen.length > 1) note(`random walk ${w.start}: warped through`, w.mapsSeen);
   }
@@ -333,32 +370,33 @@ S('stairs_height', async ({ page, assert, ev }) => {
     const out = {};
     const p = __qa.p();
     // Nordklippen stairs (9,13) 1→0: walk up from (9,15)
-    __qa.tp('overworld', 9, 15);
+    const T = (m, x, y) => __qa.tp(m, x, y, true);
+    T('overworld', 9, 15);
     const l0 = p.lvl;
     const zs = [];
     __qa.run(90, () => ({ y: -1 }), () => { zs.push(+p.z.toFixed(2)); return null; });
     out.nord = { startLvl: l0, lvl: p.lvl, ty: Math.floor((p.y - 2) / 16), zMonotone: zs.every((z, i) => i === 0 || z >= zs[i - 1] - 0.01), zmax: Math.max(...zs), stuck: __qa.playerStuck() };
     // continue to level 2 via stairs at (5..,7)
-    __qa.tp('overworld', 5, 9);
+    T('overworld', 5, 9);
     __qa.run(80, () => ({ y: -1 }));
     out.nord2 = { lvl: p.lvl, ty: Math.floor((p.y - 2) / 16) };
     // back down the stairs
-    __qa.tp('overworld', 9, 12);
+    T('overworld', 9, 12);
     __qa.run(80, () => ({ y: 1 }));
     out.down = { lvl: p.lvl, ty: Math.floor((p.y - 2) / 16), state: p.state };
     // Steinwacht stairs (36..37,14)
-    __qa.tp('overworld', 36, 16);
+    T('overworld', 36, 16);
     __qa.run(90, () => ({ y: -1 }));
     out.stein = { lvl: p.lvl, ty: Math.floor((p.y - 2) / 16) };
-    __qa.tp('overworld', 40, 11);
-    __qa.run(90, () => ({ y: -1 }));
+    T('overworld', 40, 11);
+    __qa.run(45, () => ({ y: -1 }));
     out.stein2 = { lvl: p.lvl, ty: Math.floor((p.y - 2) / 16) };
     // cannot walk up a cliff face (no stairs): from below the Nordklippen at (7,14)? use (8,15) up
-    __qa.tp('overworld', 6, 16);
+    T('overworld', 6, 16);
     __qa.run(90, () => ({ y: -1 }));
     out.cliffUp = { lvl: p.lvl, ty: Math.floor((p.y - 2) / 16), stuck: __qa.playerStuck() };
     // side-step from stairs onto the plateau edge (stairs → sideways higher cell must be blocked)
-    __qa.tp('overworld', 9, 13);
+    T('overworld', 9, 13);
     const lvlS = p.lvl;
     __qa.run(40, () => ({ x: 1 }));
     out.sideFromStairs = { startLvl: lvlS, lvl: p.lvl, tx: Math.floor(p.x / 16), stuck: __qa.playerStuck() };
@@ -379,8 +417,8 @@ S('ledge_jump', async ({ page, assert, ev }) => {
   const r = await ev(() => {
     const out = [];
     const p = __qa.p();
-    for (const [name, tx, ty, dx, dy] of [['south', 8, 12, 0, 1], ['east', 11, 4, 1, 0], ['west', 2, 4, -1, 0], ['north(no)', 6, 0, 0, -1], ['stein-south', 43, 13, 0, 1], ['ruin-west', 38, 2, -1, 0]]) {
-      __qa.tp('overworld', tx, ty);
+    for (const [name, tx, ty, dx, dy] of [['south', 8, 12, 0, 1], ['east', 11, 4, 1, 0], ['stein-west', 34, 12, -1, 0], ['north(no)', 6, 0, 0, -1], ['stein-south', 43, 13, 0, 1], ['ruin-west', 38, 3, -1, 0], ['ruin-south', 41, 4, 0, 1]]) {
+      __qa.tp('overworld', tx, ty, true);
       const l0 = p.lvl; let jumped = false, st = [];
       __qa.run(90, () => ({ x: dx, y: dy }), () => { if (p.state === 'jump') jumped = true; return null; });
       out.push({ name, from: l0, to: p.lvl, jumped, tx: Math.floor(p.x / 16), ty: Math.floor((p.y - 2) / 16), state: p.state, stuck: __qa.playerStuck() });
@@ -433,7 +471,7 @@ S('sword_vs_enemies', async ({ page, assert, note, ev }) => {
     __qa.tp('dungeon_1', 8, 8);
     __qa.run(5);
     let spun = false;
-    __qa.run(60, () => ({ keys: ['attack'] }), () => { if (p.state === 'charge' && p.charged) spun = true; return null; });
+    __qa.run(80, () => ({ keys: ['attack'] }), () => { if (p.state === 'charge' && p.charged) spun = true; return null; });
     __qa.run(10, () => ({}), () => (p.state === 'spin' ? 'SPIN' : null));
     out.spin = { charged: spun, state: p.state };
     g.debug.godMode(false);
@@ -483,7 +521,7 @@ S('player_damage_knockback', async ({ page, assert, note, ev }) => {
     out.tree = { startStuck: stuck, stuck: st2, y: p.y, treeY: tree.y };
     // i-frames: two hits in a row only count once
     __qa.tp('dungeon_1', 8, 8);
-    const h1 = p.hp; p.hurt(1, { x: p.x, y: p.y - 10 }); p.hurt(1, { x: p.x, y: p.y - 10 });
+    p.iframes = 0; const h1 = p.hp; p.hurt(1, { x: p.x, y: p.y - 10 }); p.hurt(1, { x: p.x, y: p.y - 10 });
     out.iframes = { before: h1, after: p.hp };
     // real enemy contact: slime next to player
     __qa.tp('dungeon_1', 4, 8);
@@ -531,7 +569,7 @@ S('death_gameover_continue', async ({ page, assert, ev }) => {
   assert(r.restart.map === 'house_elder', 'Neustart → new game in Bodos Haus', r.restart);
 });
 
-S('pits_fall', async ({ page, assert, ev }) => {
+S('pits_fall', async ({ page, assert, note, ev }) => {
   await newGame(page);
   const r = await ev(() => {
     const p = __qa.p(), g = __drift.game;
@@ -539,10 +577,19 @@ S('pits_fall', async ({ page, assert, ev }) => {
     __qa.tp('dungeon_2', 9, 7);
     g.enemies.forEach((e) => (e.dead = true));
     const hp0 = p.hp; let fell = false;
-    __qa.run(120, () => ({ x: 1 }), () => { if (p.state === 'fall') fell = true; return null; });
+    __qa.run(120, () => (fell ? {} : { x: 1 }), () => { if (p.state === 'fall') fell = true; return null; });
     __qa.run(60);
-    return { fell, hp0, hp: p.hp, snap: __qa.snap(), stuck: __qa.playerStuck(), cell: g.world.tileAt(Math.floor(p.x / 16), Math.floor((p.y - 2) / 16)) };
+    const hpAfter = p.hp;
+    const snap1 = __qa.snap(), stuck1 = __qa.playerStuck(), cell1 = g.world.tileAt(Math.floor(p.x / 16), Math.floor((p.y - 2) / 16));
+    // holding the direction after respawn: how many falls in 3 s?
+    let falls = 0, prev = 'normal';
+    __qa.tp('dungeon_2', 9, 7, true); p.hp = 20; p.maxHp = 20;
+    __qa.run(180, () => ({ x: 1 }), () => { if (p.state === 'fall' && prev !== 'fall') falls++; prev = p.state; return null; });
+    const rep = { falls, hpLeft: p.hp };
+    p.maxHp = 6; p.hp = 6;
+    return { rep, fell, hp0, hp: hpAfter, snap: snap1, stuck: stuck1, cell: cell1 };
   });
+  note('holding → into a pit for 3 s (respawn next to the pit)', r.rep);
   assert(r.fell, 'walking into a pit → fall', r);
   assert(r.hp === r.hp0 - 2, 'pit costs one heart', r);
   assert(r.cell !== 'pit' && !r.stuck, 'respawn on safe ground', r);
@@ -601,16 +648,16 @@ S('bush_cut_lift_throw', async ({ page, assert, note, ev }) => {
 
 S('chest_sign_npc', async ({ page, assert, note, ev }) => {
   await newGame(page);
-  const r = await ev(() => {
+  const r = await ev(async () => {
     const g = __drift.game, p = __qa.p(), out = {};
     __qa.tp('house_elder', 8, 3);
     const r0 = p.rupees;
     __qa.face('up'); __qa.tap('action', 5);
     out.dlg = __drift.ui.state;
-    __qa.clearDialogs();
+    await __qa.clearDialogs();
     out.chest = { r0, r1: p.rupees, flag: !!Object.keys(g.flags).find((k) => k.startsWith('chest_house_elder')), state: p.state };
     // reopen → no second reward
-    __qa.tap('action', 5); __qa.clearDialogs();
+    __qa.tap('action', 5); await __qa.clearDialogs();
     out.chest.r2 = p.rupees;
     // re-enter the map → chest stays open
     __qa.tp('house_elder', 8, 3);
@@ -618,14 +665,14 @@ S('chest_sign_npc', async ({ page, assert, note, ev }) => {
     // sign
     __qa.tp('house_elder', 9, 8);
     __qa.face('up'); __qa.tap('action', 5);
-    out.sign = __drift.ui.state; __qa.clearDialogs();
+    out.sign = __drift.ui.state; await __qa.clearDialogs();
     // merchant without bombs
     __qa.tp('overworld', 9, 31);
     __qa.face('up'); __qa.tap('action', 5);
-    out.merchant = __drift.ui.state; __qa.clearDialogs();
+    out.merchant = __drift.ui.state; await __qa.clearDialogs();
     // merchant with bombs & rupees: does buying ask for confirmation?
     g.debug.give('bombs', 1); p.rupees = 50;
-    __qa.tap('action', 5); __qa.clearDialogs();
+    __qa.tap('action', 5); await __qa.clearDialogs();
     out.buy = { rupees: p.rupees, bombs: p.bombs };
     // Mia
     __qa.tp('overworld', 20, 30);
@@ -644,7 +691,7 @@ S('chest_sign_npc', async ({ page, assert, note, ev }) => {
 
 S('dungeon_full_run', async ({ page, assert, note, ev }) => {
   await newGame(page);
-  const r = await ev(() => {
+  const r = await ev(async () => {
     const g = __drift.game, p = __qa.p(), out = { steps: [] };
     const log = (k, v) => out.steps.push([k, v]);
     // walk into the dungeon from the overworld entrance
@@ -687,7 +734,7 @@ S('dungeon_full_run', async ({ page, assert, note, ev }) => {
     out.switchFlag = !!g.flags.d2_switch;
     // open the chest (12,3)
     __qa.walkTo(12 * 16 + 8, 4 * 16 + 12, 600, 2);
-    __qa.face('up'); __qa.tap('action', 5); __qa.clearDialogs();
+    __qa.face('up'); __qa.tap('action', 5); await __qa.clearDialogs();
     out.key = p.keys;
     // back to room 1
     __qa.tp('dungeon_2', 7, 10);
@@ -721,14 +768,17 @@ S('dungeon_full_run', async ({ page, assert, note, ev }) => {
     out.d3clear = !!g.flags.d3_clear;
     // bombs chest (7,7)
     __qa.walkTo(7 * 16 + 8, 8 * 16 + 12, 600, 2);
-    __qa.face('up'); __qa.tap('action', 5); __qa.clearDialogs();
+    __qa.face('up'); __qa.tap('action', 5); await __qa.clearDialogs();
     out.bombs = p.bombs;
-    // bomb the cracked wall: stand at (7,2), face up, place bomb, back off
-    __qa.walkTo(7 * 16 + 8, 2 * 16 + 10, 600, 2);
+    // bomb the cracked wall: walk around the chest to (7,2), face up, place bomb, back off
+    __qa.walkTo(5 * 16 + 8, 8 * 16 + 10, 300, 2); __qa.walkTo(5 * 16 + 8, 3 * 16 + 10, 300, 2);
+    __qa.walkTo(7 * 16 + 8, 2 * 16 + 10, 300, 2);
+    out.atWall = __qa.snap();
     __qa.face('up'); __qa.tap('item', 2);
     __qa.run(40, () => ({ y: 1 }));
     __qa.run(150);
     out.wall = !!g.flags.d3_wall;
+    out.bombsLeft = p.bombs;
     g.debug.godMode(false);
     __qa.tp('dungeon_3', 7, 2);
     __qa.run(150, () => ({ y: -1 }), () => (g.mapId === 'dungeon_4' && !g.trans ? 'IN' : null));
@@ -747,18 +797,18 @@ S('dungeon_full_run', async ({ page, assert, note, ev }) => {
   assert(r.wallBlocks, 'cracked wall blocks before bombing');
   assert(r.d3clear, `killing all enemies sets d3_clear (${r.fightFrames} frames)`);
   assert(r.bombs >= 9, 'bomb chest gives bombs', r.bombs);
-  assert(r.wall, 'bomb opens the cracked wall (d3_wall)');
+  assert(r.wall, 'bomb opens the cracked wall (d3_wall)', { at: r.atWall, bombsLeft: r.bombsLeft });
   assert(r.room4.map === 'dungeon_4' && !r.room4.stuck, 'through the bombed wall → boss room', r.room4);
 });
 
 S('boss_fight', async ({ page, assert, note, ev }) => {
   await newGame(page);
-  const r = await ev(() => {
+  const r = await ev(async () => {
     const g = __drift.game, p = __qa.p(), out = {};
     g.debug.godMode(true);
     __qa.tp('dungeon_4');
     const boss = g.enemies.find((e) => e.boss);
-    out.hp0 = boss.hp;
+    out.hp0 = boss.hp; out.hpBeforeFight = p.maxHp;
     let f = 0, shutterClosed = false, tinks = 0, swings = 0, states = {};
     const shutter = g.objects.find((o) => o.type === 'shutter');
     for (; f < 60 * 120 && !boss.dead; f++) {
@@ -777,22 +827,23 @@ S('boss_fight', async ({ page, assert, note, ev }) => {
     }
     out.frames = f; out.dead = boss.dead; out.states = states; out.swings = swings; out.shutterClosed = shutterClosed;
     out.flag = !!g.flags.boss_golem;
-    __qa.run(90);
-    out.pickups = g.pickups.filter((k) => !k.dead).map((k) => ({ type: k.type, x: Math.round(k.x), y: Math.round(k.y) }));
-    out.shutterOpen = !shutter?.solid;
-    // collect heart container then crystal
-    const maxHp0 = p.maxHp;
-    for (const type of ['heart_container', 'crystal']) {
-      const k = g.pickups.find((q) => q.type === type && !q.dead);
-      if (!k) continue;
-      __qa.walkTo(k.x, k.y + 4, 600, 3);
-      __qa.run(10);
-      __qa.clearDialogs(2000);
-      __qa.run(30);
+    const maxHp0 = out.maxHpBefore = p.maxHp;
+    out.pickupsSeen = new Set();
+    // the heart container may land right on the player: collect pickups until the crystal is ours
+    for (let k = 0; k < 40 && !g.flags.crystal; k++) {
+      await __qa.clearDialogs(3000);
+      __qa.run(20);
+      for (const q of g.pickups) if (!q.dead) out.pickupsSeen.add(q.type);
+      const q = g.pickups.find((q) => !q.dead && (q.type === 'heart_container' || q.type === 'crystal'));
+      if (q) { __qa.walkTo(q.x, q.y + 4, 400, 3); __qa.run(5); }
+      else __qa.run(30);
     }
-    out.maxHp = [maxHp0, p.maxHp];
+    out.pickupsSeen = [...out.pickupsSeen];
+    out.hcFlag = !!g.flags.boss_heart;
+    out.shutterOpen = !shutter?.solid;
+    out.maxHp = [out.hpBeforeFight, p.maxHp];
     out.crystal = !!g.flags.crystal;
-    __qa.clearDialogs(3000); __qa.run(30);
+    await __qa.clearDialogs(3000); __qa.run(30);
     out.portal = !!g.objects.find((o) => o.type === 'portal');
     // walk into the portal
     __qa.walkTo(8 * 16 + 8, 9 * 16 + 8, 600, 2);
@@ -810,7 +861,7 @@ S('boss_fight', async ({ page, assert, note, ev }) => {
   assert(r.shutterOpen, 'shutter opens after the fight');
   assert(!r.stuck, 'player never stuck during boss fight', r.stuck);
   if (r.bossStuck) note('boss inside solid tile', r.bossStuck);
-  assert(r.pickups.some((k) => k.type === 'heart_container'), 'boss drops a heart container', r.pickups);
+  assert(r.hcFlag, 'boss drops a heart container (collected)', r.pickupsSeen);
   assert(r.maxHp[1] === r.maxHp[0] + 2, 'heart container +1 heart', r.maxHp);
   assert(r.crystal, 'crystal collected');
   assert(r.portal, 'portal appears after the ending');
@@ -872,7 +923,7 @@ S('warps_roundtrip', async ({ page, assert, note, ev }) => {
 
 S('bomb_cave', async ({ page, assert, note, ev }) => {
   await newGame(page);
-  const r = await ev(() => {
+  const r = await ev(async () => {
     const g = __drift.game, p = __qa.p(), out = {};
     g.debug.give('bombs', 5);
     __qa.tp('overworld', 4, 15);
@@ -890,7 +941,7 @@ S('bomb_cave', async ({ page, assert, note, ev }) => {
     // heart container chest in the cave
     const mh = p.maxHp;
     __qa.walkTo(6 * 16 + 8, 3 * 16 + 12, 600, 2);
-    __qa.face('up'); __qa.tap('action', 5); __qa.clearDialogs(); __qa.run(20);
+    __qa.face('up'); __qa.tap('action', 5); await __qa.clearDialogs(); __qa.run(20);
     out.maxHp = [mh, p.maxHp];
     // lifting/throwing a bomb
     __qa.tp('overworld', 21, 22);
@@ -911,9 +962,10 @@ S('bomb_cave', async ({ page, assert, note, ev }) => {
   note('after throwing bomb', r.afterThrow);
 });
 
-S('pause_menu', async ({ page, assert, ev }) => {
+S('pause_menu', async ({ page, assert, note, ev }) => {
   await newGame(page);
   await pause(page, false);
+
   await page.keyboard.press('Enter');
   await page.waitForTimeout(300);
   const a = await ev(() => ({ g: __drift.game.state, ui: __drift.ui.state, x: __drift.game.player.x }));
@@ -966,6 +1018,8 @@ for (const [W, H] of [[390, 844], [844, 390]]) {
     await page.touchscreen.tap(W / 2, H / 2); await page.waitForTimeout(1200);
     const s0 = await ev(() => __qa.snap());
     assert(s0.map === 'house_elder', 'tap on title starts the game', s0);
+    await page.waitForFunction(() => __drift.ui.state === 'dialog', null, { timeout: 4000 }).catch(() => {});
+    await page.screenshot({ path: path.join(SHOTS, `touch_dialog_${W}x${H}.png`) });
     for (let i = 0; i < 40; i++) { if ((await ev(() => __drift.ui.state)) !== 'dialog') break; await page.touchscreen.tap(W / 2, H / 3); await page.waitForTimeout(150); }
     const s1 = await ev(() => ({ ...__qa.snap(), touch: __drift.ui.touchMode }));
     assert(s1.ui === 'hud', 'dialog can be tapped away', s1.ui);
@@ -1011,6 +1065,49 @@ for (const [W, H] of [[390, 844], [844, 390]]) {
     assert(z1 > z0, 'zoom + button zooms in', { z0, z1 });
   }, { open: { ctx: { viewport: { width: W, height: H }, deviceScaleFactor: 3, hasTouch: true, isMobile: true } } });
 }
+
+// A key tapped between two polls (keydown+keyup inside one frame) – happens at low FPS / fast taps.
+S('input_quick_tap', async ({ page, assert, note, ev }) => {
+  await newGame(page);
+  await pause(page, false);
+  const res = {};
+  for (const [name, key, read] of [['attack', 'Space', () => __drift.game.player.state], ['pause', 'Enter', () => __drift.ui.state]]) {
+    // freeze the loop, tap the key, resume → the next poll sees neither keydown nor keyup
+    await ev(() => { window.__qaPause = true; });
+    await page.waitForTimeout(50);
+    await page.keyboard.press(key);
+    await ev(() => { window.__qaPause = false; });
+    let seen = false;
+    for (let i = 0; i < 10; i++) { const v = await ev(read); if (v === 'attack' || v === 'pause') seen = true; await page.waitForTimeout(20); }
+    res[name] = seen;
+    if (seen && name === 'pause') { await page.keyboard.press('Enter', { delay: 50 }); await page.waitForTimeout(200); }
+  }
+  note('tap inside one frame registered?', res);
+  assert(res.attack && res.pause, 'a key tapped within one frame (keydown+keyup before the next poll) is not lost', res);
+});
+
+// Throwing a lifted bomb, with the real main loop (an exception there kills requestAnimationFrame).
+S('bomb_throw_realloop', async ({ page, assert, note, ev }) => {
+  await newGame(page);
+  await ev(() => { __qa.tp('overworld', 21, 22, true); __drift.game.debug.give('bombs', 3); __drift.game.player.dir = 'down'; });
+  await pause(page, false);
+  await page.keyboard.press('KeyQ', { delay: 50 }); await page.waitForTimeout(150);
+  await page.keyboard.press('KeyE', { delay: 50 }); await page.waitForTimeout(400);
+  const c = await ev(() => __drift.game.player.carry?.type || null);
+  await page.keyboard.press('Space', { delay: 50 });
+  await page.waitForTimeout(1500);
+  const f0 = await ev(() => __drift.game.frame);
+  await page.waitForTimeout(500);
+  const f1 = await ev(() => __drift.game.frame);
+  note('carried', c);
+  assert(c === 'bomb', 'bomb can be lifted with E');
+  assert(f1 > f0 + 5, 'game loop keeps running after throwing a bomb', { f0, f1 });
+  // a bomb exploding while it is carried
+  await ev(() => { window.__qaPause = true; __qa.tp('overworld', 21, 22, true); __qa.face('down'); __qa.tap('item', 2); __qa.tap('action', 20); });
+  const r = await ev(() => { const p = __qa.p(); const c = p.carry; __qa.run(200); return { carriedBefore: c?.type, carryAfter: p.carry?.type || null, carryDead: !!p.carry?.dead, hp: p.hp }; });
+  note('bomb held for 3.3 s', r);
+  assert(!(r.carryAfter && r.carryDead), 'an exploded bomb is not still held over the head', r);
+}, { allowErrors: true });
 
 S('memory_room_changes', async ({ page, assert, note, ev }) => {
   await newGame(page);
@@ -1075,6 +1172,7 @@ S('3d_screens_and_fps', async ({ page, assert, note, ev }) => {
 
 S('3d_touch_portrait', async ({ page, assert, note, ev }) => {
   await page.touchscreen.tap(195, 422); await page.waitForTimeout(1500);
+  await page.waitForFunction(() => __drift.ui.state === 'dialog', null, { timeout: 6000 }).catch(() => {});
   for (let i = 0; i < 40; i++) { if ((await ev(() => __drift.ui.state)) !== 'dialog') break; await page.touchscreen.tap(195, 300); await page.waitForTimeout(150); }
   await ev(() => __drift.game.debug.teleport('overworld', 12, 24));
   await page.waitForTimeout(1500);

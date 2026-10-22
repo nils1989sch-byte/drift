@@ -100,7 +100,7 @@ export function cobbleTiles() {
   };
   const pts = [];
   const r = rng(909);
-  for (let gy = 0; gy < 4; gy++) for (let gx = 0; gx < 3; gx++) pts.push([gx * 5.33 + r() * 2.5 + (gy % 2) * 2.6, gy * 4 + r() * 1.5]);
+  for (let gy = 0; gy < 3; gy++) for (let gx = 0; gx < 3; gx++) pts.push([gx * 5.33 + r() * 2 + (gy % 2) * 2.6, gy * 5.33 + r() * 1.5]);
   return frames([cv(mk(1, pts)), cv(mk(2, pts))], { mode: 'variant' });
 }
 export function grassFlowers() {

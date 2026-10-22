@@ -50,13 +50,15 @@ function renderLogo(t) {
 
 // soft glow: logo silhouette downsampled and upscaled with smoothing (works without ctx.filter)
 let glowSmall = null;
+const GLOW_M = 4; // transparent margin (texels) so the bilinear upscale fades out instead of ending in a hard box
 function logoGlow(logo, k) {
-  const w = Math.max(2, Math.ceil(logo.width / k)), h = Math.max(2, Math.ceil(logo.height / k));
+  const w = Math.ceil(logo.width / k) + GLOW_M * 2, h = Math.ceil(logo.height / k) + GLOW_M * 2;
   if (!glowSmall || glowSmall.width !== w || glowSmall.height !== h) { glowSmall = document.createElement('canvas'); glowSmall.width = w; glowSmall.height = h; }
   const g = glowSmall.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
   g.clearRect(0, 0, w, h);
   g.imageSmoothingEnabled = true;
-  g.drawImage(logo, 0, 0, w, h);
+  g.drawImage(logo, GLOW_M, GLOW_M, logo.width / k, logo.height / k);
   g.globalCompositeOperation = 'source-in';
   g.fillStyle = '#ffd890'; g.fillRect(0, 0, w, h);
   g.globalCompositeOperation = 'source-over';
@@ -101,9 +103,24 @@ export function createScreens(U) {
   const title = { active: false, t: 0, out: -1, onStart: null, motes: [] };
   function showTitle(onStart) {
     title.active = true; title.t = 0; title.out = -1; title.onStart = onStart || null;
+    title.fromState = U.game?.state === 'title' || !U.game; // opened while the game is in its title state
     title.motes = Array.from({ length: 46 }, () => ({ x: Math.random(), y: Math.random(), s: 0.3 + Math.random(), p: Math.random() * 6 }));
     U.onModal(true, 'title');
     U.sfx?.music?.('title');
+  }
+  /** Close the title immediately (no callback), e.g. when the game left its 'title' state on its own. */
+  function closeTitle() {
+    if (!title.active) return;
+    title.active = false; title.out = -1; title.onStart = null;
+    U.onModal(false, 'title');
+  }
+  /** Title must never outlive the game's title state. */
+  function checkTitle() {
+    if (!title.active) return;
+    const g = U.game;
+    if (!g || g.state === undefined) return;
+    if (g.state === 'title') { title.fromState = true; return; }
+    if (title.fromState || title.out >= 0) closeTitle();
   }
   function startGame() {
     if (title.out >= 0 || title.t < 0.35) return;
@@ -155,16 +172,20 @@ export function createScreens(U) {
     const lx = Math.floor(W / 2 - (logo.width * lsc) / 2);
     const ly = Math.floor(H * 0.17) - PADT * lsc;
     {
-      const gl = logoGlow(logo, 3);
+      const K = 3;
+      const gl = logoGlow(logo, K);
       const pulse = 0.55 + 0.15 * Math.sin(t * 1.6);
       ctx.save();
       ctx.imageSmoothingEnabled = true;
       ctx.globalCompositeOperation = 'lighter';
-      const pad = 6 * lsc;
-      ctx.globalAlpha = a * pulse * 0.45 * clamp(t / 1.2, 0, 1);
-      ctx.drawImage(gl, lx - pad, ly - pad, logo.width * lsc + pad * 2, logo.height * lsc + pad * 2);
-      ctx.globalAlpha = a * pulse * 0.22 * clamp(t / 1.2, 0, 1);
-      ctx.drawImage(gl, lx - pad * 3, ly - pad * 2, logo.width * lsc + pad * 6, logo.height * lsc + pad * 4);
+      const f = lsc * K; // UI px per glow texel
+      const cxl = lx + (logo.width * lsc) / 2, cyl = ly + (logo.height * lsc) / 2;
+      const fade = clamp(t / 1.2, 0, 1);
+      for (const [sc, al] of [[1.0, 0.42], [1.35, 0.2]]) {
+        const dw = gl.width * f * sc, dh = gl.height * f * sc;
+        ctx.globalAlpha = a * pulse * al * fade;
+        ctx.drawImage(gl, cxl - dw / 2, cyl - dh / 2, dw, dh);
+      }
       ctx.restore();
       ctx.imageSmoothingEnabled = false;
     }
@@ -435,13 +456,14 @@ export function createScreens(U) {
 
   return {
     title, pause, over,
-    showTitle, showGameOver, openPause, closePause,
+    showTitle, showGameOver, openPause, closePause, closeTitle, checkTitle,
     update(dt) {
       if (title.active) updateTitle(dt);
       else if (over.active) updateOver(dt);
       else if (pause.active) updatePause(dt);
     },
     draw(ctx) {
+      checkTitle();
       if (pause.active) drawPause(ctx);
       if (over.active) drawOver(ctx);
       if (title.active) drawTitle(ctx);

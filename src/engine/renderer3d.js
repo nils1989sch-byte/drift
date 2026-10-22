@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { TILE, LEVEL } from './constants.js';
 import { TILE_DEFS } from '../data/tiles.js';
+import { createModelFactory, houseTextures as houseTexturesFallback } from './models3d.js';
 
 const WALL_LEVELS = 2;      // solid wall tiles are raised blocks of this many levels
 const PLINTH = 40;          // diorama base depth (world px)
@@ -68,6 +69,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   const spriteKey = new Map(); // canvas -> sprite key
   for (const [k, arr] of Object.entries(assets.sprites || {})) for (const c of arr || []) if (c && !spriteKey.has(c)) spriteKey.set(c, k);
   const sp = (k) => assets.sprites?.[k]?.[0];
+  const models3d = createModelFactory({ tex, sp, mobile });
+  const MODEL_KEYS = { tree: ['tree', 'green', 0.82], tree_autumn: ['tree', 'autumn', 0.85], tree_pine: ['tree', 'pine', 0.85], tree_small: ['tree', 'green', 0.55], bush: ['bush', null, 1] };
 
   // ---------- state per world ----------
   let cur = null; // { world, group, groundCanvas, groundTex, animCells, deco }
@@ -302,31 +305,34 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       ground.receiveShadow = true;
       group.add(ground);
     }
-    // forest ring: instanced tree billboards around the map
-    const keys = ['tree_pine', 'tree', 'tree_autumn', 'tree_small'].filter((k) => sp(k));
-    if (!keys.length) return;
-    const dummy = new THREE.Object3D();
-    keys.forEach((key, ki) => {
-      const img = sp(key);
-      const pts = [];
-      for (let i = 0; i < 900; i++) {
-        const hsh = hash(i * 7 + ki * 1013, 91);
-        if (hsh % keys.length !== ki && keys.length > 1) continue;
-        const r1 = (hash(i, 17 + ki) % 10000) / 10000, r2 = (hash(i, 29 + ki) % 10000) / 10000;
-        const x = -260 + r1 * (W + 520), z = -300 + r2 * (H + 560);
-        const inside = (x > -12 && x < W + 12 && z > -6) || z > H - 40; // keep the camera side (south) open
-        if (inside) continue;
-        pts.push([x, z, 0.85 + ((hsh >> 8) % 100) / 180]);
-      }
-      const w = img.width, h = img.height, ax = img.ax ?? w / 2, ay = img.ay ?? h - 1;
-      const geo = new THREE.PlaneGeometry(1, 1);
-      geo.translate(0.5 - ax / w, 0.5 + (ay + 1 - h) / h + (h - 1 - ay) / h, 0);
-      billboardNormals(geo);
-      const mesh = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ map: tex(img), alphaTest: 0.5, side: THREE.DoubleSide }), pts.length);
-      pts.forEach(([x, z, sc], i) => { dummy.position.set(x, -0.6, z); dummy.scale.set(w * sc * (i & 1 ? -1 : 1), h * sc, 1); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix); });
-      mesh.castShadow = true; mesh.receiveShadow = true;
-      mesh.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex(img), alphaTest: 0.5 });
-      group.add(mesh);
+    // forest ring: instanced 3D trees around the map (templates expanded per child mesh)
+    const kinds = ['pine', 'green', 'green', 'autumn'];
+    const groups = kinds.map(() => []);
+    for (let i = 0; i < (mobile ? 260 : 520); i++) {
+      const r1 = (hash(i, 17) % 10000) / 10000, r2 = (hash(i, 29) % 10000) / 10000;
+      const x = -300 + r1 * (W + 600), z = -320 + r2 * (H + 340);
+      if ((x > -14 && x < W + 14 && z > -10) || z > H - 40) continue; // keep map + camera side open
+      groups[hash(i, 5) % kinds.length].push([x, z, 0.9 + (hash(i, 9) % 60) / 100, (hash(i, 11) % 628) / 100]);
+    }
+    const mtx = new THREE.Matrix4(), pm = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0);
+    kinds.forEach((kind, ki) => {
+      const pts = groups[ki];
+      if (!pts.length) return;
+      const tpl = models3d.tree(kind, 17 + ki * 31, 1);
+      tpl.position.set(0, 0, 0); tpl.rotation.set(0, 0, 0); tpl.scale.setScalar(1); tpl.updateMatrixWorld(true);
+      tpl.traverse((o) => {
+        if (!o.isMesh) return;
+        const im = new THREE.InstancedMesh(o.geometry, o.material, pts.length);
+        pts.forEach(([x, z, s, rot], k) => {
+          q.setFromAxisAngle(up, rot); sc.setScalar(s);
+          pm.compose(new THREE.Vector3(x, -0.6, z), q, sc);
+          mtx.multiplyMatrices(pm, o.matrixWorld);
+          im.setMatrixAt(k, mtx);
+        });
+        im.castShadow = true; im.receiveShadow = true;
+        if (o.customDepthMaterial) im.customDepthMaterial = o.customDepthMaterial;
+        group.add(im);
+      });
     });
   }
 
@@ -487,53 +493,87 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     return (houseMats[key] = m);
   }
   function uvScale(geo, sx, sy) { const uv = geo.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * sx, uv.getY(i) * sy); }
+  let houseTex = null;
+  function hmat(key, fallbackCanvas, opts = {}) {
+    if (houseMats[key]) return houseMats[key];
+    const img = sp(key) || fallbackCanvas;
+    return (houseMats[key] = new THREE.MeshLambertMaterial({ map: tex(img, true), ...opts }));
+  }
   function buildHouse(d, img) {
-    const fw = d.footprint?.w ?? 60, fd = d.footprint?.h ?? 36;
-    const wallH = 30, roofH = 24, over = 4;
+    houseTex ||= houseTexturesFallback();
+    const fw = d.footprint?.w ?? 56, fd = d.footprint?.h ?? 34;
+    const baseH = 5, wallH = 30, roofH = 22, over = 4;
     const g = new THREE.Group();
-    const wallTex = sp('tex_wall_plaster');
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(fw, wallH, fd), houseMat('tex_wall_plaster', '#e8dcc0', true));
-    if (wallTex) { const geo = wall.geometry; uvScale(geo, 1, 1); geo.attributes.uv.needsUpdate = true; wall.material.map.repeat.set(fw / wallTex.width / 1.5, wallH / wallTex.height); }
-    wall.position.y = wallH / 2; wall.castShadow = wall.receiveShadow = true; g.add(wall);
-    // gable roof (triangular prism)
-    const hw = fw / 2 + over, hd = fd / 2 + over;
+    const wallM = hmat('tex_wall_plaster', houseTex.wall), roofM = hmat('tex_roof', houseTex.roof, { side: THREE.DoubleSide });
+    const stoneM = hmat('tex_wall_stone', houseTex.stone);
+    const worldUV = (geo, axisU, axisV, su = 32, sv = 32) => {
+      const p = geo.attributes.position, uv = geo.attributes.uv;
+      for (let k = 0; k < p.count; k++) uv.setXY(k, p.getComponent(k, axisU) / su, p.getComponent(k, axisV) / sv);
+    };
+    // stone base + plaster walls (box faces get world-scaled UVs per side)
+    const box = (w, h, dd, y, mat, su, sv) => {
+      const geo = new THREE.BoxGeometry(w, h, dd);
+      geo.translate(0, y + h / 2, 0);
+      const p = geo.attributes.position, uv = geo.attributes.uv, n = geo.attributes.normal;
+      for (let k = 0; k < p.count; k++) {
+        const ax = Math.abs(n.getX(k)) > 0.5 ? 2 : 0; // side faces use z, front/back use x
+        uv.setXY(k, (p.getComponent(k, ax) + w) / su, (p.getY(k) - y) / sv);
+      }
+      const m = new THREE.Mesh(geo, mat); m.castShadow = m.receiveShadow = true; g.add(m); return m;
+    };
+    box(fw + 2, baseH, fd + 2, 0, stoneM, 32, 16);
+    box(fw, wallH, fd, baseH, wallM, 64, 32);
+    // gable roof, ridge running north-south so the gable faces the camera
+    const y0 = baseH + wallH, hw = fw / 2 + over, hd = fd / 2 + over, top = y0 + roofH;
+    const slope = Math.hypot(hw, roofH);
     const roofGeo = new THREE.BufferGeometry();
     const P = [
-      // south slope
-      -hw, wallH, hd, hw, wallH, hd, hw, wallH + roofH, 0, -hw, wallH, hd, hw, wallH + roofH, 0, -hw, wallH + roofH, 0,
-      // north slope
-      hw, wallH, -hd, -hw, wallH, -hd, -hw, wallH + roofH, 0, hw, wallH, -hd, -hw, wallH + roofH, 0, hw, wallH + roofH, 0,
-      // gables
-      -fw / 2, wallH, fd / 2, -fw / 2, wallH + roofH - 2, 0, -fw / 2, wallH, -fd / 2,
-      fw / 2, wallH, -fd / 2, fw / 2, wallH + roofH - 2, 0, fw / 2, wallH, fd / 2,
+      -hw, y0, -hd, -hw, y0, hd, 0, top, hd, -hw, y0, -hd, 0, top, hd, 0, top, -hd, // west slope
+      hw, y0, hd, hw, y0, -hd, 0, top, -hd, hw, y0, hd, 0, top, -hd, 0, top, hd,     // east slope
     ];
-    const rs = Math.hypot(hd, roofH) / 32, ra = (2 * hw) / 32;
-    const UV = [0, 0, ra, 0, ra, rs, 0, 0, ra, rs, 0, rs, 0, 0, ra, 0, ra, rs, 0, 0, ra, rs, 0, rs, 0, 0, 0.5, 1, 1, 0, 0, 0, 0.5, 1, 1, 0];
+    const su = (2 * hd) / 32, sv = slope / 32;
+    const UV = [0, 0, su, 0, su, sv, 0, 0, su, sv, 0, sv, 0, 0, su, 0, su, sv, 0, 0, su, sv, 0, sv];
     roofGeo.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
     roofGeo.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2));
     roofGeo.computeVertexNormals();
-    const roofM = houseMat('tex_roof', '#c0603a', true);
-    const roof = new THREE.Mesh(roofGeo, roofM); roof.castShadow = roof.receiveShadow = true;
-    roof.geometry.addGroup(0, 12, 0); roof.geometry.addGroup(12, 6, 1);
-    roof.material = [roofM, houseMat('tex_wall_plaster', '#e8dcc0', true)];
-    g.add(roof);
-    // door + windows as decals on the south wall
-    const decal = (key, w, h, x, y, color) => {
-      const im = sp(key);
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), im ? new THREE.MeshLambertMaterial({ map: tex(im), alphaTest: 0.5 }) : new THREE.MeshLambertMaterial({ color }));
-      m.position.set(x, y, fd / 2 + 0.3); m.receiveShadow = true; g.add(m); return m;
-    };
-    decal('tex_door', 14, 22, 0, 11, '#6a4028');
-    decal('tex_window', 11, 11, -fw / 2 + 12, 17, '#f0d880');
-    decal('tex_window', 11, 11, fw / 2 - 12, 17, '#f0d880');
-    if (!wallTex && img) {
-      // no house textures yet: wrap the sprite onto the front as a fallback
-      const fm = new THREE.Mesh(new THREE.PlaneGeometry(img.width, img.height), new THREE.MeshLambertMaterial({ map: tex(img), alphaTest: 0.5 }));
-      fm.position.set(0, img.height / 2, fd / 2 + 0.6); g.add(fm);
+    const roof = new THREE.Mesh(roofGeo, roofM); roof.castShadow = roof.receiveShadow = true; g.add(roof);
+    // gables (front + back) in plaster with timber
+    const gab = new THREE.BufferGeometry();
+    const G = [-fw / 2, y0, fd / 2, fw / 2, y0, fd / 2, 0, top - 2, fd / 2, fw / 2, y0, -fd / 2, -fw / 2, y0, -fd / 2, 0, top - 2, -fd / 2];
+    gab.setAttribute('position', new THREE.Float32BufferAttribute(G, 3));
+    gab.setAttribute('uv', new THREE.Float32BufferAttribute(G.map(() => 0).slice(0, 12), 2));
+    worldUV(gab, 0, 1, 64, 32);
+    gab.computeVertexNormals();
+    const gm = new THREE.Mesh(gab, wallM); gm.castShadow = gm.receiveShadow = true; g.add(gm);
+    // ridge beam + eave boards
+    const wood = new THREE.MeshLambertMaterial({ color: '#4a2e1c' });
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 2 * hd + 2), wood); ridge.position.set(0, top + 0.5, 0); ridge.castShadow = true; g.add(ridge);
+    for (const sx of [-1, 1]) {
+      const eave = new THREE.Mesh(new THREE.BoxGeometry(2, 2, slope + 2), wood);
+      eave.position.set(sx * hw / 2, (y0 + top) / 2, hd + 0.5); eave.rotation.x = 0; eave.rotation.y = 0;
+      eave.rotation.order = 'YXZ'; eave.lookAt(new THREE.Vector3(0, top, hd + 0.5).add(g.position));
+      g.add(eave);
     }
+    // chimney
+    const ch = new THREE.Mesh(new THREE.BoxGeometry(6, 16, 6), stoneM); ch.position.set(fw * 0.22, top - 4, -fd * 0.15); ch.castShadow = true; g.add(ch);
+    // door + windows as decals
+    const decal = (key, fb, w, h, x, y, z, ry = 0) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: tex(sp(key) || fb), alphaTest: 0.5, emissive: key === 'tex_window' ? '#ffb040' : '#000000', emissiveIntensity: key === 'tex_window' ? 0.35 : 0 }));
+      m.emissiveMap = m.material.map; m.material.emissiveMap = m.material.map;
+      m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; g.add(m); return m;
+    };
+    const fz = fd / 2 + 0.3;
+    decal('tex_door', houseTex.door, 14, 21, 0, baseH + 10.5, fz + 1.1);
+    decal('tex_window', houseTex.win, 14, 12, -fw / 2 + 12, baseH + 17, fz);
+    decal('tex_window', houseTex.win, 14, 12, fw / 2 - 12, baseH + 17, fz);
+    decal('tex_window', houseTex.win, 10, 9, 0, y0 + 8, fz);
+    decal('tex_window', houseTex.win, 14, 12, fw / 2 + 0.3, baseH + 17, 0, Math.PI / 2);
+    decal('tex_window', houseTex.win, 14, 12, -fw / 2 - 0.3, baseH + 17, 0, -Math.PI / 2);
+    // step in front of the door
+    const step = new THREE.Mesh(new THREE.BoxGeometry(18, 2, 5), stoneM); step.position.set(0, 1, fd / 2 + 3); step.receiveShadow = step.castShadow = true; g.add(step);
     // the drawable's foot is the front-centre of the house; box offset from it
-    const box = d.box || d.def?.box;
-    g.userData.offZ = box ? box[1] + box[3] / 2 : -fd / 2 - 2;
+    const bx = d.box || d.def?.box;
+    g.userData.offZ = bx ? bx[1] + bx[3] / 2 : -fd / 2 - 2;
     scene.add(g);
     return g;
   }
@@ -641,6 +681,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   const R = {
     three: { THREE, scene, camera, gl },
     assets, time: 0, is3D: true,
+    models3d: true,
     tiltShift: true, vignette: true, grade: true, bloom: !mobile, dof: true, debug: false,
     resScale: mobile ? 0.75 : 1,
     stats: { tiles: 0, sprites: 0 },
@@ -652,6 +693,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const key = spriteKey.get(img);
       const d = curDrawable;
       if (d && (d.model === 'house' || key === 'house')) { houseSeen(d, img, x, y, z); return; }
+      if (d && MODEL_KEYS[key] && R.models3d) { modelSeen(d, key, x, y, z, o.hop || 0); return; }
       if (key === 'torch' || key === 'torch_lit') torchSpots.push([x, y, z]);
       const floor = d?.layer === 'floor';
       const kind = floor ? 'floor' : a < 1 ? 'trans' : 'solid';
@@ -701,6 +743,36 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     seenHouses.add(d);
   }
 
+  const models = new Map(); // drawable -> 3D prop group
+  const seenModels = new Set();
+  function modelSeen(d, key, x, y, z, hop) {
+    let g = models.get(d);
+    if (!g) {
+      const [type, kind, size] = MODEL_KEYS[key];
+      const seed = hash(Math.round(x), Math.round(y)) % 100000;
+      g = type === 'tree' ? models3d.tree(kind, seed, size * (0.9 + (seed % 20) / 100)) : models3d.bush(seed, size);
+      scene.add(g); models.set(d, g);
+    }
+    g.position.set(x, z * LEVEL + hop, y - 1);
+    g.visible = true;
+    seenModels.add(d);
+  }
+  function fadeOccluders(player) {
+    if (!player) return;
+    models.forEach((g, d) => {
+      if (!g.visible || !g.userData.crown) return;
+      const dz = d.y - player.y, dx = Math.abs(d.x - player.x);
+      const occ = dz > 2 && dz < 64 && dx < 28;
+      const target = occ ? 0.35 : 1;
+      if (!g.userData.fadeMat && occ) {
+        g.traverse((o) => { if (o.isMesh && o !== g.children[0]) { o.material = o.material.clone(); o.material.transparent = true; } });
+        g.userData.fadeMat = true;
+      }
+      if (!g.userData.fadeMat) return;
+      g.traverse((o) => { if (o.isMesh && o.material.transparent) { o.material.opacity += (target - o.material.opacity) * 0.15; o.material.depthWrite = o.material.opacity > 0.9; } });
+    });
+  }
+
   // ---------- camera ----------
   const look = new THREE.Vector3(), camY = { v: 0, init: false };
   function placeCamera(cam, world) {
@@ -738,7 +810,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     windUniforms.uTime.value = time;
     if (canvas.width !== W || canvas.height !== H) resize(canvas.width, canvas.height);
     if (!world) { gl.setRenderTarget(null); gl.setClearColor(BG); gl.clear(); return; }
-    if (!cur || cur.world !== world) { houses.forEach((g) => scene.remove(g)); houses.clear(); camY.init = false; buildWorld(world, drawables); }
+    if (!cur || cur.world !== world) { houses.forEach((g) => scene.remove(g)); houses.clear(); models.forEach((g) => scene.remove(g)); models.clear(); camY.init = false; buildWorld(world, drawables); }
     // tile changes (cut grass, bombed walls...)
     if (world.dirty.length) {
       for (const i of world.dirty) { const tx = i % world.w, ty = (i / world.w) | 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (world.inside(tx + dx, ty + dy)) paintCell(world, cur.groundCtx, tx + dx, ty + dy); }
@@ -758,11 +830,11 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
     // lighting mood per map
     if (cur.dark) { hemi.intensity = 0.55; hemi.color.set('#8090c8'); sun.intensity = 0.9; sun.color.set('#c8c8ff'); scene.fog.color.copy(BG); scene.background = BG; }
-    else { hemi.intensity = 0.62; hemi.color.set('#9ec4e8'); hemi.groundColor.set('#3a3020'); sun.intensity = 3.1; sun.color.set('#ffe6b8'); scene.fog.color.copy(HAZE); scene.background = HAZE; }
+    else { hemi.intensity = 0.95; hemi.color.set('#9ec4e8'); hemi.groundColor.set('#3a3020'); sun.intensity = 3.4; sun.color.set('#ffe6b8'); scene.fog.color.copy(HAZE); scene.background = HAZE; }
 
     // collect billboards
     used.solid = used.trans = used.floor = 0; blobUsed = 0; order = 0; torchSpots.length = 0;
-    seenHouses.clear();
+    seenHouses.clear(); seenModels.clear();
     R.stats.sprites = 0;
     const list = drawables.filter((d) => d && !d.hidden).sort((a, b) => a.y + (a.sortBias || 0) - (b.y + (b.sortBias || 0)));
     for (const d of list) {
@@ -774,6 +846,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     for (const k of Object.keys(pools)) for (let i = used[k]; i < pools[k].length; i++) pools[k][i].visible = false;
     for (let i = blobUsed; i < blobs.length; i++) blobs[i].visible = false;
     houses.forEach((g, d) => { if (!seenHouses.has(d)) g.visible = false; });
+    models.forEach((g, d) => { if (!seenModels.has(d)) g.visible = false; else if (g.userData.crown) g.userData.crown.rotation.z = Math.sin(time * 1.3 + g.userData.sway) * 0.025; });
+    fadeOccluders(cam.follow);
 
     // torches -> point lights (nearest to the view centre)
     torchSpots.sort((a, b) => Math.hypot(a[0] - look.x, a[1] - look.z) - Math.hypot(b[0] - look.x, b[1] - look.z));
@@ -789,7 +863,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     gl.render(scene, camera);
 
     const post = R.tiltShift || R.bloom || R.grade || R.vignette;
-    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.32, uTilt: R.tiltShift ? 0.9 : 0, uMaxCoc: (mobile ? 5 : 8) * (rtBlur.width / 640) };
+    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.42, uTilt: R.tiltShift ? 0.9 : 0, uMaxCoc: (mobile ? 5 : 8) * (rtBlur.width / 640) };
     let src = rtScene;
     if (R.tiltShift && R.dof) {
       Object.entries(u).forEach(([k, v]) => { blurMat.uniforms[k].value = v; compMat.uniforms[k].value = v; });

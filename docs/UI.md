@@ -31,7 +31,7 @@ ui.toast(text, { id?, time? })   // gleiche id ersetzt einen Toast (z. B. 'zoom'
 ui.showArea(name)           // Gebietsname von Hand einblenden (sonst automatisch bei Änderung von game.areaName)
 ui.showTitle(onStart)       // onStart(), sonst game.start?.()
 ui.showGameOver(onRetry)    // onRetry('continue' | 'restart'); ohne Callback: game.retry/continue/start bzw. game.restart / reload
-ui.openPause(); ui.closePause(); ui.closeDialog();
+ui.openPause(); ui.closePause(); ui.closeDialog(); ui.closeTitle();
 ui.state                    // 'title' | 'pause' | 'gameover' | 'dialog' | 'hud'
 ui.touchMode, ui.hideHud, ui.scale
 // Font für andere Module:
@@ -68,6 +68,8 @@ Dialogs `'dialog'` und danach wieder `'play'`.
   `player.sword`/`hasSword` und `player.shield`/`hasShield`. Ab `bombs > 0` zählt `bomb` als vorhanden.
 - `game.areaName` (oder `game.world.name`): Ändert sich der Wert, blendet die UI ein Banner ein.
 - `game.state`: Bei `'title'` öffnet sich der Titel, bei `'gameover'` der Game-Over-Bildschirm (jeweils beim Wechsel).
+  **Der Titel schließt sich sofort ohne Callback**, sobald `game.state !== 'title'` ist (z. B. nach `debug.teleport`),
+  wenn er im Zustand `'title'` geöffnet wurde oder gerade ausblendet. Manuell geht das mit `ui.closeTitle()`.
 - `game.start()`, `game.retry()`, `game.restart()`, `game.onPause(bool)`.
 
 ### Pause
@@ -92,7 +94,8 @@ so groß gezeichnet.
 ## Look (HD-2D / Octopath-Stil)
 - **Dialog:** Die Sprechblase ist leicht transparentes Pergament bzw. Stein in warmem Grau-Beige (`#d9cfbd`, 94 %) mit
   Papierkorn und Licht von oben. Der Rand ist dunkel (`#3a2e2a`), 2–3 px breit und unregelmäßig gezackt (fester Seed,
-  dadurch flackert nichts). Oben links sitzt ein dunkler Namensreiter mit elfenbeinfarbener Schrift. Der Text ist dunkel
+  dadurch flackert nichts). Die Form ist an den Ecken abgeschrägt und hat links und rechts flache Spitzen. Oben links sitzt ein
+  sechseckiger, taupefarbener Namensreiter mit heller Schrift, der Zeiger zur Figur ist eine dünne dunkle Linie. Der Text ist dunkel
   (`#2a2026`) auf hellem Grund, der Weiter-Pfeil rotbraun. Die Auswahl steht in einer eigenen kleinen Blase.
 - **HUD:** dunkle, halbtransparente Plaketten (`#141019`, 58 %) mit feiner goldener Haarlinie, Zahlen in Elfenbein,
   dazu ein zurückhaltendes Label „LEBEN“.
