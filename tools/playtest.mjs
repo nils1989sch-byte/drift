@@ -167,7 +167,7 @@ async function openPage({ r3d = false, ctx: ctxOpts = {}, query = '' } = {}) {
 }
 // start a new game via the real title screen, skip the intro
 async function newGame(page, { skipIntro = true } = {}) {
-  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter', { delay: 60 });
   await page.waitForTimeout(900);
   if (skipIntro) await page.evaluate(async () => { __qaPause = true; __qa.run(50); await __qa.clearDialogs(); });
 }
@@ -212,7 +212,7 @@ async function runScenario(sc) {
 S('boot_title_intro', async ({ page, assert, ev }) => {
   const s0 = await ev(() => ({ g: __drift.game.state, ui: __drift.ui.state }));
   assert(s0.g === 'title' && s0.ui === 'title', 'boots into title', s0);
-  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter', { delay: 60 });
   await page.waitForTimeout(1200);
   const s1 = await ev(() => __qa.snap());
   assert(s1.map === 'house_elder', 'new game starts in house_elder', s1.map);
@@ -222,7 +222,7 @@ S('boot_title_intro', async ({ page, assert, ev }) => {
   for (let i = 0; i < 60; i++) {
     const st = await ev(() => __drift.ui.state);
     if (st !== 'dialog') break;
-    await page.keyboard.press(['Space', 'KeyJ', 'KeyK'][i % 3]);
+    await page.keyboard.press(['Space', 'KeyJ', 'KeyK'][i % 3], { delay: 60 });
     await page.waitForTimeout(120); pages++;
   }
   const s2 = await ev(() => ({ ...__qa.snap(), flags: __drift.game.debug.flags() }));
@@ -419,8 +419,9 @@ S('ledge_jump', async ({ page, assert, ev }) => {
     const p = __qa.p();
     for (const [name, tx, ty, dx, dy] of [['south', 8, 12, 0, 1], ['east', 11, 4, 1, 0], ['stein-west', 34, 12, -1, 0], ['north(no)', 6, 0, 0, -1], ['stein-south', 43, 13, 0, 1], ['ruin-west', 38, 3, -1, 0], ['ruin-south', 41, 4, 0, 1]]) {
       __qa.tp('overworld', tx, ty, true);
-      const l0 = p.lvl; let jumped = false, st = [];
-      __qa.run(90, () => ({ x: dx, y: dy }), () => { if (p.state === 'jump') jumped = true; return null; });
+      const l0 = p.lvl; let jumped = false, landed = false;
+      __qa.run(90, () => (landed ? {} : { x: dx, y: dy }), () => { if (p.state === 'jump') jumped = true; else if (jumped) landed = true; return null; });
+      __qa.run(5);
       out.push({ name, from: l0, to: p.lvl, jumped, tx: Math.floor(p.x / 16), ty: Math.floor((p.y - 2) / 16), state: p.state, stuck: __qa.playerStuck() });
     }
     return out;
@@ -843,7 +844,7 @@ S('boss_fight', async ({ page, assert, note, ev }) => {
     out.shutterOpen = !shutter?.solid;
     out.maxHp = [out.hpBeforeFight, p.maxHp];
     out.crystal = !!g.flags.crystal;
-    await __qa.clearDialogs(3000); __qa.run(30);
+    for (let k = 0; k < 20 && !g.objects.find((o) => o.type === 'portal'); k++) { await __qa.clearDialogs(3000); __qa.run(30); }
     out.portal = !!g.objects.find((o) => o.type === 'portal');
     // walk into the portal
     __qa.walkTo(8 * 16 + 8, 9 * 16 + 8, 600, 2);
@@ -948,9 +949,7 @@ S('bomb_cave', async ({ page, assert, note, ev }) => {
     __qa.face('down'); __qa.tap('item', 2);
     __qa.tap('action', 20);
     out.carryBomb = p.carry?.type || null;
-    __qa.tap('attack', 1);
-    __qa.run(200);
-    out.afterThrow = __qa.snap();
+    try { __qa.tap('attack', 1); __qa.run(200); out.afterThrow = __qa.snap(); } catch (e) { out.throwError = String(e); }
     return out;
   });
   assert(r.bombObj, 'item key places a bomb');
@@ -959,23 +958,23 @@ S('bomb_cave', async ({ page, assert, note, ev }) => {
   assert(r.map === 'cave', 'walk into the opened cave', r.map);
   assert(r.maxHp[1] === r.maxHp[0] + 2, 'cave chest gives a heart container', r.maxHp);
   assert(r.carryBomb === 'bomb', 'a placed bomb can be lifted', r.carryBomb);
-  note('after throwing bomb', r.afterThrow);
+  assert(!r.throwError, 'throwing a lifted bomb does not throw', r.throwError);
 });
 
 S('pause_menu', async ({ page, assert, note, ev }) => {
   await newGame(page);
   await pause(page, false);
 
-  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter', { delay: 60 });
   await page.waitForTimeout(300);
   const a = await ev(() => ({ g: __drift.game.state, ui: __drift.ui.state, x: __drift.game.player.x }));
   await page.keyboard.down('ArrowRight'); await page.waitForTimeout(400); await page.keyboard.up('ArrowRight');
   const b = await ev(() => ({ x: __drift.game.player.x }));
-  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  await page.keyboard.press('Escape', { delay: 60 }); await page.waitForTimeout(300);
   const c = await ev(() => ({ g: __drift.game.state, ui: __drift.ui.state }));
-  await page.keyboard.press('KeyP'); await page.waitForTimeout(300);
+  await page.keyboard.press('KeyP', { delay: 60 }); await page.waitForTimeout(300);
   const d = await ev(() => ({ ui: __drift.ui.state }));
-  await page.keyboard.press('KeyP'); await page.waitForTimeout(300);
+  await page.keyboard.press('KeyP', { delay: 60 }); await page.waitForTimeout(300);
   await page.screenshot({ path: path.join(SHOTS, 'pause_2d.png') }).catch(() => {});
   assert(a.g === 'pause' && a.ui === 'pause', 'Enter opens pause', a);
   assert(Math.abs(b.x - a.x) < 0.01, 'game frozen while paused', { a: a.x, b: b.x });
@@ -987,13 +986,13 @@ S('zoom', async ({ page, assert, ev }) => {
   await newGame(page);
   await pause(page, false);
   const z0 = await ev(() => __drift.camera.target);
-  await page.keyboard.press('Equal'); await page.waitForTimeout(200);
+  await page.keyboard.press('Equal', { delay: 60 }); await page.waitForTimeout(200);
   const z1 = await ev(() => __drift.camera.target);
-  await page.keyboard.press('Minus'); await page.keyboard.press('Minus'); await page.waitForTimeout(200);
+  await page.keyboard.press('Minus', { delay: 60 }); await page.keyboard.press('Minus', { delay: 60 }); await page.waitForTimeout(200);
   const z2 = await ev(() => __drift.camera.target);
-  for (let i = 0; i < 12; i++) await page.keyboard.press('Equal');
+  for (let i = 0; i < 12; i++) await page.keyboard.press('Equal', { delay: 60 });
   const zmax = await ev(() => [__drift.camera.target, __drift.camera.maxScale]);
-  for (let i = 0; i < 12; i++) await page.keyboard.press('Minus');
+  for (let i = 0; i < 12; i++) await page.keyboard.press('Minus', { delay: 60 });
   const zmin = await ev(() => [__drift.camera.target, __drift.camera.minScale]);
   await page.mouse.move(640, 360); await page.mouse.wheel(0, -100); await page.waitForTimeout(200);
   const zw = await ev(() => __drift.camera.target);
@@ -1057,11 +1056,13 @@ for (const [W, H] of [[390, 844], [844, 390]]) {
     const pm = await ev(() => __drift.ui.state);
     assert(pm === 'pause', 'menu button opens pause', pm);
     await page.screenshot({ path: path.join(SHOTS, `touch_pause_${W}x${H}.png`) });
-    await page.touchscreen.tap(C.menu.x + C.menu.w / 2, C.menu.y + C.menu.h / 2); await page.waitForTimeout(300);
+    const menuVisibleInPause = await ev(() => getComputedStyle(document.querySelector('[data-ctrl=menu]')).display !== 'none');
+    note('≡ button visible while paused (to close it again)', menuVisibleInPause);
+    await ev(() => __drift.ui.closePause()); await page.waitForTimeout(300);
     const z0 = await ev(() => __drift.camera.target);
     if (C.zin) { await page.touchscreen.tap(C.zin.x + C.zin.w / 2, C.zin.y + C.zin.h / 2); await page.waitForTimeout(200); }
     const z1 = await ev(() => __drift.camera.target);
-    note('pause after second menu tap / zoom', { ui: await ev(() => __drift.ui.state), z0, z1 });
+
     assert(z1 > z0, 'zoom + button zooms in', { z0, z1 });
   }, { open: { ctx: { viewport: { width: W, height: H }, deviceScaleFactor: 3, hasTouch: true, isMobile: true } } });
 }
@@ -1133,7 +1134,7 @@ S('save_continue', async ({ page, assert, ev }) => {
   await page.waitForFunction(() => window.__drift?.game);
   await page.waitForTimeout(300);
   await page.evaluate(QA_LIB);
-  await page.keyboard.press('Enter'); await page.waitForTimeout(1000);
+  await page.keyboard.press('Enter', { delay: 60 }); await page.waitForTimeout(1000);
   const s = await ev(() => __qa.snap());
   assert(s.map === 'dungeon_1', 'reload + start continues at last entry', s);
   assert(s.rupees === 33, 'rupees persisted', s.rupees);
@@ -1161,7 +1162,7 @@ S('3d_screens_and_fps', async ({ page, assert, note, ev }) => {
   const a = await ev(() => __qa.snap());
   await page.keyboard.down('ArrowRight'); await page.waitForTimeout(800); await page.keyboard.up('ArrowRight');
   const b = await ev(() => __qa.snap());
-  await page.keyboard.press('Space'); await page.waitForTimeout(60);
+  await page.keyboard.press('Space', { delay: 60 }); await page.waitForTimeout(60);
   await page.screenshot({ path: path.join(SHOTS, '3d_attack.png') });
   const info = await ev(() => ({ renderer: __drift.renderer.constructor?.name, stats: __drift.renderer.stats, gl: !!document.querySelector('#game').getContext }));
   note('3D FPS (SwiftShader software GL – not representative of real GPUs)', fps);

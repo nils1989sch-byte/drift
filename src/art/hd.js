@@ -12,10 +12,10 @@ const rgb = (r, g, b) => ((255 << 24) | (Math.max(0, Math.min(255, b | 0)) << 16
 const hx = (h) => { const n = parseInt(h.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
 const mixc = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
 const shadeC = (c, k) => [c[0] * k, c[1] * k, c[2] * k];
-const toU = (c) => rgb(c[0], c[1], c[2]);
+const toU = (c) => (typeof c === 'number' ? c : rgb(c[0], c[1], c[2]));
 function ramp(hexes) { return hexes.map(hx); }
 // quantised ramp lookup (crisp pixel tones, many of them)
-function rampAt(R, t) { const i = Math.max(0, Math.min(R.length - 1, Math.floor(t * R.length))); return R[i]; }
+function rampAt(R, t) { let u = R._u; if (!u) { u = R._u = Uint32Array.from(R.map((c) => rgb(c[0], c[1], c[2]))); } const i = t <= 0 ? 0 : t >= 1 ? u.length - 1 : (t * u.length) | 0; return u[i]; }
 
 function hf(x, y, s) { let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
 function vnoise(x, y, period, s) {
@@ -577,7 +577,7 @@ function stone64() {
   const pts = []; for (let i = 0; i < 26; i++) pts.push([r() * W, r() * W, 0.3 + r() * 0.55]);
   for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
     let b = 1e9, s = 1e9, id = 0;
-    for (let k = 0; k < pts.length; k++) { const dx = Math.min(Math.abs(x - pts[k][0]), W - Math.abs(x - pts[k][0])), dy = Math.min(Math.abs(y - pts[k][1]), W - Math.abs(y - pts[k][1])) * 1.4; const d = Math.hypot(dx, dy); if (d < b) { s = b; b = d; id = k; } else if (d < s) s = d; }
+    for (let k = 0; k < pts.length; k++) { const dx = Math.min(Math.abs(x - pts[k][0]), W - Math.abs(x - pts[k][0])), dy = Math.min(Math.abs(y - pts[k][1]), W - Math.abs(y - pts[k][1])) * 1.4; const d = Math.sqrt(dx * dx + dy * dy); if (d < b) { s = b; b = d; id = k; } else if (d < s) s = d; }
     const e = s - b, i = y * W + x;
     let t = pts[id][2] + (f[i] - 0.5) * 0.35 + (r() - 0.5) * 0.1;
     if (e < 2) t = 0.04 + f[i] * 0.1; else if (e < 3.2) t -= 0.2;

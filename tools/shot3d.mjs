@@ -11,6 +11,6 @@ await p.goto(`http://localhost:${port}/index.html${q}`); await p.waitForTimeout(
 await p.keyboard.press('Enter'); await p.waitForTimeout(1500);
 for (let i=0;i<8;i++){ await p.keyboard.press('Space'); await p.waitForTimeout(250);} 
 if (tp) { await p.evaluate((tp) => { const [m,x,y]=tp.split(','); __drift.game.debug?.teleport(m,+x,+y); }, tp); await p.waitForTimeout(2500); }
-await p.keyboard.press('Enter'); await p.waitForTimeout(400); await p.keyboard.press('Enter'); await p.waitForTimeout(1500); await p.screenshot({ path: out });
+await p.waitForTimeout(1500); await p.screenshot({ path: out });
 console.log(await p.evaluate(() => JSON.stringify({ st: __drift.game.state, map: __drift.game.world?.id, x: __drift.game.player.x|0, y: __drift.game.player.y|0, s: __drift.camera.scale, sprites: __drift.renderer.stats.sprites })));
 console.log(errs.join('\n') || 'no errors'); await b.close(); srv.kill();

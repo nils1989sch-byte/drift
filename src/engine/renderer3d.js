@@ -745,12 +745,60 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
   const models = new Map(); // drawable -> 3D prop group
   const seenModels = new Set();
+  // Static props are drawn as instanced batches (one draw call per template part);
+  // only props that currently hide the player get an individual, fadeable copy.
+  const batches = new Map();
+  const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _s = new THREE.Vector3(), _p = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
+  function batchFor(type, kind, variant) {
+    const key = `${type}_${kind}_${variant}`;
+    let b = batches.get(key);
+    if (b) return b;
+    const tpl = type === 'tree' ? models3d.tree(kind, variant * 977 + 1, 1) : models3d.bush(variant * 31 + 1, 1);
+    tpl.rotation.set(0, 0, 0); tpl.scale.setScalar(1); tpl.position.set(0, 0, 0); tpl.updateMatrixWorld(true);
+    b = { parts: [], list: [] };
+    tpl.traverse((o) => {
+      if (!o.isMesh) return;
+      const im = new THREE.InstancedMesh(o.geometry, o.material, 700);
+      im.count = 0; im.castShadow = im.receiveShadow = true; im.frustumCulled = false;
+      if (o.customDepthMaterial) im.customDepthMaterial = o.customDepthMaterial;
+      scene.add(im);
+      b.parts.push({ im, local: o.matrixWorld.clone() });
+    });
+    batches.set(key, b);
+    return b;
+  }
+  function flushBatches() {
+    batches.forEach((b) => {
+      for (const { im, local } of b.parts) {
+        const n = Math.min(b.list.length, 700);
+        for (let i = 0; i < n; i++) im.setMatrixAt(i, _m.multiplyMatrices(b.list[i], local));
+        im.count = n; im.instanceMatrix.needsUpdate = true;
+      }
+      b.list.length = 0;
+    });
+  }
+  const matPool = []; let matUsed = 0;
   function modelSeen(d, key, x, y, z, hop) {
+    const [type, kind, size0] = MODEL_KEYS[key];
+    const seed = hash(Math.round(d.x0 ?? x), Math.round(d.y0 ?? y)) % 100000;
+    d.x0 ??= x; d.y0 ??= y;
+    const pl = R.player;
+    const occ = pl && type === 'tree' && d.y - pl.y > 2 && d.y - pl.y < 64 && Math.abs(d.x - pl.x) < 30;
+    if (!occ && !models.has(d)) {
+      const size = type === 'tree' ? size0 * (0.9 + (seed % 20) / 100) : size0;
+      const m = matPool[matUsed] || (matPool[matUsed] = new THREE.Matrix4()); matUsed++;
+      _q.setFromAxisAngle(_up, (seed % 628) / 100); _s.setScalar(size); _p.set(x, z * LEVEL + hop, y - 1);
+      m.compose(_p, _q, _s);
+      batchFor(type, kind, seed % 3).list.push(m);
+      return;
+    }
     let g = models.get(d);
     if (!g) {
       const [type, kind, size] = MODEL_KEYS[key];
       const seed = hash(Math.round(x), Math.round(y)) % 100000;
-      g = type === 'tree' ? models3d.tree(kind, seed, size * (0.9 + (seed % 20) / 100)) : models3d.bush(seed, size);
+      const v = seed % 3;
+      g = type === 'tree' ? models3d.tree(kind, v * 977 + 1, size0 * (0.9 + (seed % 20) / 100)) : models3d.bush(v * 31 + 1, size0);
+      g.rotation.y = (seed % 628) / 100;
       scene.add(g); models.set(d, g);
     }
     g.position.set(x, z * LEVEL + hop, y - 1);
@@ -762,7 +810,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     models.forEach((g, d) => {
       if (!g.visible || !g.userData.crown) return;
       const dz = d.y - player.y, dx = Math.abs(d.x - player.x);
-      const occ = dz > 2 && dz < 64 && dx < 28;
+      const occ = dz > 2 && dz < 64 && dx < 30;
+      if (!occ && g.userData.fadeMat && g.children.every((o) => !o.material?.transparent || o.material.opacity > 0.97)) { scene.remove(g); models.delete(d); return; }
       const target = occ ? 0.35 : 1;
       if (!g.userData.fadeMat && occ) {
         g.traverse((o) => { if (o.isMesh && o !== g.children[0]) { o.material = o.material.clone(); o.material.transparent = true; } });
@@ -834,7 +883,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
     // collect billboards
     used.solid = used.trans = used.floor = 0; blobUsed = 0; order = 0; torchSpots.length = 0;
-    seenHouses.clear(); seenModels.clear();
+    seenHouses.clear(); seenModels.clear(); matUsed = 0; R.player = cam.follow;
     R.stats.sprites = 0;
     const list = drawables.filter((d) => d && !d.hidden).sort((a, b) => a.y + (a.sortBias || 0) - (b.y + (b.sortBias || 0)));
     for (const d of list) {
@@ -848,6 +897,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     houses.forEach((g, d) => { if (!seenHouses.has(d)) g.visible = false; });
     models.forEach((g, d) => { if (!seenModels.has(d)) g.visible = false; else if (g.userData.crown) g.userData.crown.rotation.z = Math.sin(time * 1.3 + g.userData.sway) * 0.025; });
     fadeOccluders(cam.follow);
+    flushBatches();
 
     // torches -> point lights (nearest to the view centre)
     torchSpots.sort((a, b) => Math.hypot(a[0] - look.x, a[1] - look.z) - Math.hypot(b[0] - look.x, b[1] - look.z));

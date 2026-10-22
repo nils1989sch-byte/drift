@@ -9,7 +9,7 @@ import { buildFX } from './fx.js';
 import { buildIcons } from './icons.js';
 import { buildDeco } from './deco.js';
 import { RES, buildTilesHD, buildEdgesHD, buildFacesHD, buildLeafAndHouseHD, tilePixHD } from './hd.js';
-import { grassTallSprite } from './terrain.js';
+import { grassTallSprite, edgeMeta } from './terrain.js';
 
 export { palette };
 
@@ -19,7 +19,7 @@ export function buildAssets() {
   const tm = (k, f) => { const a = performance.now(); const v = f(); times[k] = Math.round(performance.now() - a); return v; };
   // environment: HD textures (48 texels per tile); edgeGroup/edgePriority from the terrain module
   const tiles = tm('tiles', buildTilesHD);
-  const { edgeGroup, edgePriority } = buildEdges();
+  const { edgeGroup, edgePriority } = edgeMeta();
   const edges = tm('edges', () => buildEdgesHD(tilePixHD(tiles)));
   const faces = tm('faces', buildFacesHD);
   const sprites = Object.assign({}, tm('hero', buildHero), tm('soldier', buildSoldier), tm('actors', buildActors), tm('objects', buildObjects), tm('fx', buildFX), tm('deco', buildDeco));

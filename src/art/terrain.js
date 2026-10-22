@@ -235,12 +235,15 @@ export function buildEdges() {
     edgeSet({ group: 'water', seed: 600, base: 1, amp: 1, fill: P.water_dk, rim: P.water_md }),
     edgeSet({ group: 'stone_floor', seed: 700, base: 2, amp: 1, fill: P.rock_lt, rim: P.rock_dk, tex: (u, t) => (u % 5 === 0 ? P.rock_dk : t === 0 ? P.rock_hi : null) }),
   );
+  return { edges, ...edgeMeta() };
+}
+export function edgeMeta() {
   const edgeGroup = { grass_flowers: 'grass', grass_tall: 'grass', water_edge_n: 'water' };
   const edgePriority = {
     grass_dark: 8, grass: 7, stone_floor: 6, sand: 5, path: 4, dirt: 3, shallow: 2, water: 1,
     bridge: 99, stairs: 99, dungeon_floor: 99, dungeon_wall: 99, wood_floor: 99, void: 99,
   };
-  return { edges, edgeGroup, edgePriority };
+  return { edgeGroup, edgePriority };
 }
 
 // ---------------------------------------------------------------- cliff faces (16×12 pieces)
