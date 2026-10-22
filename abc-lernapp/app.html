@@ -586,13 +586,36 @@ function pickVoice(){
 if(hasTTS){pickVoice();try{speechSynthesis.addEventListener('voiceschanged',pickVoice)}catch(e){speechSynthesis.onvoiceschanged=pickVoice}}
 function startTalk(b){stopTalk();if(!b)return;talkB=b;let o=false;talkT=setInterval(()=>{o=!o;b.svg.classList.toggle('mo',o)},140)}
 function stopTalk(){clearInterval(talkT);talkT=null;if(talkB)talkB.svg.classList.remove('mo');talkB=null}
-/* say(text,{bruno,onEnd,words:{index:fn}}) – onEnd always fires (also when silent) */
-function say(text,o={}){
-  const seq=++speakSeq;
+/* ALL speech goes through speak(key, fallbackText, opts) / speakParts([[key,text],…], opts).
+   Recorded clips (voice/manifest.json → {"clips":{key:url}}, fetched lazily on the first touch; may be missing)
+   play through one reused <audio>, each new line cancels the previous one; a missing clip falls back to
+   speechSynthesis(text). Parts chain via onended. opts: {bruno, onEnd, onBoundary}; onEnd always fires. */
+let VM=null, vmAsked=false; const voiceEl=new Audio(); voiceEl.preload='auto';
+function loadVoices(){if(vmAsked)return;vmAsked=true;
+  try{fetch('voice/manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{VM=(j&&j.clips)||{};VM.__name=j&&j.name}).catch(()=>{VM={}})}catch(e){VM={}}}
+const clip=k=>{if(!VM||!k||!VM[k])return null;if(k==='hello-name'&&(VM.__name||'Mia')!==S.name)return null;return VM[k]};
+function speak(key,text,o={}){speakParts([[key,text]],o)}
+function speakParts(parts,o={}){
+  const seq=++speakSeq; stopVoices();
+  if(!S.sound){setTimeout(()=>{if(seq===speakSeq)o.onEnd&&o.onEnd()},Math.min(1600,300+parts.map(p=>p[1]).join(' ').length*40));return}
+  let i=0;
+  const next=()=>{if(seq!==speakSeq)return;if(i>=parts.length){stopTalk();o.onEnd&&o.onEnd();return}
+    const [k,t]=parts[i++], last=i===parts.length, url=clip(k);
+    if(url)playClip(url,seq,o.bruno,next,()=>tts(t,seq,{bruno:o.bruno,onBoundary:last?o.onBoundary:null},next));
+    else tts(t,seq,{bruno:o.bruno,onBoundary:last?o.onBoundary:null},next)};
+  next();
+}
+function playClip(url,seq,bruno,done,fallback){
+  let fin=false; const end=ok=>{if(fin)return;fin=true;clearTimeout(g);voiceEl.onended=voiceEl.onerror=voiceEl.onplaying=null;if(seq!==speakSeq)return;ok?done():fallback()};
+  const g=setTimeout(()=>end(true),9000);
+  voiceEl.onplaying=()=>{if(seq===speakSeq)startTalk(bruno)}; voiceEl.onended=()=>end(true); voiceEl.onerror=()=>end(false);
+  voiceEl.src=url; try{const pr=voiceEl.play();if(pr&&pr.catch)pr.catch(()=>end(false))}catch(e){end(false)}
+}
+function tts(text,seq,o,done){
   let ended=false;
-  const fin=()=>{if(ended)return;ended=true;clearTimeout(guard);if(seq!==speakSeq)return;stopTalk();o.onEnd&&o.onEnd()};
+  const fin=()=>{if(ended)return;ended=true;clearTimeout(guard);if(seq!==speakSeq)return;stopTalk();done()};
   const guard=setTimeout(fin,1400+text.length*95);
-  if(!S.sound||!hasTTS){stopTalk();clearTimeout(guard);setTimeout(fin,Math.min(1600,300+text.length*40));return}
+  if(!hasTTS){clearTimeout(guard);setTimeout(fin,300+text.length*40);return}
   const ss=speechSynthesis, u=new SpeechSynthesisUtterance(text);
   u.lang='de-DE'; if(voice)u.voice=voice; u.rate=.86; u.pitch=1.12; u.volume=1;
   u.onstart=()=>{if(seq===speakSeq)startTalk(o.bruno)};
@@ -600,14 +623,17 @@ function say(text,o={}){
   if(o.onBoundary)u.onboundary=e=>{if(seq===speakSeq)o.onBoundary(e.charIndex||0)};
   if(ss.speaking||ss.pending){ss.cancel();setTimeout(()=>{if(seq===speakSeq)ss.speak(u)},60)}else ss.speak(u);
 }
-function hush(){speakSeq++;stopTalk();if(hasTTS&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()}
-/* "M. M wie Maus." – onWord fires exactly when the voice reaches the word (boundary event) or on a timed fallback */
+function stopVoices(){stopTalk();try{if(!voiceEl.paused)voiceEl.pause()}catch(e){}if(hasTTS&&(speechSynthesis.speaking||speechSynthesis.pending))speechSynthesis.cancel()}
+function hush(){speakSeq++;stopVoices()}
+/* "A! A wie Affe!" – onWord fires when the voice reaches the word (boundary event) or on a timed fallback */
 function sayLetter(L,o={}){
   const w=wordOf(L), text=`${L}. ${L} wie ${w}.`, wi=text.lastIndexOf(w);
   let fired=false; const fire=()=>{if(fired)return;fired=true;o.onWord&&o.onWord()};
-  const fb=later(fire,S.sound&&hasTTS?1500:700,o.scope);
-  say(text,{bruno:o.bruno,onBoundary:ci=>{if(ci>=wi){clearTimeout(fb);fire()}},onEnd:()=>{fire();o.onEnd&&o.onEnd()}});
+  const fb=later(fire,S.sound?1450:700);
+  speak('name-'+L,text,{bruno:o.bruno,onBoundary:ci=>{if(ci>=wi){clearTimeout(fb);fire()}},onEnd:()=>{fire();o.onEnd&&o.onEnd()}});
 }
+const PRAISE=['Super!','Juhu, richtig!','Toll gemacht!','Klasse!','Ja, genau!'], TRY=["Hmm, probier's nochmal!",'Fast! Schau noch mal genau.','Nicht schlimm. Noch ein Versuch!'];
+const pickIdx=a=>Math.floor(Math.random()*a.length);
 
 /* ---------- 3b. tiny WebAudio effects ---------- */
 let AC=null, noiseBuf=null;
@@ -654,7 +680,7 @@ function clearLater(){timers.forEach(clearTimeout);timers.clear()}
 /* press feedback: squish on pointerdown, spring back on release (+ soft boop) */
 const pressAnims=new WeakMap();
 document.addEventListener('pointerdown',e=>{
-  audioUnlock();
+  audioUnlock(); loadVoices();
   const el=e.target.closest('.press'); if(!el||el.disabled)return;
   const t=el.dataset.squish?$(el.dataset.squish):el, sc=el.classList.contains('card')?.97:.94;
   t.classList.add('down'); sfx('boop');
@@ -771,12 +797,14 @@ function paintToday(){
   $('#todayPic').innerHTML=ART.ill[L];
   const hit=$('#todayHit');hit.dataset.letter=L;hit.setAttribute('aria-label',`Buchstabe des Tages: ${L} wie ${w}`);
 }
-const HELLOS=()=>[[`Hallo ${S.name}!<br>Spielst du mit mir?`,`Hallo ${S.name}! Spielst du mit mir?`],[`Heute üben wir<br>das ${letterOfDay()}!`,`Heute üben wir das ${letterOfDay()}!`],['Magst du Ballons<br>fangen?','Magst du Ballons fangen?'],['Hihi,<br>das kitzelt!','Hihi, das kitzelt!']];
+const HELLOS=()=>{const L=letterOfDay();return[[`Hallo ${S.name}!<br>Spielst du mit mir?`,[['hello-name',`Hallo ${S.name}! Spielst du mit mir?`]]],
+  [`Heute üben wir<br>das ${L}!`,clip('today')?[['today','Heute üben wir das'],['is-'+L,`Das ist das ${L}.`]]:[[null,`Heute üben wir das ${L}!`]]],
+  ['Magst du Ballons<br>fangen?',[['play-q','Magst du Ballons fangen?']]],['Hihi,<br>das kitzelt!',[['tickle','Hihi, das kitzelt!']]]]};
 let hi=0;
 function setBubble(html){const b=$('#homeBubble');b.innerHTML=html;if(!reduced())spring(b,p=>({transform:`scale(${.85+.15*p})`,opacity:Math.min(1,p*2)}),SP_SOFT)}
 function enterHome(){paintToday();later(()=>happy(BR.home),250)}
-onTap($('#homeBruno'),()=>{const[h,t]=HELLOS()[++hi%4];setBubble(h);earWiggle(BR.home);happy(BR.home);say(t,{bruno:BR.home})});
-onTap($('#homeBubble'),()=>{const[,t]=HELLOS()[hi%4];happy(BR.home);say(t,{bruno:BR.home})});
+onTap($('#homeBruno'),()=>{const[h,t]=HELLOS()[++hi%4];setBubble(h);earWiggle(BR.home);happy(BR.home);speakParts(t,{bruno:BR.home})});
+onTap($('#homeBubble'),()=>{const[,t]=HELLOS()[hi%4];happy(BR.home);speakParts(t,{bruno:BR.home})});
 onTap($('#todayHit'),()=>openDetail(letterOfDay()));
 onTap($('#todaySay'),()=>{const L=letterOfDay(), b=$('#todayWord b');happy(BR.home);
   sayLetter(L,{bruno:BR.home,onWord:()=>{if(!reduced())anim(b,[{transform:'none'},{transform:'translateY(-8px)'},{transform:'none'}],{duration:300,easing:E.out})}});
@@ -840,7 +868,7 @@ const F={target:'A',found:0,busy:false,prev:null,case:'upper'};
 const slots=()=>$$('#roundStars .slot');
 function paintRound(){$('#roundStars').innerHTML=Array.from({length:5},(_,i)=>`<span class="slot${i<F.found?' on':''}" data-testid="round-star" data-filled="${i<F.found}"><span>${ART.sc['star-empty']}</span><span class="full">${ART.sc.star}</span></span>`).join('')}
 function newRound(){F.found=0;F.busy=false;paintRound();nextQ()}
-function ask(){thinking(BR.find);say(`Wo ist das ${F.target}?`,{bruno:BR.find,onEnd:()=>{if(BR.find.svg.dataset.mood==='thinking')setMood(BR.find,'neutral')}})}
+function ask(){thinking(BR.find);speak('ask-'+F.target,`Wo ist das ${F.target}?`,{bruno:BR.find,onEnd:()=>{if(BR.find.svg.dataset.mood==='thinking')setMood(BR.find,'neutral')}})}
 function nextQ(){
   F.busy=false; F.qid=(F.qid||0)+1;
   const p=order().slice(0,8); let t; do{t=p[Math.floor(Math.random()*p.length)]}while(t===F.prev&&p.length>1); F.target=t; F.prev=t;
@@ -865,13 +893,13 @@ function pick(btn){
     F.busy=true; const slot=slots()[F.found]; if(slot)slot.dataset.filled='true'; F.found++; addStar(); bump(L);
     /* next step waits for the praise to finish (onend) but never less than the pop/star animation */
     let praised=false, minDone=false, stepped=false; const q0=F.qid; const step=()=>{if(stepped||!praised||!minDone||current!=='find'||F.qid!==q0)return;stepped=true;if(F.found>=5)showParty();else nextQ()};
-    happy(BR.find); say(`Super! Das ist das ${L}!`,{bruno:BR.find,onEnd:()=>{praised=true;step()}});
+    happy(BR.find); const n=pickIdx(PRAISE); speakParts([['praise-'+(n+1),PRAISE[n]],['is-'+L,`Das ist das ${L}!`]],{bruno:BR.find,onEnd:()=>{praised=true;step()}});
     popBalloon(btn,slot);
     later(()=>{minDone=true;step()},F.found>=5?1500:1650);
     later(()=>{praised=true;step()},4200); /* fallback if the voice never reports onend */
   }else{
     wobble(btn); encourage(BR.find);
-    say(`Das ist das ${L}. Wo ist das ${F.target}?`,{bruno:BR.find});
+    speakParts([['is-'+L,`Das ist das ${L}.`],['ask-'+F.target,`Wo ist das ${F.target}?`]],{bruno:BR.find});
   }
 }
 function wobble(btn){if(reduced())return;const b=$('.bl-body',btn);
@@ -898,7 +926,7 @@ onTap($('#askBubble'),()=>{armIdle();ask();if(!reduced())anim($('#askText b'),[{
 function showParty(){
   if(current!=='find')return;
   const p=$('#party'); p.hidden=false; app.classList.add('partying'); paintStars();
-  sfx('fanfare'); say(`Super gemacht, ${S.name}! Fünf Sterne!`,{bruno:BR.party});
+  sfx('fanfare'); speak('party',`Super gemacht, ${S.name}! Fünf Sterne!`,{bruno:BR.party});
   const row=$('.row',p), v=$('#partyVid'), showRow=()=>{row.classList.remove('wait');if(!reduced())$$('.btn',row).forEach((b,i)=>spring(b,q=>({transform:`translateY(${40*(1-q)}px) scale(${.8+.2*q})`,opacity:Math.min(1,q*2)}),SP_SOFT,{delay:i*90,fill:'backwards'}))};
   if(reduced()){ /* posters instead of video */
     if(MEDIA.feierPoster){p.classList.add('still');p.style.backgroundImage=`url(${MEDIA.feierPoster})`}else setMood(BR.party,'cheer');
@@ -972,7 +1000,7 @@ async function setupTrace(announce){
   T.ready=false; T.done=false; T.pid=null; T.path=[]; T.warned=false;
   const L=ABC[T.idx]; $('#tTitle').textContent=`Mal das ${glyph(L)}!`;
   $('#meter').classList.remove('full'); $('#meterFill').style.transform='translateX(-100%)'; $('#tNext').classList.remove('nudge');
-  if(announce){setMood(BR.trace,'encourage',1600);say(`Mal das ${L}.`,{bruno:BR.trace})}
+  if(announce){setMood(BR.trace,'encourage',1600);speak('trace-'+L,`Mal das ${L}.`,{bruno:BR.trace})}
   try{await Promise.race([document.fonts.load('600 200px "Fredoka"'),sleep(1500)])}catch(e){}
   if(seq!==T.seq)return;
   const board=$('#board'), bw=board.clientWidth, bh=board.clientHeight; if(!bw||!bh)return;
@@ -1087,12 +1115,12 @@ function meter(final){
   $('#meterFill').style.transform=`translateX(${(Math.min(1,prog)-1)*100}%)`;
   if(!final||T.done)return;
   if(cov>=.65&&prec>=.4)traceSuccess();
-  else if(cov>=.65&&!T.warned){T.warned=true;encourage(BR.trace);say(`Mal genau auf dem ${ABC[T.idx]}!`,{bruno:BR.trace})}
+  else if(cov>=.65&&!T.warned){T.warned=true;encourage(BR.trace);{const n=pickIdx(TRY);speakParts([['try-'+(n+1),TRY[n]],['trace-'+ABC[T.idx],`Mal das ${ABC[T.idx]}.`]],{bruno:BR.trace})}}
 }
 function traceSuccess(){
   T.done=true; const L=ABC[T.idx]; addStar(); bump(L,2);
   $('#meter').classList.add('full'); $('#meterFill').style.transform='translateX(0)'; $('#hintGrp').style.opacity=0;
-  cheer(BR.trace,2600); say(`Toll gemalt! Das ist das ${L}!`,{bruno:BR.trace});
+  cheer(BR.trace,2600); speakParts([['traced','Toll gemalt!'],['is-'+L,`Das ist das ${L}!`]],{bruno:BR.trace});
   const r=sRect($('#board'));
   if(!reduced()){anim($('#boardGlow'),[{opacity:0},{opacity:1,offset:.4},{opacity:0}],{duration:700,easing:E.out});
     spring($('#meter .mstar'),p=>({transform:`scale(${1+.5*Math.sin(Math.min(1,p)*Math.PI)})`}),SP_PLAY);
@@ -1195,7 +1223,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)hush()});
 let rzT=0; addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(()=>{const was=LAND;fit();if(current==='trace')setupTrace(false)},120)});
 RMQ.addEventListener&&RMQ.addEventListener('change',()=>{});
 paintName(); paintStars(); paintToday();
-setTimeout(()=>{if(!$('#abcGrid').children.length){renderGrid();gridSig=S.caseMode+letterOfDay()}},400);
+requestAnimationFrame(()=>setTimeout(()=>{if(!$('#abcGrid').children.length){renderGrid();gridSig=S.caseMode+letterOfDay()}},60));
 $('#tabs').style.setProperty('--ti',0);
 setTimeout(()=>{if(current==='home')happy(BR.home)},500);
 </script>
