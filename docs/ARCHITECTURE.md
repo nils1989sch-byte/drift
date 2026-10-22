@@ -135,3 +135,7 @@ L/Q=item, Enter/Esc=start, +/-/Mausrad=Zoom. Pinch-Zoom auf Touch (Renderer/Kame
   bottom = dunkler Fuß), `single` optional 16×24 für 1-Stufen-Klippen. Renderer: top oben, mid wiederholt, bottom unten, geclippt.
   Mehrere mid-Varianten: `faces[id].mids = [Canvas…]` (Renderer wählt per Hash) – optional.
 - Endstücke: `faces[id + '_l']`, `faces[id + '_r']` (gleiches Format) werden genutzt, wenn das Plateau links/rechts abfällt.
+
+## HD-Sprites (Regie)
+- `canvas.ws` = Welt-Einheiten pro Sprite-Pixel (Default 1). HD-Figuren werden in doppelter Dichte gemalt (z. B. Held 32×48 px)
+  und setzen `ws = 0.5` → Weltgröße bleibt 16×24. `ax/ay` bleiben in Sprite-Pixeln. Beide Renderer unterstützen das.

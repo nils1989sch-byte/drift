@@ -703,8 +703,10 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       if (mat.map !== t) { mat.map = t; mat.emissiveMap = t; mat.needsUpdate = mat._hadMap !== true; mat._hadMap = true; if (m.customDepthMaterial) { m.customDepthMaterial.map = t; m.customDepthMaterial.needsUpdate = true; } }
       mat.opacity = a;
       mat.emissiveIntensity = o.flash ? 1.6 : 0;
-      const w = img.width, h = img.height;
-      const ax = img.ax ?? (w >> 1), ay = img.ay ?? h - 1;
+      // img.ws = world units per sprite pixel (high-density HD sprites use 0.5); anchors stay in sprite pixels
+      const ws = img.ws ?? 1;
+      const w = img.width * ws, h = img.height * ws;
+      const ax = (img.ax ?? (img.width >> 1)) * ws, ay = (img.ay ?? img.height - 1) * ws;
       const hop = o.hop || 0;
       const yUp = z * LEVEL + hop;
       if (floor) {
@@ -714,7 +716,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       } else {
         const sy = stretch;
         m.scale.set(o.flip ? -w : w, h * sy, 1);
-        m.position.set(o.flip ? x + ax : x - ax, yUp - (h - 1 - ay) * sy, y + 0.6 + order * 0.004);
+        m.position.set(o.flip ? x + ax : x - ax, yUp - (h - ws - ay) * sy, y + 0.6 + order * 0.004);
         if (d?.layer === 'top') { mat.depthTest = false; m.renderOrder = 10; } else { mat.depthTest = true; m.renderOrder = 0; }
       }
       order++;

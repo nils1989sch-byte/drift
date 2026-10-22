@@ -26,9 +26,15 @@ export function createRenderer(canvas, assets) {
     stats: { tiles: 0, sprites: 0 },
     sprite(img, x, y, z = 0, o = {}) {
       if (!img) return;
-      const ax = img.ax ?? (img.width >> 1);
-      const ay = img.ay ?? img.height - 1;
+      const ws = img.ws ?? 1;
+      const ax = (img.ax ?? (img.width >> 1)) * ws;
+      const ay = (img.ay ?? img.height - 1) * ws;
       let dx = Math.round(x - ax), dy = Math.round(y - z * LEVEL - (o.hop || 0) - ay);
+      if (ws !== 1) { // high-density sprite: draw scaled (2D fallback only)
+        const a = o.alpha ?? 1; if (a <= 0) return;
+        ctx.globalAlpha = a; ctx.drawImage(o.flash ? flashOf(img) : img, dx, dy, img.width * ws, img.height * ws); ctx.globalAlpha = 1;
+        return;
+      }
       let src = o.flash ? flashOf(img) : img;
       const a = o.alpha ?? 1;
       if (a <= 0) return;
