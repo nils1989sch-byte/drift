@@ -1,6 +1,6 @@
 // Full-screen UI states: title screen, pause menu (inventory + options + controls help), game over.
 import { drawText, measure, wrap, LINE_H } from './font.js';
-import { C, panel, pxRect, rgba, clamp, easeOutBounce } from './theme.js';
+import { C, panel, plaque, pxRect, rgba, clamp, easeOutBounce } from './theme.js';
 
 // ---- big "DRIFT" logo (own pixel letters, 2 px strokes, 11 rows) -------------------------------
 const LOGO = {
@@ -10,8 +10,8 @@ const LOGO = {
   F: ['########', '########', '##......', '##......', '##......', '######..', '######..', '##......', '##......', '##......', '##......'],
   T: ['########', '########', '...##...', '...##...', '...##...', '...##...', '...##...', '...##...', '...##...', '...##...', '...##...'],
 };
-const FACE = [C.gold_lt, C.gold_lt, '#f8d850', C.gold_md, C.gold_md, C.gold_md, '#e09820', '#e09820', '#c87818', C.gold_dk, C.gold_dk];
-const EXTR = ['#784838', '#402028'];
+const FACE = ['#fffcf4', '#fffaf0', '#f8f0dc', '#f4ead0', '#efe2c4', '#e8d8b4', '#e2cea6', '#dcc498', '#d4b888', '#c8a878', '#b89868'];
+const EXTR = ['#6a5848', '#3a2e2a'];
 const LOGO_WORD = 'DRIFT', LGAP = 2, LH = 11, DEPTH = 2, PADT = 14; // PADT: room for drop-in
 
 const logoLetters = (() => {
@@ -42,10 +42,25 @@ function renderLogo(t) {
   for (let d = DEPTH; d >= 1; d--) { g.fillStyle = EXTR[d - 1]; for (const [x, y] of pts) put(x, y + d); }
   for (const [x, y, row] of pts) {
     const s = x - row * 0.6 - shine;
-    g.fillStyle = s >= 0 && s < 2.2 ? C.white : s >= 2.2 && s < 3.2 ? '#fff8c0' : FACE[row];
+    g.fillStyle = s >= 0 && s < 2.2 ? '#ffffff' : s >= 2.2 && s < 3.4 ? '#fffdf6' : FACE[row];
     put(x, y);
   }
   return logoCanvas;
+}
+
+// soft glow: logo silhouette downsampled and upscaled with smoothing (works without ctx.filter)
+let glowSmall = null;
+function logoGlow(logo, k) {
+  const w = Math.max(2, Math.ceil(logo.width / k)), h = Math.max(2, Math.ceil(logo.height / k));
+  if (!glowSmall || glowSmall.width !== w || glowSmall.height !== h) { glowSmall = document.createElement('canvas'); glowSmall.width = w; glowSmall.height = h; }
+  const g = glowSmall.getContext('2d');
+  g.clearRect(0, 0, w, h);
+  g.imageSmoothingEnabled = true;
+  g.drawImage(logo, 0, 0, w, h);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = '#ffd890'; g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = 'source-over';
+  return glowSmall;
 }
 
 const ITEM_NAMES = { sword: 'Schwert', shield: 'Schild', bomb: 'Bomben', bow: 'Bogen', boomerang: 'Bumerang', lamp: 'Laterne',
@@ -118,7 +133,7 @@ export function createScreens(U) {
     ctx.globalAlpha = a;
     if (U.game?.world) {
       const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, rgba(C.bg0, 0.80)); g.addColorStop(0.5, rgba(C.night, 0.55)); g.addColorStop(1, rgba(C.bg0, 0.88));
+      g.addColorStop(0, rgba(C.bg0, 0.62)); g.addColorStop(0.42, rgba(C.bg0, 0.12)); g.addColorStop(0.62, rgba(C.bg0, 0.08)); g.addColorStop(1, rgba(C.bg0, 0.78));
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     } else {
       const g = ctx.createRadialGradient(W / 2, H * 0.4, 0, W / 2, H * 0.4, Math.max(W, H) * 0.7);
@@ -129,7 +144,7 @@ export function createScreens(U) {
     for (const m of title.motes) {
       const tw = 0.35 + 0.35 * Math.sin(t * 2 + m.p);
       ctx.globalAlpha = a * tw * fadeIn;
-      ctx.fillStyle = m.s > 1 ? C.gold_lt : C.white;
+      ctx.fillStyle = m.s > 1 ? '#ffe8b0' : C.ivory;
       const sz = m.s > 1.1 ? 2 : 1;
       ctx.fillRect(Math.floor(m.x * W), Math.floor(m.y * H), sz, sz);
     }
@@ -139,19 +154,35 @@ export function createScreens(U) {
     const lsc = Math.max(1, Math.min(Math.floor((W - 24) / logo.width), Math.floor((H * 0.3) / (LH + DEPTH + 4)), 6));
     const lx = Math.floor(W / 2 - (logo.width * lsc) / 2);
     const ly = Math.floor(H * 0.17) - PADT * lsc;
+    {
+      const gl = logoGlow(logo, 3);
+      const pulse = 0.55 + 0.15 * Math.sin(t * 1.6);
+      ctx.save();
+      ctx.imageSmoothingEnabled = true;
+      ctx.globalCompositeOperation = 'lighter';
+      const pad = 6 * lsc;
+      ctx.globalAlpha = a * pulse * 0.45 * clamp(t / 1.2, 0, 1);
+      ctx.drawImage(gl, lx - pad, ly - pad, logo.width * lsc + pad * 2, logo.height * lsc + pad * 2);
+      ctx.globalAlpha = a * pulse * 0.22 * clamp(t / 1.2, 0, 1);
+      ctx.drawImage(gl, lx - pad * 3, ly - pad * 2, logo.width * lsc + pad * 6, logo.height * lsc + pad * 4);
+      ctx.restore();
+      ctx.imageSmoothingEnabled = false;
+    }
     ctx.drawImage(logo, lx, ly, logo.width * lsc, logo.height * lsc);
     const sub = 'Ein Diorama-Abenteuer';
     const ly2 = ly + logo.height * lsc + 4;
     ctx.globalAlpha = a * clamp((t - 0.9) / 0.5, 0, 1);
-    drawText(ctx, sub, Math.floor(W / 2), ly2, { align: 'center', color: C.frame, shadow: C.ink });
+    drawText(ctx, sub, Math.floor(W / 2), ly2, { align: 'center', color: C.ivory, shadow: C.ink });
     ctx.globalAlpha = a;
     // prompt
     if (t > 1.1) {
-      const blink = title.out >= 0 ? Math.floor(title.out * 16) % 2 === 0 : Math.sin(t * 4) > -0.4;
+      const blink = title.out >= 0 ? Math.floor(title.out * 16) % 2 === 0 : true;
       if (blink) {
+        ctx.globalAlpha = a * (title.out >= 0 ? 1 : 0.55 + 0.45 * Math.sin(t * 3)) * clamp((t - 1.1) / 0.4, 0, 1);
         const txt = U.touchMode ? 'Tippe zum Starten' : 'Drücke Start (Enter)';
         const sc = measure(txt) * 2 < W - 24 && H > 200 ? 2 : 1;
-        drawText(ctx, txt, Math.floor(W / 2), Math.floor(H * 0.60), { align: 'center', scale: sc, color: C.white, outline: C.ink, shadow: C.shadow });
+        drawText(ctx, txt, Math.floor(W / 2), Math.floor(H * 0.60), { align: 'center', scale: sc, color: C.ivory, shadow: C.ink });
+        ctx.globalAlpha = a;
       }
     }
     // controls hint
@@ -161,7 +192,11 @@ export function createScreens(U) {
     const maxW = W - safe.l - safe.r - 16;
     const wrapped = lines.flatMap((l) => wrap(l, maxW));
     const startY = bottom - wrapped.length * LINE_H - 2;
-    if (startY > H * 0.62 + 24) wrapped.forEach((l, i) => drawText(ctx, l, Math.floor(W / 2), startY + i * LINE_H, { align: 'center', color: C.dim, shadow: C.ink }));
+    if (startY > H * 0.62 + 24) {
+      const bw = Math.min(maxW + 8, Math.max(...wrapped.map(measure)) + 20);
+      plaque(ctx, Math.floor(W / 2 - bw / 2), startY - 4, bw, wrapped.length * LINE_H + 6, 0.5);
+      wrapped.forEach((l, i) => drawText(ctx, l, Math.floor(W / 2), startY + i * LINE_H - 1, { align: 'center', color: C.ivoryDim, shadow: C.ink }));
+    }
     ctx.globalAlpha = a * 0.6;
     drawText(ctx, 'v0.1', W - safe.r - 4, safe.t + 2, { align: 'right', color: C.dim, shadow: C.ink });
     ctx.globalAlpha = 1;
@@ -245,13 +280,13 @@ export function createScreens(U) {
     const owned = new Set(ownedItems(p));
     const list = [...BASE_ITEMS, ...[...owned].filter((i) => !BASE_ITEMS.includes(i))];
     const cols = Math.max(3, Math.min(list.length, Math.floor((w) / 22)));
-    drawText(ctx, 'INVENTAR', x, y, { color: C.gold_lt, shadow: C.ink });
+    drawText(ctx, 'INVENTAR', x, y, { color: C.hair, shadow: C.ink });
     const gy = y + 12;
     list.forEach((id, i) => {
       const cx = x + (i % cols) * 22, cy = gy + Math.floor(i / cols) * 22;
       const has = owned.has(id);
       const sel = p?.item === id;
-      pxRect(ctx, cx, cy, 20, 20, sel ? C.gold_md : C.ink, 1);
+      pxRect(ctx, cx, cy, 20, 20, sel ? C.hair : rgba(C.hair, 0.25), 1);
       pxRect(ctx, cx + 1, cy + 1, 18, 18, rgba(C.bg0, 0.6), 0);
       if (has) {
         const ic = U.icon(id);
@@ -275,12 +310,12 @@ export function createScreens(U) {
     rows.forEach((r, i) => {
       const yy = y + i * 14;
       const sel = i === pause.sel;
-      if (sel) { ctx.fillStyle = rgba(C.frame, 0.16); ctx.fillRect(x - 2, yy - 1, w + 4, 13); }
-      if (sel && Math.floor(U.time * 3) % 3 !== 2) drawText(ctx, '▶', x, yy, { color: C.gold_lt, shadow: C.ink });
-      drawText(ctx, r.label, x + 9, yy, { color: sel ? C.white : C.dim, shadow: C.ink });
+      if (sel) { ctx.fillStyle = rgba(C.hair, 0.14); ctx.fillRect(x - 2, yy - 1, w + 4, 13); }
+      if (sel && Math.floor(U.time * 3) % 3 !== 2) drawText(ctx, '▶', x, yy, { color: C.hair, shadow: C.ink });
+      drawText(ctx, r.label, x + 9, yy, { color: sel ? C.ivory : C.ivoryDim, shadow: C.ink });
       if (r.value != null) {
         const vx = x + w;
-        const vw = drawText(ctx, r.lr ? `◀ ${r.value} ▶` : r.value, vx, yy, { align: 'right', color: sel ? C.gold_lt : C.dim, shadow: C.ink });
+        const vw = drawText(ctx, r.lr ? `◀ ${r.value} ▶` : r.value, vx, yy, { align: 'right', color: sel ? C.hair : C.dim, shadow: C.ink });
         void vw;
       }
       if (r.lr) {
@@ -304,11 +339,11 @@ export function createScreens(U) {
     const px = Math.floor(safe.l + 6 + (aw - pw) / 2);
     const py = Math.floor(safe.t + 4 + Math.max(0, (ah - ph) / 2));
     panel(ctx, px, py, pw, Math.min(ph, ah), { alpha: 0.94 });
-    drawText(ctx, '- PAUSE -', px + Math.floor(pw / 2), py + 6, { align: 'center', color: C.white, outline: C.ink, shadow: C.shadow });
+    drawText(ctx, '- PAUSE -', px + Math.floor(pw / 2), py + 6, { align: 'center', color: C.ivory, shadow: C.ink });
     if (wide) {
       const colW = invW;
       drawInventory(ctx, px + 12, py + 22, colW);
-      ctx.fillStyle = rgba(C.frame, 0.35); ctx.fillRect(px + 12 + colW + 8, py + 24, 1, 104);
+      ctx.fillStyle = rgba(C.hair, 0.3); ctx.fillRect(px + 12 + colW + 8, py + 24, 1, 104);
       drawRows(ctx, px + colW + 32, py + 30, pw - colW - 46);
     } else {
       const ih = drawInventory(ctx, px + 12, py + 22, invW);
@@ -326,11 +361,11 @@ export function createScreens(U) {
     const ph = Math.min(ah, 22 + lines.length * LINE_H + 10);
     const px = Math.floor(safe.l + 6 + (aw - pw) / 2), py = Math.floor(safe.t + 4 + (ah - ph) / 2);
     panel(ctx, px, py, pw, ph, { alpha: 0.95 });
-    drawText(ctx, '- STEUERUNG -', px + Math.floor(pw / 2), py + 6, { align: 'center', color: C.white, outline: C.ink, shadow: C.shadow });
+    drawText(ctx, '- STEUERUNG -', px + Math.floor(pw / 2), py + 6, { align: 'center', color: C.ivory, shadow: C.ink });
     let y = py + 22;
     for (const l of lines) {
       if (y > py + ph - 14) break;
-      if (l.h) drawText(ctx, l.h, px + 12, y, { color: C.gold_lt, shadow: C.ink });
+      if (l.h) drawText(ctx, l.h, px + 12, y, { color: C.hair, shadow: C.ink });
       else drawText(ctx, l.t, px + 12, y, { color: C.white, shadow: C.ink });
       y += LINE_H;
     }
@@ -369,16 +404,19 @@ export function createScreens(U) {
   function drawOver(ctx) {
     const { W, H } = U;
     const t = over.t;
-    ctx.globalAlpha = clamp(t / 0.8, 0, 1) * 0.78;
-    ctx.fillStyle = '#300818'; ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 1;
+    {
+      const k = clamp(t / 1.0, 0, 1);
+      const g = ctx.createRadialGradient(W / 2, H * 0.4, 0, W / 2, H * 0.4, Math.max(W, H) * 0.7);
+      g.addColorStop(0, rgba('#2a0c18', 0.55 * k)); g.addColorStop(1, rgba(C.bg0, 0.92 * k));
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
     const txt = 'GAME OVER';
     const sc = measure(txt) * 3 < W - 24 ? 3 : 2;
     const n = Math.floor(clamp((t - 0.3) / 0.6, 0, 1) * txt.length);
-    const rows = [C.heart_hi, C.heart_hi, C.red_lt, C.heart_md, C.heart_md, C.heart_dk, C.heart_dk];
+    const rows = ['#fff0e8', '#f8d8cc', '#f0b8a8', '#e89888', '#d87868', '#c85850', '#a84040'];
     const full = measure(txt) * sc;
     const shown = txt.slice(0, n);
-    drawText(ctx, shown, Math.floor(W / 2 - full / 2), Math.floor(H * 0.3), { scale: sc, color: rows, outline: C.ink, shadow: C.shadow });
+    drawText(ctx, shown, Math.floor(W / 2 - full / 2), Math.floor(H * 0.3), { scale: sc, color: rows, shadow: C.ink });
     if (t >= 1.3) {
       const opts = ['Weiter', 'Neustart'];
       const ow = 120, oh = opts.length * 16 + 12;
@@ -387,8 +425,8 @@ export function createScreens(U) {
       opts.forEach((o, i) => {
         const yy = oy + 7 + i * 16;
         const sel = i === over.sel;
-        if (sel && Math.floor(U.time * 3) % 3 !== 2) drawText(ctx, '▶', ox + 12, yy, { color: C.gold_lt, shadow: C.ink });
-        drawText(ctx, o, ox + 24, yy, { color: sel ? C.white : C.dim, shadow: C.ink });
+        if (sel && Math.floor(U.time * 3) % 3 !== 2) drawText(ctx, '▶', ox + 12, yy, { color: C.hair, shadow: C.ink });
+        drawText(ctx, o, ox + 24, yy, { color: sel ? C.ivory : C.ivoryDim, shadow: C.ink });
         U.hit(ox, yy - 2, ow, 15, () => { over.sel = i; chooseOver(i); });
       });
     }

@@ -70,7 +70,7 @@ function drawWorld(t) {
 
 const keys = {
   Digit1: () => ui.dialog(['Willkommen in DRIFT! Dies ist ein längerer Text, damit der Seitenumbruch und der Schreibmaschinen-Effekt getestet werden.', 'Grüße aus dem Dorf. Äpfel, Öl, Übermut und Straße.']).then((r) => ui.toast('Dialog: ' + r)),
-  Digit2: () => ui.dialog({ text: 'Möchtest du die Truhe öffnen?', speaker: 'Ältester', choices: ['Ja', 'Nein'] }).then((r) => ui.toast(r === 0 ? 'Ja gewählt' : 'Nein gewählt')),
+  Digit2: () => ui.dialog({ text: 'Möchtest du die Truhe öffnen?', speaker: 'Ältester', choices: ['Ja', 'Nein'] }, { anchor: () => ({ x: cv.width / 2, y: cv.height / 2 - 26 * camera.scale }) }).then((r) => ui.toast(r === 0 ? 'Ja gewählt' : 'Nein gewählt')),
   Digit3: () => { player.hp = Math.max(0, player.hp - 1); if (player.hp === 0) game.state = 'gameover'; },
   Digit4: () => { player.hp = Math.min(player.maxHp, player.hp + 2); },
   Digit5: () => { game.areaName = ['Weiler Morgentau', 'Flüsterwald', 'Höhle der Stille'][Math.floor(Math.random() * 3)] + ' ' + Math.floor(Math.random() * 9); },

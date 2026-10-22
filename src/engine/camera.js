@@ -13,6 +13,7 @@ export function createCamera() {
       cam.viewW = w; cam.viewH = h;
       // Default: about 15 tiles visible vertically (SNES = 224px).
       const base = Math.max(1, Math.round(Math.min(w, h * 1.25) / 270));
+      cam.base = base;
       cam.minScale = Math.max(1, Math.floor(base / 2));
       cam.maxScale = Math.max(base + 3, 4);
       if (!cam._init) { cam.scale = cam.target = base; cam._init = true; }

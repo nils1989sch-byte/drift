@@ -32,3 +32,11 @@ Nur zum Abgleich. **Keine** fremden Grafiken übernehmen, keine Nintendo-Assets 
 - ArMM1998 „Zelda-like tilesets and sprites“ (Lizenz als CC0 gelistet, im Kommentar angezweifelt): https://opengameart.org/node/70957
 - Deepnight Dungeon Tileset (CC0, 16×16): https://opengameart.org/node/100171
 - Kenney (CC0-Assets, u. a. Tiny Town / Tiny Dungeon 16×16): https://kenney.nl/assets
+
+## HD-2D
+- HD-2D (Wikipedia: dynamisches Licht, DOF, Tilt-Shift): https://en.wikipedia.org/wiki/HD-2D
+- Octopath-Entwickler-Interview (Tiefe, Tile-/Farbvarianz): https://www.siliconera.com/project-octopath-traveler-developers-answer-project-started-troubles-developing-hd-2d/
+- HD-2D-Pipeline DX12 (Bokeh-Gather 64 Samples, Contact Shadows, ACES, Sprite-Normalmaps): https://dev.to/gaurav_de/creating-an-hd-2d-rendering-pipeline-on-dx12-205k
+- Analyse Octopath-Postprocessing (AO, Lens-Flare, Vignette, DOF, Bloom): https://www.tfgonline.lapinf.ufn.edu.br/media/midias/TCC2_Final_4M2dWJZ.pdf
+- Three.js Billboards: https://threejs.org/manual/en/billboards.html
+- Three.js Billboard + Depth: https://discourse.threejs.org/t/is-billboard-depth-supported/6504

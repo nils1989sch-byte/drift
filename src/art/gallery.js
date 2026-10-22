@@ -146,7 +146,9 @@ const groups = [
   ['Gegner', (k) => /^(octorok|soldier|slime|bat|boss)/.test(k)],
   ['NPC', (k) => k.startsWith('npc_')],
   ['FX', (k) => k.startsWith('fx_')],
-  ['Objekte & Pickups', (k) => !/^(hero_|octorok|soldier|slime|bat|boss|npc_|fx_)/.test(k)],
+  ['Deko-Billboards', (k) => k.startsWith('deco_')],
+  ['Haus-Texturen', (k) => k.startsWith('tex_')],
+  ['Objekte & Pickups', (k) => !/^(hero_|octorok|soldier|slime|bat|boss|npc_|fx_|deco_|tex_)/.test(k)],
 ];
 for (const [t, f] of groups) section(t, A.sprites, 15, f);
 section('Icons', A.icons, 15);

@@ -1,8 +1,9 @@
-// DRIFT master palette (docs/STYLE_GUIDE.md §4.3) – 69 colors, every channel on 8-steps, no #000/#fff.
+// DRIFT master palette (docs/STYLE_GUIDE.md §4.3) – 74 colors, every channel on 8-steps, no #000/#fff.
 export const palette = {
   ink: '#181020', shadow: '#302848', night: '#283048',
   grass_ink: '#183828', grass_dk: '#286840', grass_md: '#48a050', grass_lt: '#88c858', grass_hi: '#d0e888',
   dirt_ink: '#402028', dirt_dk: '#784838', dirt_md: '#a87048', dirt_lt: '#d0a068', dirt_hi: '#f0d098', sand: '#e0c888',
+  cliff_ink: '#402830', cliff_dk: '#705040', cliff_md: '#a08058', cliff_lt: '#c8a870', cliff_hi: '#e8d098',
   rock_ink: '#282038', rock_dk: '#504860', rock_md: '#807880', rock_lt: '#b0a898', rock_hi: '#e0d8c0',
   water_ink: '#102050', water_dk: '#184888', water_md: '#2878c0', water_lt: '#58b0e0', water_hi: '#a8e0f0', foam: '#e8f8f8',
   wood_ink: '#301820', wood_dk: '#603028', wood_md: '#985038', wood_lt: '#c88048', wood_hi: '#e8b870',
@@ -23,6 +24,7 @@ const P = palette;
 export const R = {
   grass: [P.grass_ink, P.grass_dk, P.grass_md, P.grass_lt, P.grass_hi],
   dirt: [P.dirt_ink, P.dirt_dk, P.dirt_md, P.dirt_lt, P.dirt_hi],
+  cliff: [P.cliff_ink, P.cliff_dk, P.cliff_md, P.cliff_lt, P.cliff_hi],
   rock: [P.rock_ink, P.rock_dk, P.rock_md, P.rock_lt, P.rock_hi],
   water: [P.water_ink, P.water_dk, P.water_md, P.water_lt, P.water_hi, P.foam],
   wood: [P.wood_ink, P.wood_dk, P.wood_md, P.wood_lt, P.wood_hi],

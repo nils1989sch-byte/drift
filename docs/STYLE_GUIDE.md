@@ -324,3 +324,106 @@ Eastward, Sea of Stars), bleibt aber reines Pixel-Art. In 2D-Canvas umsetzbare M
 - Wichtiges (Pickups, Gegner, interaktive Objekte) ist **heller oder satter** als der Hintergrund; Böden
   bleiben mittlere Helligkeit und kontrastarm (keine Muster mit ≥ 3 harten Kontrastsprüngen pro 8 px).
 - Graustufen-Test: Silhouette und Wertgruppen müssen auch ohne Farbe lesbar sein.
+
+## 11. HD-2D (Three.js-Renderer, Richtung „Octopath Traveler“)
+
+3D-Gelände aus Blöcken mit Pixel-Texturen, Figuren/Objekte als Pixel-Billboards, echtes Sonnenlicht mit
+Schatten, Tiefenunschärfe, Bloom, Grading. Alle Pixel-Regeln aus §1–§10 gelten weiter für die **Texturen**; Licht
+und Post-FX dürfen die Palette im Bild modulieren (das ist der HD-2D-Look), aber nicht ersetzen.
+Zahlen = **Startwerte** (Three.js ≥ r160, `renderer.outputColorSpace = SRGBColorSpace`), danach nach Auge tunen.
+
+**Einheiten & Texel-Dichte**
+- 1 Welteinheit = 1 Tile = **16 Texel**. Gilt ausnahmslos für Boden, Klippen, Wände, Sprites (Held 16×24 px →
+  Quad 1 × 1,5). Höhenstufe = 1 Einheit. Nie Texturen strecken oder verschiedene Dichten mischen.
+- UVs weltausgerichtet: Oberseiten über x/z, Frontflächen (Klippen-Faces) über x/y – Faces aus §5 direkt nutzbar.
+- Texturen: `magFilter = NearestFilter`, `minFilter = NearestMipmapNearestFilter` (Mipmaps gegen Flimmern in der
+  Ferne), `anisotropy = 4`, `colorSpace = SRGBColorSpace`. Kein Linear-Filter auf Pixel-Texturen.
+- `renderer.setPixelRatio(Math.min(devicePixelRatio, 2))`, `antialias: false` (Kanten bleiben pixelig; DOF
+  übernimmt die Weichheit).
+
+**Kamera**
+- `PerspectiveCamera`, **FOV 30°** (Tele-Look = Miniatur; Bereich 25–35°), Neigung **40° nach unten** (35–45°),
+  Yaw fest 0 (Blick nach Norden, keine Drehung → Billboards/Schatten konsistent).
+- Abstand zum Fokuspunkt ≈ **23 Einheiten** → ca. 22×12 Tiles sichtbar (16:9). Zoom = Abstand 14–32, FOV bleibt.
+- Kamera folgt dem Spieler gedämpft (lerp 6/s), Fokuspunkt 0,5 Einheiten über dem Fußpunkt.
+
+**Billboards (Sprites)**
+- Quads stehen **senkrecht** (Y-Achse), Unterkante = Fußpunkt, Yaw zur Kamera. Gegen die Verkürzung durch die
+  Neigung Höhe mit `1/cos(pitch)` skalieren (bei 40°: ×1,31) **oder** Quad um `pitch × 0,5` nach hinten kippen.
+- Material: `MeshLambertMaterial`, `alphaTest 0.5`, `transparent: false`, Normale zur Kamera; Mindesthelligkeit
+  über `emissive` = 0,25 × Albedo (bzw. emissiveMap = Sprite, emissiveIntensity 0.25), damit Figuren im Schatten
+  lesbar bleiben.
+- Sprites **werfen Schatten** (`castShadow`, `customDepthMaterial` mit `alphaTest 0.5`). Renderer-Ellipsenschatten
+  aus §2 entfällt dann; optional schwacher Kontakt-Blob (Alpha 0,2, Radius 0,35).
+- Pixelschärfe: Sprite-Position auf 1/16 Einheit runden (Bewegung im Texelraster).
+
+**Licht**
+- Sonne: `DirectionalLight` Farbe **#fff0d8** (≈ 5200 K, warm), Intensität **2.6**, Richtung **von oben-links-vorne**:
+  Position relativ zum Ziel `(-6, 10, 5)` (Elevation ≈ 50°). Bei Abend: #ffc890, Intensität 1.8, Elevation 25°.
+- Ambient: `HemisphereLight` Himmel **#9ec4e8**, Boden **#5a4a3a**, Intensität **0.9** → kühle, leicht teal Schatten.
+  Kein reines Ambient-Weiß.
+- Schatten: `PCFSoftShadowMap`, `mapSize 2048`, Shadow-Kamera orthografisch ±14 Einheiten um den Spieler
+  (mitführen, auf Texelgröße snappen gegen Flimmern), `bias -0.0005`, `normalBias 0.02`, `radius 2`.
+  Schatten mittelhart (Kante ≈ 1–2 Texel weich), nie schwarz: Schattenbereich behält ≥ 45 % Helligkeit
+  (Hemi-Licht; optional `shadow.intensity 0.75`).
+- Fackeln/Feuer: `PointLight` **#ff9a40**, Intensität 6, `distance 5`, `decay 2`, Flackern ±12 % mit 8–12 Hz
+  (Rauschen, nicht Sinus). Max. 6 Punktlichter gleichzeitig (Performance Mobil).
+- Kontaktschatten/AO: SSAO optional (Desktop), sonst eingebackenes AO an Klippenfuß (§2-Regel gilt umgekehrt:
+  in HD-2D backt die Textur KEIN AO, das kommt aus Licht/AO-Pass bzw. einer dunklen Vertex-Farbe am Fuß, 25 %).
+
+**Tone-Mapping & Grading**
+- `toneMapping = NeutralToneMapping` (farbtreuer als ACES für Pixel-Paletten), `toneMappingExposure 1.0`.
+- Grading (eigener ShaderPass am Ende): Schatten-Lift Richtung **teal** `+(-0.01, 0.02, 0.04)`, Lichter-Gain
+  Richtung **warm** `×(1.04, 1.01, 0.96)`, Sättigung **1.10**, Kontrast **1.06** (Pivot 0.5).
+- Kein LUT, das Hauttöne grünlich oder Gras gelb kippt; Abgleich: `grass_md` und `tunic_md` müssen unterscheidbar
+  bleiben.
+
+**Tiefenschärfe (DOF) & Tilt-Shift**
+- Fokus = Kameraabstand zum Spieler (jeden Frame). **Scharfbereich ±3 Einheiten** Tiefe um den Spieler,
+  volle Unschärfe ab ±12. Max. Blur-Radius **4 px bei 1080p** (skaliert mit Auflösung), Vordergrund (näher an
+  der Kamera, unterer Bildrand) stärker als Hintergrund (Faktor 1,3).
+- Umsetzung: `BokehPass` (focus = Distanz, `aperture ≈ 0.0006`, `maxblur 0.008`) oder eigener Gather-Blur über
+  Tiefentextur (Depth-gewichtet, damit scharfe Sprites nicht in den Hintergrund ausbluten).
+- Fallback Mobil/niedrige Qualität: Bildschirm-Tilt-Shift: Fokusband **40 % Bildhöhe** um die Spieler-Bildzeile,
+  Übergang über 20 %, max. Blur 3 px.
+- HUD und Dialoge nie geblurrt.
+
+**Bloom**
+- `UnrealBloomPass` **strength 0.35**, **radius 0.4**, **threshold 0.85** (nur Sonnenglanz, Wasserglitzer, Feuer,
+  Kristalle, Glühwürmchen). Emissive-Objekte mit Intensität 1.5–3 über die Schwelle heben. Kein Bloom auf Gras/Haut.
+
+**Vignette & Atmosphäre**
+- Vignette: offset **1.0**, darkness **1.15**, Farbe Richtung `night` (#283048), Randabdunklung max. 25 %.
+- Nebel: `THREE.Fog` **#b8c8d8**, near = Kameraabstand + 6 (≈ 29), far = Kameraabstand + 45 (≈ 68); Dungeon:
+  #283048, near 18, far 45. Höhennebel in Tälern/Wasser optional (Plane mit Alpha 0,15).
+- Lichtstrahlen (God-Rays): 2–4 additive Quads mit weichem Verlauf, Alpha 0,06–0,10, warm #fff0c8, langsam
+  wandernd – nur im Wald/Innenräumen mit Fenstern.
+
+**Partikel**
+- Staub/Pollen (Tag): 40–80 pro Bildschirm, Größe 1 Texel (1/16 Einheit, `Points` mit sizeAttenuation),
+  #fff0c8 Alpha 0,5, Drift 0,1–0,3 Einh./s, Leben 4–8 s, nur im Sonnenlicht sichtbar (Alpha × Lichtanteil).
+- Glühwürmchen (Abend/Wald): 10–20, #d8f870, Emissive 2.5 (→ Bloom), Blinken 0,5–1,5 Hz, Schwebeweg Perlin.
+- Blätter: 2–5 gleichzeitig, 3×2 Texel, grass-Ramp, fallen mit 0,4 Einh./s, Trudeln 1–2 Hz.
+- Effekte aus §7 (Slash, Poof, Spark …) bleiben Pixel-Billboards; Spark/Slash dürfen emissiv sein (Bloom).
+
+**Vegetation & Wind**
+- Hohes Gras: **gekreuzte Billboard-Quads** (2 Quads à 1 × 0,75, 45° versetzt, oder kamerafacing), 3–6 Büschel pro
+  Tile, Farbe je Büschel ±1 Ramp-Stufe variieren, `alphaTest 0.5`, wirft Schatten.
+- Wind im Vertex-Shader: `offsetX = sin(t·1.6 + x·0.7 + z·0.4) · 0.04 · h²` (h = 0 am Fuß … 1 an der Spitze),
+  Böen alle 4–8 s mit Amplitude ×2 über 1,5 s; Offset auf 1/16 Einheit runden (pixelig bleiben).
+- Bäume: Kronen als 1–3 gestaffelte Billboards (Tiefenversatz 0,3) über Stamm-Billboard, Kronen schwingen mit
+  Amplitude 0,015. Büsche/Blumen gleiche Wind-Funktion mit halber Amplitude.
+
+**Wasser**
+- Wasseroberfläche **0,15 Einheiten unter** Bodenhöhe, eigenes Material: Pixel-Textur aus §5 (`water`, 4 Frames
+  à 4 fps oder UV-Scroll 0,05 Einh./s), `MeshStandardMaterial` roughness **0.25**, metalness 0, opacity **0.85**.
+  Darunter Sand-/Grund-Plane, damit `shallow` durchscheint (opacity 0.55 bei Flachwasser).
+- Sonnenglitzer: Highlights der Textur leicht emissiv (0.6) → Bloom. Uferlinie: `foam`-Streifen als eigener Quad,
+  animiert. Keine echten Reflexionen nötig; optional gespiegelte Sprite-Kopien mit Alpha 0,2.
+
+**Klippen & Gelände in 3D**
+- Plateaus = extrudierte Blöcke, Frontflächen mit Face-Texturen aus §5 (oben/mitte/fuß), Seitenflächen (Ost/West)
+  mit derselben Face-Textur, Licht macht den Hell/Dunkel-Unterschied (links hell, rechts im Schatten).
+- Grasüberhang `[0]` zusätzlich als kleiner Billboard-/Lippenstreifen 2 Texel vor der Kante (Silhouette).
+- Kanten nicht abrunden (Blocklook bleibt), aber Kantenvariation über Texturen und Deko-Billboards (Steine,
+  Grasbüschel am Klippenfuß).

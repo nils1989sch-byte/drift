@@ -414,25 +414,17 @@ export class Player extends Entity {
     const { img, flip } = animFrame(this.anim, `hero_idle_${this.dir}`);
     const o = { hop: this.hop, flip, flash: this.flash > 0, alpha: blink ? 0.35 : 1 };
     if (st === 'fall' && !(this.anim?.has?.('fall'))) {
-      // fallback fall: shrink into the hole
-      const s = Math.max(0.05, 1 - this.t / 0.6);
-      ctx.save();
-      ctx.translate(Math.round(this.x), Math.round(this.y - this.z * LEVEL));
-      ctx.scale(s, s);
-      r.sprite(img, 0, 0, 0, o);
-      ctx.restore();
+      // fallback fall: sink and fade into the hole
+      const k = Math.min(1, this.t / 0.6);
+      r.sprite(img, this.x, this.y, this.z, { ...o, hop: -k * 10, alpha: 1 - k });
     } else r.sprite(img, this.x, this.y, this.z, o);
 
-    // tall grass hides the feet
+    // tall grass hides the feet (foreground blades sprite)
     const w = this.g.world, tx = cellOf(this.x), ty = cellOf(centerY(this));
     if (w.def(tx, ty).tall && st !== 'jump') {
       const gs = r.assets?.sprites?.grass_tall;
       const gi = Array.isArray(gs) ? gs[Math.floor(r.time * 2) % gs.length] : gs;
       if (gi) r.sprite(gi, this.x, this.y + 2, this.z);
-      else {
-        const tile = r.assets?.tiles?.grass_tall?.[0];
-        if (tile) ctx.drawImage(tile, 0, 8, 16, 8, Math.round(this.x - 8), Math.round(this.y - this.z * LEVEL - 5), 16, 8);
-      }
     }
     // carried object over the head
     if (this.carry) {

@@ -1,9 +1,9 @@
 // HUD (ALttP-like layout per STYLE_GUIDE §8): item box top-left, counters top-middle, hearts top-right.
 // Reads game.player every frame; hp counts half hearts (2 hp = 1 heart).
 import { drawText, measure, LINE_H } from './font.js';
-import { C, pxRect, rgba, clamp } from './theme.js';
+import { C, rgba, clamp, plaque } from './theme.js';
 
-const GOLD_ROWS = [C.gold_lt, C.gold_lt, C.gold_md, C.gold_md, C.gold_md, C.gold_dk, C.gold_dk];
+const IVORY_ROWS = ['#fffaf0', '#fffaf0', C.ivory, C.ivory, '#e8dcc0', '#dccca8', '#d0bc94'];
 
 export function createHUD(U) {
   const st = {
@@ -58,11 +58,7 @@ export function createHUD(U) {
   }
 
   function iconBox(ctx, x, y, item) {
-    pxRect(ctx, x, y, 22, 22, C.ink, 2);
-    pxRect(ctx, x + 1, y + 1, 20, 20, C.frame, 1);
-    ctx.fillStyle = C.frameDk; ctx.fillRect(x + 2, y + 19, 18, 1); ctx.fillRect(x + 19, y + 2, 1, 18);
-    pxRect(ctx, x + 2, y + 2, 18, 18, C.ink, 0);
-    ctx.fillStyle = rgba(C.night, 0.85); ctx.fillRect(x + 3, y + 3, 16, 16);
+    plaque(ctx, x, y, 22, 22, 0.62);
     const ic = item ? U.icon(item) : null;
     if (ic) U.drawIcon(ctx, ic, x + 11, y + 11, 16);
   }
@@ -72,7 +68,7 @@ export function createHUD(U) {
     let w = 0;
     if (ic) { U.drawIcon(ctx, ic, x + 4, y + 4, 8); w = 10; }
     const v = String(Math.max(0, Math.floor(value))).padStart(digits, '0');
-    drawText(ctx, v, x + w, y - 2, { color: C.white, shadow: C.ink });
+    drawText(ctx, v, x + w, y - 2, { color: C.ivory, shadow: C.ink });
     return w + measure(v) + 1;
   }
 
@@ -96,6 +92,7 @@ export function createHUD(U) {
     const narrow = W < 330;
     let cx = narrow ? ix + 28 : Math.floor(W / 2 - cw / 2);
     const cy = top + 7;
+    plaque(ctx, cx - 5, top + 3, cw + 10, 15);
     for (const [k, v, d] of groups) cx += counter(ctx, cx, cy, k, v, d) + 8;
 
     // hearts
@@ -108,11 +105,13 @@ export function createHUD(U) {
     const rowW = Math.min(hearts, perRow) * hw;
     const hx0 = right - rowW;
     let hy = top + 1;
+    const lw = measure('LEBEN');
+    const pw = Math.max(rowW, rows === 1 ? lw : 0) + 10;
+    plaque(ctx, right - pw + 5, top - 1, pw, rows === 1 ? 23 : rows * (hw + 1) + 7);
     if (rows === 1) {
-      const lw = measure('- LEBEN -');
-      drawText(ctx, '- LEBEN -', Math.min(hx0 + Math.floor(rowW / 2), right - Math.ceil(lw / 2)), top - 3, { align: 'center', color: C.heart_hi, shadow: C.ink });
+      drawText(ctx, 'LEBEN', right + 5 - Math.floor(pw / 2), top - 2, { align: 'center', color: C.ivoryDim, shadow: C.ink });
       hy = top + 10;
-    }
+    } else hy = top + 3;
     const hp = num(p.hp);
     const shake = st.hurtT > 0 ? Math.round(Math.sin(st.hurtT * 60) * 1) : 0;
     const flash = st.hurtT > 0 && Math.floor(st.hurtT * 20) % 2 === 0;
@@ -150,19 +149,24 @@ export function createHUD(U) {
     }
     if (st.areaT > 0 && st.areaName) {
       const t = 3.2 - st.areaT;
-      const a = clamp(Math.min(t / 0.45, st.areaT / 0.7), 0, 1);
+      const a = clamp(Math.min(t / 0.6, st.areaT / 0.8), 0, 1);
       const sc = measure(st.areaName) * 2 + 40 <= W - 16 ? 2 : 1;
-      const y = Math.floor(H * 0.26);
+      const y = Math.floor(H * 0.24);
       const tw = measure(st.areaName) * sc;
-      ctx.globalAlpha = a * 0.7;
-      ctx.fillStyle = C.night;
-      ctx.fillRect(0, y - 4 * sc + 3, W, LINE_H * sc + 6 * sc - 4);
+      const bandH = LINE_H * sc + 10;
+      const by = y - 5;
+      const gr = ctx.createLinearGradient(0, 0, W, 0);
+      gr.addColorStop(0, rgba(C.plaque, 0)); gr.addColorStop(0.3, rgba(C.plaque, 0.55 * a));
+      gr.addColorStop(0.7, rgba(C.plaque, 0.55 * a)); gr.addColorStop(1, rgba(C.plaque, 0));
+      ctx.fillStyle = gr; ctx.fillRect(0, by, W, bandH);
+      const lw = Math.floor(clamp((t - 0.1) / 0.8, 0, 1) * (tw / 2 + 30));
+      const lg = ctx.createLinearGradient(W / 2 - lw, 0, W / 2 + lw, 0);
+      lg.addColorStop(0, rgba(C.hair, 0)); lg.addColorStop(0.5, rgba(C.hair, 0.9 * a)); lg.addColorStop(1, rgba(C.hair, 0));
+      ctx.fillStyle = lg;
+      ctx.fillRect(Math.floor(W / 2 - lw), by, lw * 2, 1);
+      ctx.fillRect(Math.floor(W / 2 - lw), by + bandH - 1, lw * 2, 1);
       ctx.globalAlpha = a;
-      ctx.fillStyle = C.gold_md;
-      const lw = Math.floor(clamp((t - 0.15) / 0.6, 0, 1) * (tw / 2 + 14));
-      ctx.fillRect(Math.floor(W / 2 - lw - 8), y - 4 * sc + 3, lw * 2 + 16, 1);
-      ctx.fillRect(Math.floor(W / 2 - lw - 8), y + LINE_H * sc + 2 * sc - 2, lw * 2 + 16, 1);
-      drawText(ctx, st.areaName, Math.floor(W / 2), y, { align: 'center', scale: sc, color: GOLD_ROWS, outline: C.ink, shadow: C.shadow });
+      drawText(ctx, st.areaName, Math.floor(W / 2), y + (sc === 2 ? 0 : 1), { align: 'center', scale: sc, color: IVORY_ROWS, shadow: C.ink });
       ctx.globalAlpha = 1;
     }
     let ty = T + 32;
@@ -171,10 +175,8 @@ export function createHUD(U) {
       const w = measure(t.text) + 14;
       const x = Math.floor(U.W / 2 - w / 2);
       ctx.globalAlpha = a;
-      pxRect(ctx, x, ty, w, 15, C.ink, 2);
-      pxRect(ctx, x + 1, ty + 1, w - 2, 13, rgba(C.night, 0.95), 1);
-      ctx.fillStyle = rgba(C.frame, 0.5); ctx.fillRect(x + 3, ty + 1, w - 6, 1);
-      drawText(ctx, t.text, x + 7, ty + 1, { color: C.white, shadow: C.ink });
+      plaque(ctx, x, ty, w, 15, 0.7);
+      drawText(ctx, t.text, x + 7, ty + 1, { color: C.ivory, shadow: C.ink });
       ctx.globalAlpha = 1;
       ty += 18;
     }

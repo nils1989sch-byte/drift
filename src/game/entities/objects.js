@@ -48,6 +48,7 @@ export class Obj extends Entity {
     this.solid = spec.solid ?? def.solid ?? true;
     this.layer = def.layer;
     this.box = spec.box || def.box || [-7, -12, 14, 12];
+    if (spec.t === 'house') { this.model = 'house'; this.footprint = { w: 60, h: 36 }; }
     if (spec.t === 'barrier') { this.box = [0, 0, spec.w * TILE, spec.h * TILE]; this.x = spec.x * TILE; this.y = spec.y * TILE; this.lvl = -1; this.hidden = true; }
     this.lift = !!def.lift; this.cut = !!def.cut;
     this.sortBias = spec.sortBias ?? 0;

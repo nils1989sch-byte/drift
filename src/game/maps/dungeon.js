@@ -112,7 +112,7 @@ export function dungeon4() {
     onEnter(g) {
       g.setFlag('boss_fight', false, false);
       if (g.flags.boss_golem && !g.flags.crystal) g.spawnCrystal();
-      if (g.flags.boss_golem) g.addPortal();
+      if (g.flags.crystal) g.addPortal();
     },
   };
 }

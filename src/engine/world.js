@@ -32,7 +32,12 @@ export function createWorld(map) {
     pxH: h * TILE,
     inside,
     tileAt(tx, ty) { return inside(tx, ty) ? map.ground[ty * w + tx] : 'void'; },
-    setTile(tx, ty, id) { if (inside(tx, ty)) map.ground[ty * w + tx] = id; },
+    version: 0,
+    dirty: [],   // cells changed via setTile since the renderer last looked (renderer clears it)
+    setTile(tx, ty, id) {
+      if (!inside(tx, ty) || map.ground[ty * w + tx] === id) return;
+      map.ground[ty * w + tx] = id; world.version++; world.dirty.push(ty * w + tx);
+    },
     heightAt(tx, ty) { return inside(tx, ty) ? map.height[ty * w + tx] : 0; },
     def(tx, ty) { return TILE_DEFS[world.tileAt(tx, ty)] || TILE_DEFS.void; },
     // Height at a world-pixel point.

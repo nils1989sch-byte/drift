@@ -71,3 +71,13 @@ Automatisch prüfbare Punkte sind mit **[auto]** markiert (Pixel-Analyse der Can
 - [ ] Held, Gegner, Pickups, Hindernisse in < 1 s unterscheidbar.
 - [ ] Boden kontrastarm (keine harten Muster), Interaktives hebt sich ab.
 - [ ] Begehbar vs. blockiert eindeutig (Kontaktschatten/Fuß an Hindernissen).
+
+## K. HD-2D (Three.js)
+- [ ] Texel-Dichte überall 16 Texel/Einheit; keine gestreckten oder gefilterten (unscharfen) Pixel-Texturen.
+- [ ] Kamera FOV 25–35°, Neigung 35–45°; Sprites nicht sichtbar gestaucht.
+- [ ] Sonne warm von oben links, Schatten kühl/teal, nie schwarz; Sprites werfen Schatten.
+- [ ] Spieler immer im Schärfebereich; Vorder-/Hintergrund weich; HUD scharf.
+- [ ] Bloom nur auf Highlights/Emissivem; Gras und Haut ohne Glow.
+- [ ] Grading: `grass_md` vs. `tunic_md` unterscheidbar, Hauttöne nicht grünlich.
+- [ ] Wind bewegt Gras/Bäume texelgenau, ohne Ruckeln; Partikel sparsam.
+- [ ] Mobil: ≥ 50 fps mit Fallback (Tilt-Shift statt Bokeh, Shadow 1024, ≤ 4 Punktlichter).

@@ -2,6 +2,7 @@
 import { createInput } from './engine/input.js';
 import { createCamera } from './engine/camera.js';
 import { createRenderer } from './engine/renderer.js';
+import { createRenderer3D, webglAvailable } from './engine/renderer3d.js';
 import { buildAssets } from './art/index.js';
 import { createFX } from './anim/index.js';
 import { createSFX } from './audio/index.js';
@@ -16,7 +17,9 @@ function boot() {
   const input = createInput(window);
   const camera = createCamera();
   const assets = buildAssets();
-  const renderer = createRenderer(canvas, assets);
+  const params = new URLSearchParams(location.search);
+  const use3D = params.get('r') !== '2d' && webglAvailable();
+  const renderer = use3D ? createRenderer3D(canvas, assets) : createRenderer(canvas, assets);
   const fx = createFX(assets);
   const sfx = createSFX();
   const ui = createUI({ root, input, assets, sfx, camera });
