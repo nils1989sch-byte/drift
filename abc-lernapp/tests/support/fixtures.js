@@ -142,7 +142,7 @@ class App {
       const gone = await handle.evaluate((el) => !el.isConnected).catch(() => true);
       if (gone) return 'next';
       return (await this.questionSignature()) !== before ? 'next' : 'waiting';
-    }, { timeout: 6000 }).not.toBe('waiting');
+    }, { timeout: 15_000 }).not.toBe('waiting');
     return target;
   }
 

@@ -26,9 +26,10 @@ test.describe('Finden game', () => {
     expect(await app.sel.filledRoundStars()).toBe(0);
     expect(await app.questionSignature()).toBe(before);
     await expect(app.$('celebration')).toBeHidden();
-    // Bruno reacts kindly (no "falsch"), and repeats the question
+    // Bruno reacts kindly (no "falsch") and repeats the question. Recorded clips play one after
+    // another (e.g. try-N, then ask-X), so wait for the repeat instead of reading a fixed moment.
+    await expect.poll(async () => (await app.spoken()).join(' '), { timeout: 10_000 }).toContain(target);
     const said = (await app.spoken()).join(' ');
-    expect(said).toContain(target);
     expect(said.toLowerCase()).not.toMatch(/falsch|nein/);
     // the right answer still works afterwards
     await app.answerCorrect();

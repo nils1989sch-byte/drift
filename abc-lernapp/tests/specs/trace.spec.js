@@ -97,13 +97,15 @@ test.describe('Nachmalen (tracing)', () => {
   });
 
   test('tracing over the whole letter with a finger earns a star', async ({ app }) => {
+    // two complete traces of ~35 finger strokes each via CDP: ~25–30 s each with 4 workers
+    test.setTimeout(150_000);
     await openTrace(app);
     const stars = await app.sel.starCount();
     await app.clearSpoken();
     const how = await traceLetter(app);
     app.note('note', `trace strategy: ${how}`);
     await expect.poll(() => app.sel.starCount(), { timeout: 4000 }).toBe(stars + 1);
-    expect((await app.spoken()).join(' ')).toMatch(/toll|super|prima|klasse/i);
+    await expect.poll(async () => (await app.spoken()).join(' ')).toMatch(/toll|super|prima|klasse/i);
     // tracing again on the finished letter must not farm more stars
     await traceLetter(app);
     await app.page.waitForTimeout(300);
