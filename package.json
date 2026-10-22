@@ -1,0 +1,12 @@
+{
+  "name": "drift",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DRIFT – ein 2,5D Pixel-Action-Adventure im SNES-Diorama-Stil (PC + Touch)",
+  "scripts": {
+    "start": "http-server . -p 8080 -c-1 --silent",
+    "playtest": "node tools/playtest.mjs",
+    "check": "node tools/check.mjs"
+  }
+}
