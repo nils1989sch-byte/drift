@@ -3,12 +3,12 @@ import { Pix, mat, frames, rng, bayer } from './core.js';
 import { palette as P } from './palette.js';
 
 // ---------- foliage: union of shaded clusters + leaf scallops ----------
-function foliage(p, clusters, ramp, ink, seed = 1) {
+function foliage(p, clusters, ramp, ink, seed = 1, bias = -0.2) {
   // clusters drawn back-to-front (sorted by y), each with a dark rim so the clumps read separately
   const cs = [...clusters].sort((a, b) => a[1] - b[1]);
   for (const [cx, cy, rx, ry] of cs) {
     p.ellipse(cx, cy, rx + 1, ry + 1, ramp[0]);
-    p.ball(cx, cy, rx, ry, ramp, { dither: 0.18 });
+    p.ball(cx, cy, rx, ry, ramp, { dither: 0.1, bias });
   }
   // leaf scallops: small dark arcs under lighter pixels
   const r = rng(seed);
@@ -135,7 +135,6 @@ function house() {
   for (const x of [4, 5, 22, 41, 58, 59]) p.vline(x, 30, 59, P.wood_dk);
   p.hline(4, 59, 45, P.wood_dk);
   p.line(6, 44, 21, 33, P.wood_dk); p.line(42, 33, 57, 44, P.wood_dk);
-  for (let y = 31; y < 58; y += 1) { p.set(6, y, (y & 3) === 0 ? P.sand : p.get(6, y)); }
   // foundation
   for (let x = 2; x < 62; x++) for (let y = 57; y < 63; y++) p.put(x, y, P.rock_md);
   for (let row = 0; row < 2; row++) for (let x = 2 + row * 4; x < 62; x += 8) { p.vline(x, 57 + row * 3, 59 + row * 3, P.rock_dk); }
@@ -277,15 +276,19 @@ function doorLocked() {
 }
 function block() {
   const p = new Pix(16, 16);
+  // top face with bevel
   p.rect(0, 0, 16, 12, P.stone_lt);
-  p.hline(0, 15, 0, P.stone_hi); p.vline(0, 0, 11, P.stone_hi); p.vline(15, 1, 11, P.stone_md);
-  p.rect(3, 3, 10, 6, P.stone_md); p.hline(3, 12, 3, P.stone_dk); p.vline(3, 3, 8, P.stone_dk); p.hline(4, 12, 9, P.stone_hi); p.vline(13, 4, 9, P.stone_hi);
-  p.rect(0, 12, 16, 4, P.stone_md); p.hline(0, 15, 12, P.stone_dk); p.hline(0, 15, 15, P.stone_dk);
-  p.set(4, 14, P.stone_dk); p.set(11, 13, P.stone_dk);
-  const q = new Pix(16, 16); q.blit(p, 0, 0);
-  // outline inside the tile bounds: darkest material
-  for (let i = 0; i < 16; i++) { q.put(i, 15, P.stone_ink); q.put(0, i, i > 0 ? q.get(0, i) : q.get(0, i)); }
-  return q.canvas();
+  p.hline(0, 15, 0, P.stone_ink); p.vline(0, 0, 15, P.stone_ink); p.vline(15, 0, 15, P.stone_ink);
+  p.hline(1, 14, 1, P.stone_hi); p.vline(1, 1, 10, P.stone_hi);
+  p.vline(14, 2, 10, P.stone_md); p.hline(2, 14, 10, P.stone_md);
+  // engraved diamond
+  for (const [x, y] of [[7, 3], [8, 3], [5, 5], [6, 4], [9, 4], [10, 5], [5, 6], [10, 6], [6, 7], [9, 7], [7, 8], [8, 8]]) p.set(x, y, P.stone_md);
+  for (const [x, y] of [[7, 4], [8, 4], [6, 5], [6, 6], [7, 7]]) p.set(x, y, P.stone_hi);
+  // front face
+  p.hline(1, 14, 11, P.stone_dk);
+  p.rect(1, 12, 14, 3, P.stone_md); p.set(4, 13, P.stone_dk); p.set(10, 13, P.stone_dk);
+  p.hline(0, 15, 15, P.stone_ink);
+  return p.canvas();
 }
 function floorSwitch(down) {
   const p = new Pix(16, 16);

@@ -96,7 +96,7 @@ export class Pix {
   }
   // 3D-shaded ellipsoid, ramp = dark→light. light from top-left.
   ball(cx, cy, rx, ry, ramp, o = {}) {
-    const lx = -0.55, ly = -0.65, lz = 0.52, dith = o.dither ?? 0.12, bias = o.bias ?? 0;
+    const lx = -0.55, ly = -0.65, lz = 0.52, dith = o.dither ?? 0.06, bias = o.bias ?? 0;
     return this.ellipse(cx, cy, rx, ry, (x, y, nx, ny) => {
       const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
       let L = nx * lx + ny * ly + nz * lz;

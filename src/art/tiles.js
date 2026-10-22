@@ -330,35 +330,38 @@ function grassLip(p, seed) {
     p.set(x, 2 + tooth, P.grass_ink);
     if (x % 4 === 1) p.set(x, 1, P.grass_dk);
   }
-  p.set(3, 0, P.grass_lt); p.set(10, 0, P.grass_lt);
 }
-// rock cliff with vertical ribs
-const RIBS = [[1, 3], [6, 2], [10, 3], [14, 2]]; // x, width (wraps)
+// rock cliff with vertical ribs (rounded columns, lit left, staggered segment ends, wraps vertically)
+const RIBS = [[0, 4, [5, 13]], [6, 3, [10]], [11, 3, [2, 8]]]; // x, width, break rows
 function rockFace(kind) {
   const p = new Pix(16, 16);
-  p.fill(P.rock_md);
-  const breaks = { 0: [], 1: [[6, 7, 0], [11, 12, 2]], 2: [] }[kind];
-  for (const [x0, w] of RIBS) {
+  p.fill(P.rock_dk);
+  const shift = [0, 7, 3][kind];
+  for (const [x0, w, brk] of RIBS) {
     for (let y = 0; y < 16; y++) {
-      const br = breaks.find(([a, b, ri]) => RIBS[ri][0] === x0 && y >= a && y <= b);
-      if (br) { if (y === br[0]) p.hline(x0, x0 + w - 1, y, P.rock_dk); continue; }
-      for (let i = 0; i < w; i++) p.set((x0 + i) % 16, y, i === 0 ? P.rock_lt : i === w - 1 ? P.rock_md : P.rock_lt);
-      p.set((x0 + w) % 16, y, P.rock_dk);
-      p.set((x0 + w + 1) % 16, y, y % 5 === 2 ? P.rock_md : P.rock_ink);
+      const yy = (y + shift) % 16;
+      for (let i = 0; i < w; i++) p.put(x0 + i, y, i === 0 ? P.rock_lt : i === 1 && w > 3 && (yy & 7) < 3 ? P.rock_lt : P.rock_md);
+      p.put(x0 + w, y, P.rock_dk);
+      if (x0 + w + 1 < 16) p.put(x0 + w + 1, y, (yy % 7) === 3 ? P.rock_dk : P.rock_ink);
+      for (const b of brk) {
+        if (yy === b) for (let i = 0; i <= w; i++) p.put(x0 + i, y, P.rock_ink);
+        if (yy === (b + 1) % 16) { for (let i = 0; i < w; i++) p.put(x0 + i, y, i === 0 ? P.rock_hi : P.rock_lt); }
+        if (yy === (b + 15) % 16) { for (let i = 1; i < w; i++) p.put(x0 + i, y, P.rock_dk); }
+      }
     }
   }
-  // highlight dots on rib tops
-  if (kind === 1) { p.set(2, 3, P.rock_hi); p.set(11, 9, P.rock_hi); }
-  if (kind === 0) { grassLip(p, 5); p.set(1, 4, P.rock_hi); p.set(6, 4, P.rock_hi); p.set(10, 5, P.rock_hi); p.set(14, 4, P.rock_hi); }
+  p.vline(15, 0, 15, P.rock_ink);
+  if (kind === 0) {
+    grassLip(p, 5);
+    for (const [x0, w] of RIBS) { p.put(x0, 4, P.rock_hi); if (w > 1) p.put(x0 + 1, 4, P.rock_lt); }
+  }
   if (kind === 2) {
-    // rubble + dark foot
-    const chunks = [[2, 11, 3], [8, 12, 4], [13, 11, 2]];
+    const chunks = [[1, 11, 3], [7, 12, 4], [12, 11, 3]];
     for (const [cx, cy, w] of chunks) {
-      p.rect(cx, cy, w, 2, P.rock_lt); p.hline(cx, cx + w - 1, cy - 1, P.rock_hi);
-      p.vline(cx + w, cy - 1, cy + 1, P.rock_dk); p.hline(cx, cx + w, cy + 2, P.rock_dk);
+      p.rect(cx, cy, w, 2, P.rock_md); p.hline(cx, cx + w - 1, cy - 1, P.rock_lt); p.set(cx, cy - 1, P.rock_hi);
+      p.vline(cx + w, cy - 1, cy + 1, P.rock_dk); p.hline(cx - 1, cx + w, cy + 2, P.rock_ink);
     }
     p.rect(0, 14, 16, 2, P.rock_ink);
-    p.set(5, 13, P.rock_dk); p.set(12, 13, P.rock_dk);
   }
   return p.canvas();
 }
@@ -370,7 +373,7 @@ function dirtFace(kind) {
     const band = Math.floor((y + (Math.sin((x / 16) * Math.PI * 2 + kind) > 0.4 ? 1 : 0)) / 4) % 2;
     p.put(x, y, band ? P.dirt_dk : P.dirt_md);
   }
-  for (let i = 0; i < 4; i++) { const x = r.range(1, 13), y = r.range(kind === 0 ? 5 : 1, 12); p.rect(x, y, 2, 2, P.rock_md); p.set(x, y, P.rock_lt); p.set(x + 2, y + 1, P.dirt_ink); p.set(x + 1, y + 2, P.dirt_ink); }
+  for (let i = 0; i < 4; i++) { const x = r.range(1, 13), y = r.range(kind === 0 ? 5 : 1, 12); p.rect(x, y, 2, 2, P.rock_md); p.set(x, y, P.rock_lt); p.set(x + 2, y + 1, P.dirt_dk); p.set(x + 1, y + 2, P.dirt_dk); }
   for (const rx of kind === 2 ? [] : [4, 12]) { let x = rx; for (let y = 0; y < 12; y++) { p.set(x, y, P.wood_dk); if (r() < 0.35) x += r() < 0.5 ? -1 : 1; } }
   if (kind === 0) grassLip(p, 7);
   if (kind === 2) { p.rect(0, 13, 16, 3, P.dirt_ink); for (let x = 0; x < 16; x += 3) p.set(x, 12, P.dirt_ink); }
@@ -393,7 +396,7 @@ function brickFace(kind) {
 }
 
 function plinthEarth() {
-  const W = 32, H = 28, p = new Pix(W, H), r = rng(1234);
+  const W = 64, H = 28, p = new Pix(W, H), r = rng(1234);
   const wave = (x, a, ph) => Math.round(Math.sin((x / W) * Math.PI * 2 * a + ph) * 1.2);
   for (let x = 0; x < W; x++) for (let y = 0; y < H; y++) {
     let c = P.dirt_md;
@@ -404,15 +407,15 @@ function plinthEarth() {
   p.hline(0, W - 1, 0, P.dirt_lt); p.hline(0, W - 1, 1, P.dirt_lt);
   for (let x = 0; x < W; x += 3) p.set(x + (x % 2), 2, P.dirt_lt);
   // roots
-  for (const rx of [5, 21]) { let x = rx; for (let y = 2; y < 12; y++) { p.set((x + W) % W, y, P.wood_dk); if (r() < 0.4) x += r() < 0.5 ? -1 : 1; } }
+  for (const rx of [5, 23, 41, 57]) { let x = rx; for (let y = 2; y < 12; y++) { p.set((x + W) % W, y, P.wood_dk); if (r() < 0.4) x += r() < 0.5 ? -1 : 1; } }
   // stones
-  for (let i = 0; i < 9; i++) {
-    const x = r.int(W), y = r.range(9, 24), w = r.range(2, 3);
-    p.rect(x, y, w, 2, P.rock_md); p.set(x, y, P.rock_lt);
-    p.hline(x, x + w, y + 2, P.dirt_ink); p.set(x + w, y + 1, P.rock_dk);
+  for (let i = 0; i < 13; i++) {
+    const x = r.int(W - 4), y = r.range(9, 24), w = r.range(1, 4), h = w > 2 ? 2 : 1;
+    p.rect(x, y, w, h, P.rock_md); p.set(x, y, P.rock_lt);
+    p.hline(x, x + w, y + h, P.dirt_ink); p.vline(x + w, y, y + h - 1, P.rock_dk);
   }
-  for (let i = 0; i < 14; i++) p.set(r.int(W), r.range(3, 7), P.dirt_dk);
-  for (let i = 0; i < 10; i++) p.set(r.int(W), r.range(20, 27), P.dirt_dk);
+  for (let i = 0; i < 26; i++) p.set(r.int(W), r.range(3, 7), P.dirt_dk);
+  for (let i = 0; i < 20; i++) p.set(r.int(W), r.range(20, 27), P.dirt_dk);
   return p.canvas();
 }
 function plinthStone() {

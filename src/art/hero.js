@@ -46,9 +46,9 @@ oSkHdGGGGGGdHkSo
 ..oGGGGGGGGGGdoo
 .oHHGGGGGGGGddGo
 .oHHHHHHHHdGGddo
-oSHHSSHHHkHdooo.
-oSSESSSSkSkHo...
-oSSESSSSSkkHo...
+oSHHSSHHHHHdooo.
+oSSESSSSsSkHo...
+oSSESSSSskHHo...
 .osSSSSSSSHko...
 ..oosSSSSokoo...`),
 };
@@ -472,16 +472,14 @@ oSESSSSSommmo...
 };
 export function buildSoldier() {
   const S = {};
-  const TOR = Object.fromEntries(Object.entries(TORSO).map(([k, v]) => [k, v.recolor(SOLDIER_RECOLOR)]));
-  const LEG = Object.fromEntries(Object.entries(LEGS).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).map(([a, b]) => [a, b.recolor(SOLDIER_RECOLOR)]))]));
-  const parts = { HEAD: SH, TORSO: TOR, LEGS: LEG };
+  const parts = { HEAD: SH, TORSO, LEGS };
   for (const dir of DIRS) {
     const v = viewOf(dir);
     const seq = [0, 2, 3, 5].map((i) => WALK[v][i]);
     // soldiers carry a short sword pointing forward-down
     const mk = (pose, ext = 0) => {
       const c = new Pix(32, 32), A = ATK[v];
-      const body = compose({ ...pose, view: v, noShield: true }, parts);
+      const body = compose({ ...pose, view: v, noShield: true }, parts).recolor(SOLDIER_RECOLOR);
       const ang = A.F + (v === 'up' ? 0 : 0);
       const sw = drawSword(ang, 8 + ext, { blade: P.metal_lt, edge: P.metal_md, guard: P.metal_dk, grip: P.wood_dk });
       const off = { down: [12, 16], up: [19, 12], left: [16, 17] }[v];
