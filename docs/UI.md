@@ -97,14 +97,18 @@ so groß gezeichnet.
   dadurch flackert nichts). Die Form ist an den Ecken abgeschrägt und hat links und rechts flache Spitzen. Oben links sitzt ein
   sechseckiger, taupefarbener Namensreiter mit heller Schrift, der Zeiger zur Figur ist eine dünne dunkle Linie. Der Text ist dunkel
   (`#2a2026`) auf hellem Grund, der Weiter-Pfeil rotbraun. Die Auswahl steht in einer eigenen kleinen Blase.
-- **HUD:** dunkle, halbtransparente Plaketten (`#141019`, 58 %) mit feiner goldener Haarlinie, Zahlen in Elfenbein,
-  dazu ein zurückhaltendes Label „LEBEN“.
+- **HUD:** kleine, dunkle Glas-Plaketten (`#141019`, ca. 40 %) mit feiner goldener Haarlinie, Zahlen in Elfenbein,
+  dazu ein zurückhaltendes Label „LEBEN“. Die Item-Box (20×20) bleibt **ausgeblendet, solange `player.item` leer
+  ist**; die Zähler rücken dann nach.
 - **Menüs und Game Over:** dunkles, durchscheinendes Panel mit goldener Haarlinie und kleinen Eck-Nieten, über dem
   Spiel eine weiche Vignette.
 - **Titel:** Das 3D-Diorama läuft sichtbar weiter (nur oben und unten eine leichte Vignette). Das Logo ist elfenbein
   bis hellgold, hat einen Glanz-Sweep und einen **weichen, pulsierenden Glow**. Der Glow entsteht durch Herunter- und
   wieder Hochskalieren mit Glättung und funktioniert daher auch ohne `ctx.filter`. Die Logo-Pixel selbst bleiben scharf.
-- **Gebietsname:** Ein Band, das zu den Rändern hin ausblendet, mit goldenen Haarlinien und Text in Elfenbein.
+- **Ortstitel (`game.areaName`):** wie in Octopath ohne Box. Er steht zentriert im oberen Drittel (20 % der Höhe) im
+  Pixel-Font in 2× (zu schmal: 1×), elfenbein mit dunkler `ink`-Kontur. Links und rechts laufen feine Ornament-Linien
+  mit Raute aus, die nach außen ausblenden. Blendet 0,4 s ein, hält 2 s und blendet 0,6 s aus. Gezeichnet wird er
+  scharf auf dem UI-Overlay, also nicht in der 3D-Szene und ohne DOF.
 
 ## Darstellung
 - Ein eigenes Canvas `.drift-ui` liegt über `#game`, hat volle Gerätepixel und `pointer-events: none`.

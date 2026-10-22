@@ -1,8 +1,9 @@
 // HUD (ALttP-like layout per STYLE_GUIDE §8): item box top-left, counters top-middle, hearts top-right.
 // Reads game.player every frame; hp counts half hearts (2 hp = 1 heart).
-import { drawText, measure, LINE_H } from './font.js';
+import { drawText, measure, ASC } from './font.js';
 import { C, rgba, clamp, plaque } from './theme.js';
 
+const AREA_T = 3.0;
 const IVORY_ROWS = ['#fffaf0', '#fffaf0', C.ivory, C.ivory, '#e8dcc0', '#dccca8', '#d0bc94'];
 
 export function createHUD(U) {
@@ -45,7 +46,7 @@ export function createHUD(U) {
     st.toasts = st.toasts.filter((t) => t.t > 0);
   }
 
-  function showArea(name) { st.areaName = String(name); st.areaT = 3.2; }
+  function showArea(name) { st.areaName = String(name); st.areaT = AREA_T; }
 
   function toast(text, { id = null, time = 1.8 } = {}) {
     text = String(text);
@@ -58,9 +59,9 @@ export function createHUD(U) {
   }
 
   function iconBox(ctx, x, y, item) {
-    plaque(ctx, x, y, 22, 22, 0.62);
+    plaque(ctx, x, y, 20, 20, 0.42);
     const ic = item ? U.icon(item) : null;
-    if (ic) U.drawIcon(ctx, ic, x + 11, y + 11, 16);
+    if (ic) U.drawIcon(ctx, ic, x + 10, y + 10, 16);
   }
 
   function counter(ctx, x, y, iconKey, value, digits) {
@@ -82,7 +83,8 @@ export function createHUD(U) {
 
     // item box
     const ix = L + 6;
-    iconBox(ctx, ix, top, p.item ?? null);
+    const hasItem = !!p.item && !!U.icon(p.item);
+    if (hasItem) iconBox(ctx, ix, top, p.item); // empty box stays hidden until an item is equipped
 
     // counters
     const rd = Math.max(3, String(Math.floor(num(p.rupees))).length);
@@ -90,9 +92,9 @@ export function createHUD(U) {
     const cw = groups.reduce((a, gq) => a + counterW(gq[2]), 0) + 8 * (groups.length - 1);
     const hearts = Math.max(1, Math.ceil(num(p.maxHp, 6) / 2));
     const narrow = W < 330;
-    let cx = narrow ? ix + 28 : Math.floor(W / 2 - cw / 2);
+    let cx = narrow ? (hasItem ? ix + 27 : ix + 5) : Math.floor(W / 2 - cw / 2);
     const cy = top + 7;
-    plaque(ctx, cx - 5, top + 3, cw + 10, 15);
+    plaque(ctx, cx - 4, top + 4, cw + 8, 13, 0.4);
     for (const [k, v, d] of groups) cx += counter(ctx, cx, cy, k, v, d) + 8;
 
     // hearts
@@ -107,11 +109,11 @@ export function createHUD(U) {
     let hy = top + 1;
     const lw = measure('LEBEN');
     const pw = Math.max(rowW, rows === 1 ? lw : 0) + 10;
-    plaque(ctx, right - pw + 5, top - 1, pw, rows === 1 ? 23 : rows * (hw + 1) + 7);
+    plaque(ctx, right - pw + 5, top, pw, rows === 1 ? 21 : rows * (hw + 1) + 5, 0.4);
     if (rows === 1) {
-      drawText(ctx, 'LEBEN', right + 5 - Math.floor(pw / 2), top - 2, { align: 'center', color: C.ivoryDim, shadow: C.ink });
+      drawText(ctx, 'LEBEN', right + 5 - Math.floor(pw / 2), top - 1, { align: 'center', color: C.ivoryDim, shadow: C.ink });
       hy = top + 10;
-    } else hy = top + 3;
+    } else hy = top + 2;
     const hp = num(p.hp);
     const shake = st.hurtT > 0 ? Math.round(Math.sin(st.hurtT * 60) * 1) : 0;
     const flash = st.hurtT > 0 && Math.floor(st.hurtT * 20) % 2 === 0;
@@ -138,6 +140,43 @@ export function createHUD(U) {
     drawOverlays(ctx);
   }
 
+  // Octopath-like location title: crisp 2× pixel font, dark contour (no box), fine ornament lines left/right.
+  // Fade 0.4 s in, hold 2 s, 0.6 s out (st.areaT counts down from AREA_T).
+  function drawAreaTitle(ctx) {
+    const { W, H } = U;
+    const t = AREA_T - st.areaT;
+    const a = clamp(Math.min(t / 0.4, st.areaT / 0.6), 0, 1);
+    const name = st.areaName;
+    const sc = measure(name) * 2 + 90 <= W - 16 ? 2 : 1;
+    const tw = measure(name) * sc;
+    const y = Math.floor(H * 0.2);
+    const midY = y + (ASC + 3) * sc; // optical middle of the caps
+    const pa = ctx.globalAlpha;
+    ctx.globalAlpha = pa * a;
+    // ornaments: hairline fading outward, small diamond + dot at the inner end
+    const gap = 6 + sc * 2, len = Math.max(0, Math.min(56, Math.floor((W - tw) / 2) - gap - 10));
+    const grow = clamp(t / 0.6, 0, 1);
+    const L = Math.floor(len * (0.6 + 0.4 * grow));
+    for (const dir of [-1, 1]) {
+      const x0 = dir < 0 ? Math.floor(W / 2 - tw / 2) - gap : Math.ceil(W / 2 + tw / 2) + gap;
+      for (let i = 0; i < L; i++) {
+        const k = 1 - i / L;
+        const xx = x0 + dir * (i + 4);
+        ctx.globalAlpha = pa * a * k * 0.9; ctx.fillStyle = C.ink; ctx.fillRect(xx, midY - 1, 1, 3);
+        ctx.globalAlpha = pa * a * k; ctx.fillStyle = i < 3 ? C.ivory : C.hair; ctx.fillRect(xx, midY, 1, 1);
+      }
+      ctx.globalAlpha = pa * a;
+      // diamond
+      ctx.fillStyle = C.ink;
+      for (let r = -3; r <= 3; r++) { const hw2 = 3 - Math.abs(r); ctx.fillRect(x0 - hw2, midY + r, hw2 * 2 + 1, 1); }
+      ctx.fillStyle = C.hair;
+      for (let r = -2; r <= 2; r++) { const hw2 = 2 - Math.abs(r); ctx.fillRect(x0 - hw2, midY + r, hw2 * 2 + 1, 1); }
+      ctx.fillStyle = C.ivory; ctx.fillRect(x0, midY - 1, 1, 1);
+    }
+    drawText(ctx, name, Math.floor(W / 2), y, { align: 'center', scale: sc, color: IVORY_ROWS, outline: C.ink });
+    ctx.globalAlpha = pa;
+  }
+
   // low-health vignette, area banner, toasts
   function drawOverlays(ctx) {
     const { W, H } = U; const T = U.safe.t;
@@ -147,28 +186,7 @@ export function createHUD(U) {
       gr.addColorStop(0, rgba(C.heart_dk, 0)); gr.addColorStop(1, rgba(C.heart_dk, a));
       ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
     }
-    if (st.areaT > 0 && st.areaName) {
-      const t = 3.2 - st.areaT;
-      const a = clamp(Math.min(t / 0.6, st.areaT / 0.8), 0, 1);
-      const sc = measure(st.areaName) * 2 + 40 <= W - 16 ? 2 : 1;
-      const y = Math.floor(H * 0.24);
-      const tw = measure(st.areaName) * sc;
-      const bandH = LINE_H * sc + 10;
-      const by = y - 5;
-      const gr = ctx.createLinearGradient(0, 0, W, 0);
-      gr.addColorStop(0, rgba(C.plaque, 0)); gr.addColorStop(0.3, rgba(C.plaque, 0.55 * a));
-      gr.addColorStop(0.7, rgba(C.plaque, 0.55 * a)); gr.addColorStop(1, rgba(C.plaque, 0));
-      ctx.fillStyle = gr; ctx.fillRect(0, by, W, bandH);
-      const lw = Math.floor(clamp((t - 0.1) / 0.8, 0, 1) * (tw / 2 + 30));
-      const lg = ctx.createLinearGradient(W / 2 - lw, 0, W / 2 + lw, 0);
-      lg.addColorStop(0, rgba(C.hair, 0)); lg.addColorStop(0.5, rgba(C.hair, 0.9 * a)); lg.addColorStop(1, rgba(C.hair, 0));
-      ctx.fillStyle = lg;
-      ctx.fillRect(Math.floor(W / 2 - lw), by, lw * 2, 1);
-      ctx.fillRect(Math.floor(W / 2 - lw), by + bandH - 1, lw * 2, 1);
-      ctx.globalAlpha = a;
-      drawText(ctx, st.areaName, Math.floor(W / 2), y + (sc === 2 ? 0 : 1), { align: 'center', scale: sc, color: IVORY_ROWS, shadow: C.ink });
-      ctx.globalAlpha = 1;
-    }
+    if (st.areaT > 0 && st.areaName) drawAreaTitle(ctx);
     let ty = T + 32;
     for (const t of st.toasts) {
       const a = clamp(Math.min((t.max - t.t) / 0.15, t.t / 0.35), 0, 1);

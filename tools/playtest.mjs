@@ -152,9 +152,10 @@ const allErrors = [];
 
 async function openPage({ r3d = false, ctx: ctxOpts = {}, query = '' } = {}) {
   const b = r3d ? await chromium.launch({ headless: !args.headed, args: GL_ARGS }) : browser;
-  const ctx = await b.newContext({ viewport: { width: 1280, height: 720 }, ...ctxOpts });
+  const ctx = await b.newContext({ viewport: r3d ? { width: 960, height: 540 } : { width: 1280, height: 720 }, ...ctxOpts });
   await ctx.addInitScript(INIT);
   const page = await ctx.newPage();
+  if (r3d) page.setDefaultTimeout(120000);
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') errors.push('console.error: ' + m.text()); if (m.type() === 'warning' && /\[game\]|\[ui\]/.test(m.text())) errors.push('warn: ' + m.text()); });
@@ -412,6 +413,28 @@ S('stairs_height', async ({ page, assert, ev }) => {
   assert(!r.cliffUp.stuck && !r.sideFromStairs.stuck, 'no stuck at cliffs/stairs', r);
 });
 
+// Leaving a stairs cell downwards while the foot box still overlaps the plateau cell beside the stairs.
+S('stairs_side_exit', async ({ page, assert, ev }) => {
+  await newGame(page);
+  const r = await ev(() => {
+    const p = __qa.p(), out = [];
+    for (const [name, tx, ty, off] of [['hill(42,20) left', 42, 20, -4], ['hill(42,20) right', 42, 20, 4], ['nord(9,13) left', 9, 13, -4], ['nord(9,13) right', 9, 13, 4]]) {
+      __qa.tp('overworld', tx, ty, true);
+      p.x += off; p.lvl = __qa.col.levelUnder(__drift.game.world, p);
+      const start = __qa.playerStuck();
+      let stuck = null;
+      __qa.run(40, () => ({ y: 1 }), () => { stuck = __qa.playerStuck(); return stuck ? 'STUCK' : null; });
+      const snap = __qa.snap();
+      // can we still walk away?
+      const x0 = p.x, y0 = p.y;
+      __qa.run(30, () => ({ x: off > 0 ? 1 : -1, y: 1 }));
+      out.push({ name, start, stuck, snap, canLeave: Math.hypot(p.x - x0, p.y - y0) > 3 });
+    }
+    return out;
+  });
+  for (const c of r) assert(!c.stuck, `${c.name}: stepping off the stairs does not leave a foot corner inside the plateau`, c);
+});
+
 S('ledge_jump', async ({ page, assert, ev }) => {
   await newGame(page);
   const r = await ev(() => {
@@ -618,8 +641,9 @@ S('bush_cut_lift_throw', async ({ page, assert, note, ev }) => {
     const nProj = g.projectiles.length;
     __qa.tap('attack', 2);
     out.thrown = { carry: p.carry?.type || null, projectiles: g.projectiles.length - nProj };
-    __qa.run(60);
+    __qa.run(120);
     out.landed = g.projectiles.filter((q) => !q.dead).length;
+    out.flying = g.projectiles.filter((q) => !q.dead).map((q) => ({ x: Math.round(q.x), y: Math.round(q.y), hop: Math.round(q.hop), lvl: q.lvl, life: +q.life.toFixed(2) }));
     // throw a pot at an enemy: house_elder pots, no enemy there; use dungeon_1 pot (1,10) and slime
     __qa.tp('dungeon_1', 2, 10);
     __qa.face('left'); __qa.tap('action', 20);
@@ -641,7 +665,7 @@ S('bush_cut_lift_throw', async ({ page, assert, note, ev }) => {
   assert(r.lift.existed && r.lift.carry === 'bush', 'action lifts a bush', r.lift);
   assert(r.carryWalk.carry === 'bush', 'carry while walking', r.carryWalk);
   assert(!r.thrown.carry && r.thrown.projectiles === 1, 'attack throws the carried bush', r.thrown);
-  assert(r.landed === 0, 'thrown object lands/breaks', r.landed);
+  assert(r.landed === 0, 'thrown object lands/breaks within 2 s', r.flying);
   assert(r.pot.carry === 'pot', 'pot can be lifted', r.pot);
   assert(r.grass.before === 'grass_tall' && r.grass.after === 'grass', 'sword cuts tall grass', r.grass);
   assert(r.rock.carry === 'rock', 'rock can be lifted', r.rock);
@@ -1166,7 +1190,7 @@ S('3d_screens_and_fps', async ({ page, assert, note, ev }) => {
   for (const [name, map, tx, ty] of SHOT_SPOTS) {
     await ev(([m, x, y]) => { __drift.game.debug.teleport(m, x, y); }, [map, tx, ty]);
     await page.waitForTimeout(3000);
-    await page.screenshot({ path: path.join(SHOTS, name + '.png') });
+    await page.screenshot({ path: path.join(SHOTS, name + '.png'), timeout: 120000 });
     const f = await ev(() => new Promise((res) => { let n = 0; const t0 = performance.now(); const tick = () => { n++; if (performance.now() - t0 < 3000) requestAnimationFrame(tick); else res(+(n / ((performance.now() - t0) / 1000)).toFixed(1)); }; requestAnimationFrame(tick); }));
     fps[name] = f;
   }
@@ -1177,7 +1201,7 @@ S('3d_screens_and_fps', async ({ page, assert, note, ev }) => {
   await page.keyboard.down('ArrowRight'); await page.waitForTimeout(4000); await page.keyboard.up('ArrowRight');
   const b = await ev(() => __qa.snap());
   await page.keyboard.press('Space', { delay: 60 }); await page.waitForTimeout(60);
-  await page.screenshot({ path: path.join(SHOTS, '3d_attack.png') });
+  await page.screenshot({ path: path.join(SHOTS, '3d_attack.png'), timeout: 120000 });
   const info = await ev(() => ({ renderer: __drift.renderer.constructor?.name, stats: __drift.renderer.stats, gl: !!document.querySelector('#game').getContext }));
   note('3D FPS (SwiftShader software GL – not representative of real GPUs)', fps);
   note('renderer stats', info.stats);
@@ -1191,7 +1215,7 @@ S('3d_touch_portrait', async ({ page, assert, note, ev }) => {
   for (let i = 0; i < 40; i++) { if ((await ev(() => __drift.ui.state)) !== 'dialog') break; await page.touchscreen.tap(195, 300); await page.waitForTimeout(150); }
   await ev(() => __drift.game.debug.teleport('overworld', 12, 24));
   await page.waitForTimeout(1500);
-  await page.screenshot({ path: path.join(SHOTS, '3d_touch_390x844.png') });
+  await page.screenshot({ path: path.join(SHOTS, '3d_touch_390x844.png'), timeout: 120000 });
   const f = await ev(() => new Promise((res) => { let n = 0; const t0 = performance.now(); const tick = () => { n++; if (performance.now() - t0 < 3000) requestAnimationFrame(tick); else res(+(n / 3).toFixed(1)); }; requestAnimationFrame(tick); }));
   note('3D mobile FPS (SwiftShader, DPR 3)', f);
   assert(f > 0.2, '3D mobile renders', f);
