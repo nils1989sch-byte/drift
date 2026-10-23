@@ -1,6 +1,6 @@
 {
- "date": "2026-10-23T04:52:01.176Z",
- "seed": 7,
+ "date": "2026-10-23T04:52:25.865Z",
+ "seed": 3,
  "frames": 2000,
  "results": [
   {
@@ -185,8 +185,8 @@
      "ok": true,
      "msg": "keyboard diagonal (D+S) moves diagonally & normalized",
      "data": {
-      "dx": 31.730000000000018,
-      "dy": 31.720000000000027
+      "dx": 30.360000000000014,
+      "dy": 33.09000000000003
      }
     }
    ],
@@ -194,7 +194,7 @@
     "diagonal facing: {\"dr\":\"down\",\"dl\":\"down\",\"ur\":\"up\",\"ul\":\"up\"}"
    ],
    "errors": [],
-   "ms": 3715
+   "ms": 3755
   },
   {
    "name": "random_walk_collision",
@@ -202,76 +202,39 @@
    "checks": [
     {
      "ok": true,
-     "msg": "random walk overworld@12,23: player never inside solid (2000 frames, 73 cells)",
+     "msg": "random walk overworld@12,23: player never inside solid (2000 frames, 56 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk overworld@22,16: player never inside solid (2000 frames, 65 cells)",
+     "msg": "random walk overworld@22,16: player never inside solid (2000 frames, 55 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk overworld@7,9: player never inside solid (2000 frames, 58 cells)",
+     "msg": "random walk overworld@7,9: player never inside solid (2000 frames, 67 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@38,11: player never inside solid (2000 frames, 89 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@36,25: player never inside solid (2000 frames, 76 cells)",
      "data": null
     },
     {
      "ok": false,
-     "msg": "random walk overworld@38,11: player never inside solid (1390 frames, 40 cells)",
-     "data": {
-      "i": 1389,
-      "s": "tile(38,14)=grass h1 vs lvl0",
-      "snap": {
-       "map": "overworld",
-       "x": 613.63,
-       "y": 243.25,
-       "tx": 38,
-       "ty": 15,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "right",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 4,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      }
-     }
-    },
-    {
-     "ok": false,
-     "msg": "random walk overworld@36,25: player never inside solid (362 frames, 27 cells)",
-     "data": {
-      "i": 361,
-      "s": "tile(43,21)=grass h0 vs lvl1",
-      "snap": {
-       "map": "overworld",
-       "x": 693.2,
-       "y": 335.31,
-       "tx": 43,
-       "ty": 20,
-       "lvl": 1,
-       "z": 1,
-       "state": "normal",
-       "dir": "right",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 4,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      }
-     }
+     "msg": "random walk overworld@36,25: walker enemies inside solid tiles",
+     "data": [
+      "octorok: tile(38,15)=grass h0 vs lvl1"
+     ]
     },
     {
      "ok": true,
-     "msg": "random walk overworld@14,27: player never inside solid (2000 frames, 63 cells)",
+     "msg": "random walk overworld@14,27: player never inside solid (2000 frames, 59 cells)",
      "data": null
     },
     {
@@ -281,38 +244,45 @@
     },
     {
      "ok": true,
-     "msg": "random walk cave@6,7: player never inside solid (2000 frames, 42 cells)",
+     "msg": "random walk cave@6,7: player never inside solid (2000 frames, 47 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_1@8,10: player never inside solid (2000 frames, 71 cells)",
+     "msg": "random walk dungeon_1@8,10: player never inside solid (2000 frames, 66 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_2@7,9: player never inside solid (2000 frames, 62 cells)",
+     "msg": "random walk dungeon_2@7,9: player never inside solid (2000 frames, 49 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_3@7,10: player never inside solid (2000 frames, 76 cells)",
+     "msg": "random walk dungeon_3@7,10: player never inside solid (2000 frames, 78 cells)",
      "data": null
     },
     {
+     "ok": false,
+     "msg": "random walk dungeon_3@7,10: walker enemies inside solid tiles",
+     "data": [
+      "soldier: tile(11,5)=pit h0 vs lvl0"
+     ]
+    },
+    {
      "ok": true,
-     "msg": "random walk dungeon_4@8,11: player never inside solid (2000 frames, 55 cells)",
+     "msg": "random walk dungeon_4@8,11: player never inside solid (2000 frames, 59 cells)",
      "data": null
     }
    ],
    "notes": [
     "random walk: teleport target 8,10 is blocked → started at 7,9",
+    "random walk overworld@38,11: warped through: [\"overworld\",\"dungeon_1\"]",
     "random walk: teleport target 36,26 is blocked → started at 36,25",
-    "random walk dungeon_2@7,9: warped through: [\"dungeon_2\",\"dungeon_1\"]",
-    "random walk dungeon_3@7,10: warped through: [\"dungeon_3\",\"dungeon_1\"]"
+    "random walk house_elder@5,6: warped through: [\"house_elder\",\"overworld\"]"
    ],
    "errors": [],
-   "ms": 11089
+   "ms": 11865
   },
   {
    "name": "stairs_height",
@@ -429,7 +399,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 2890
+   "ms": 2679
   },
   {
    "name": "stairs_side_exit",
@@ -730,7 +700,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 2871
+   "ms": 2732
   },
   {
    "name": "pits_fall",
@@ -843,7 +813,7 @@
     "holding → into a pit for 3 s (respawn next to the pit): {\"falls\":3,\"hpLeft\":16}"
    ],
    "errors": [],
-   "ms": 2749
+   "ms": 2523
   }
  ]
 }
