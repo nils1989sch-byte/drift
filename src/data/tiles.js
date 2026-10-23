@@ -7,6 +7,8 @@ export const TILE_DEFS = {
   grass_tall:   { solid: false, tall: true, cut: true },
   grass_light:  { solid: false },
   clearing:     { solid: false },
+  soil:         { solid: false, soil: true },
+  soil_wet:     { solid: false, soil: true, wet: true },
   dirt:         { solid: false },
   path:         { solid: false },
   sand:         { solid: false },
@@ -26,7 +28,7 @@ export const TILE_DEFS = {
 export const FACE_IDS = ['rock', 'dirt', 'brick'];
 
 export const LEGEND_DEFAULT = {
-  '.': 'grass', ';': 'grass_light', 'c': 'clearing', ',': 'grass_dark', '*': 'grass_flowers', '"': 'grass_tall',
+  '.': 'grass', ';': 'grass_light', 'c': 'clearing', 'f': 'soil', ',': 'grass_dark', '*': 'grass_flowers', '"': 'grass_tall',
   ':': 'dirt', '=': 'path', 's': 'sand', '~': 'water', '-': 'shallow',
   'H': 'stairs', '#': 'bridge', 'o': 'stone_floor', '_': 'dungeon_floor',
   'W': 'dungeon_wall', 'O': 'pit', 'w': 'wood_floor', ' ': 'void',

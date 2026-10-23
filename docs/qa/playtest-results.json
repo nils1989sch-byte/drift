@@ -1,315 +1,81 @@
 {
- "date": "2026-10-23T05:08:10.383Z",
+ "date": "2026-10-23T05:15:37.476Z",
  "seed": 1,
  "frames": 2000,
  "results": [
   {
-   "name": "stairs_side_exit",
+   "name": "report1_fixes",
    "ok": true,
    "checks": [
     {
      "ok": true,
-     "msg": "stairs sweep (84 runs over all staircases): never stuck",
-     "data": []
+     "msg": "debug.teleport tp_8_10 lands on a free spot",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "hill(42,20) left: walking straight down off misaligned (4px) stairs does not get stuck",
+     "msg": "debug.teleport tp_36_26 lands on a free spot",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "debug.teleport tp_20_29 lands on a free spot",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "debug.teleport tp_16_22 lands on a free spot",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "soldier contact damage = 1 (half heart)",
+     "data": 1
+    },
+    {
+     "ok": true,
+     "msg": "golem contact damage = 1",
+     "data": 1
+    },
+    {
+     "ok": true,
+     "msg": "more heart drops at ≤ 2 HP",
      "data": {
-      "name": "hill(42,20) left",
-      "start": null,
-      "stuck": null,
-      "snap": {
-       "map": "overworld",
-       "x": 680,
-       "y": 384.67,
-       "tx": 42,
-       "ty": 23,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": true
+      "full": 13.8,
+      "low": 47
      }
     },
     {
      "ok": true,
-     "msg": "hill(42,20) left: can escape afterwards (any direction)",
+     "msg": "golem reaches its tired phase",
+     "data": "tired"
+    },
+    {
+     "ok": true,
+     "msg": "golem tired phase shows a hint toast the first time",
+     "data": [
+      "Der Kern des Golems glüht – jetzt zuschlagen!"
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "spawn outside Bodo's door is not inside the door warp"
+    },
+    {
+     "ok": true,
+     "msg": "godMode: no pit fall",
      "data": {
-      "map": "overworld",
-      "x": 680,
-      "y": 384.67,
-      "tx": 42,
-      "ty": 23,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
+      "fell": false,
+      "hp": 6
      }
-    },
-    {
-     "ok": true,
-     "msg": "hill(42,20) right: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "hill(42,20) right",
-      "start": null,
-      "stuck": null,
-      "snap": {
-       "map": "overworld",
-       "x": 680,
-       "y": 384.67,
-       "tx": 42,
-       "ty": 23,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": true
-     }
-    },
-    {
-     "ok": true,
-     "msg": "hill(42,20) right: can escape afterwards (any direction)",
-     "data": {
-      "map": "overworld",
-      "x": 680,
-      "y": 384.67,
-      "tx": 42,
-      "ty": 23,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": true,
-     "msg": "nord(9,13) left: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "nord(9,13) left",
-      "start": null,
-      "stuck": null,
-      "snap": {
-       "map": "overworld",
-       "x": 152,
-       "y": 272.67,
-       "tx": 9,
-       "ty": 16,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": true
-     }
-    },
-    {
-     "ok": true,
-     "msg": "nord(9,13) left: can escape afterwards (any direction)",
-     "data": {
-      "map": "overworld",
-      "x": 152,
-      "y": 272.67,
-      "tx": 9,
-      "ty": 16,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": true,
-     "msg": "nord(9,13) right: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "nord(9,13) right",
-      "start": null,
-      "stuck": null,
-      "snap": {
-       "map": "overworld",
-       "x": 152,
-       "y": 272.67,
-       "tx": 9,
-       "ty": 16,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "down",
-       "hp": 6,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "canLeave": true
-     }
-    },
-    {
-     "ok": true,
-     "msg": "nord(9,13) right: can escape afterwards (any direction)",
-     "data": {
-      "map": "overworld",
-      "x": 152,
-      "y": 272.67,
-      "tx": 9,
-      "ty": 16,
-      "lvl": 0,
-      "z": 0,
-      "state": "normal",
-      "dir": "down",
-      "hp": 6,
-      "maxHp": 6,
-      "keys": 0,
-      "bombs": 0,
-      "rupees": 0,
-      "carry": null,
-      "gstate": "play",
-      "ui": "hud"
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off -7px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off -7px",
-      "stuck": null,
-      "canLeave": true,
-      "escapes": 7
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off -7px: can escape afterwards (any direction)"
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off -5px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off -5px",
-      "stuck": null,
-      "canLeave": true,
-      "escapes": 7
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off -5px: can escape afterwards (any direction)"
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off -4px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off -4px",
-      "stuck": null,
-      "canLeave": true,
-      "escapes": 7
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off -4px: can escape afterwards (any direction)"
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 3px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off 3px",
-      "stuck": null,
-      "canLeave": true,
-      "escapes": 7
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 3px: can escape afterwards (any direction)"
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 4px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off 4px",
-      "stuck": null,
-      "canLeave": true,
-      "escapes": 7
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 4px: can escape afterwards (any direction)"
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 5px: walking straight down off misaligned (4px) stairs does not get stuck",
-     "data": {
-      "name": "walk down nord stairs, off 5px",
-      "stuck": null,
-      "canLeave": true,
-      "escapes": 7
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk down nord stairs, off 5px: can escape afterwards (any direction)"
     }
    ],
    "notes": [
-    "stairs sweep: runs that did not change level (blocked by the cliff next to the stairs = expected for big offsets): \"\""
+    "toasts when the golem gets tired: [\"Der Kern des Golems glüht – jetzt zuschlagen!\"]",
+    "sounds in the first 5 frames of the boss room: [\"door\"]"
    ],
    "errors": [],
-   "ms": 3315
+   "ms": 2687
   }
  ]
 }

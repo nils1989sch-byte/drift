@@ -445,6 +445,63 @@ S('npc_walks_into_player', async ({ page, assert, note, ev }) => {
   note('standing next to wandering Mia for 60 s: frames with NPC overlap', r.overlapFramesPerMinute);
 });
 
+// Targeted checks for the fixes from REPORT_1 (P1-4, P2-1/2/10/12 …)
+S('report1_fixes', async ({ page, assert, note, ev }) => {
+  await newGame(page);
+  const r = await ev(async () => {
+    const g = __drift.game, p = __qa.p(), out = {};
+    // debug.teleport into a tree / bush → free spot
+    for (const [tx, ty] of [[8, 10], [36, 26], [20, 29], [16, 22]]) { g.debug.teleport('overworld', tx, ty); out['tp_' + tx + '_' + ty] = __qa.playerStuck(); }
+    // soldier / golem contact damage
+    const contact = (map, name) => {
+      __qa.tp(map); __qa.calm();
+      const e = g.enemies.find((q) => q.name === name) || null;
+      if (!e) return null;
+      e.dead = false; e.state = name === 'boss_golem' ? 'walk' : 'chase'; e.t = 5; e.harmless = false;
+      p.iframes = 0; p.hp = 20; p.maxHp = 20;
+      p.x = e.x; p.y = e.y + 4; const h0 = p.hp;
+      __qa.run(3);
+      return h0 - p.hp;
+    };
+    out.soldierDmg = contact('dungeon_3', 'soldier');
+    out.golemDmg = contact('dungeon_4', 'boss_golem');
+    p.maxHp = 6; p.hp = 6;
+    // heart drops at low HP vs full HP
+    const roll = (hp) => { p.hp = hp; let h = 0; for (let i = 0; i < 400; i++) { const n0 = g.pickups.length; g.dropLoot(100, 100, 0, 'enemy'); if (g.pickups.length > n0 && g.pickups[g.pickups.length - 1].type === 'heart') h++; } g.pickups.length = 0; return +(h / 4).toFixed(1); };
+    out.heartPctFull = roll(6); out.heartPctLow = roll(2); p.hp = 6;
+    // golem tired-phase tell (toast) and shutter sound on entry
+    const toasts = [], sounds = []; const ot = __drift.ui.toast; __drift.ui.toast = (t, o) => { toasts.push(t); return ot.call(__drift.ui, t, o); };
+    const op = g.play; g.play = (n) => { sounds.push(n); return op(n); };
+    __qa.tp('dungeon_4'); __qa.run(5);
+    out.entrySounds = [...sounds];
+    g.debug.godMode(true);
+    const boss = g.enemies.find((e) => e.boss);
+    __qa.run(60 * 20, () => { const dx = boss.x - p.x, dy = boss.y - p.y, d = Math.hypot(dx, dy) || 1; return d > 60 ? { x: dx / d, y: dy / d } : { x: -dx / d * 0.3, y: -dy / d * 0.3 }; }, () => (boss.state === 'tired' ? 'TIRED' : null));
+    __qa.run(10);
+    out.tiredState = boss.state; out.toastsAtTired = [...toasts];
+    g.debug.godMode(false);
+    __drift.ui.toast = ot; g.play = op;
+    // overworld door spawn vs warp rect
+    __qa.tp('overworld'); const sp = g.mapDef.spawns.house, wr = g.warps.find((w) => w.to === 'house_elder').rect;
+    out.houseSpawnInWarp = sp.x >= wr.x && sp.x < wr.x + wr.w && sp.y >= wr.y && sp.y < wr.y + wr.h;
+    // pits + godMode
+    __qa.tp('dungeon_2', 9, 7, true); g.debug.godMode(true); p.hp = 6;
+    let fell = false; __qa.run(90, () => ({ x: 1 }), () => { if (p.state === 'fall') fell = true; return null; });
+    out.godPit = { fell, hp: p.hp }; g.debug.godMode(false);
+    return out;
+  });
+  for (const k of Object.keys(r).filter((k) => k.startsWith('tp_'))) assert(!r[k], `debug.teleport ${k} lands on a free spot`, r[k]);
+  assert(r.soldierDmg === 1, 'soldier contact damage = 1 (half heart)', r.soldierDmg);
+  assert(r.golemDmg === 1, 'golem contact damage = 1', r.golemDmg);
+  assert(r.heartPctLow > r.heartPctFull, 'more heart drops at ≤ 2 HP', { full: r.heartPctFull, low: r.heartPctLow });
+  assert(r.tiredState === 'tired', 'golem reaches its tired phase', r.tiredState);
+  note('toasts when the golem gets tired', r.toastsAtTired);
+  assert(r.toastsAtTired.length > 0, 'golem tired phase shows a hint toast the first time', r.toastsAtTired);
+  note('sounds in the first 5 frames of the boss room', r.entrySounds);
+  assert(!r.houseSpawnInWarp, 'spawn outside Bodo\'s door is not inside the door warp');
+  assert(!r.godPit.fell && r.godPit.hp === 6, 'godMode: no pit fall', r.godPit);
+});
+
 S('stairs_height', async ({ page, assert, ev }) => {
   await newGame(page);
   const r = await ev(() => {
