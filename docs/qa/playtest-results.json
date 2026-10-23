@@ -1,8 +1,66 @@
 {
- "date": "2026-10-23T04:52:25.865Z",
- "seed": 3,
+ "date": "2026-10-23T05:01:08.053Z",
+ "seed": 1,
  "frames": 2000,
  "results": [
+  {
+   "name": "boot_title_intro",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "boots into title",
+     "data": {
+      "g": "title",
+      "ui": "title"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "new game starts in house_elder",
+     "data": "house_elder"
+    },
+    {
+     "ok": true,
+     "msg": "intro dialog opens automatically",
+     "data": "dialog"
+    },
+    {
+     "ok": true,
+     "msg": "intro dialog can be clicked away with keys",
+     "data": {
+      "ui": "hud",
+      "g": "play",
+      "presses": 12
+     }
+    },
+    {
+     "ok": true,
+     "msg": "flag intro set"
+    },
+    {
+     "ok": true,
+     "msg": "player moves with real keyboard after intro",
+     "data": {
+      "from": 88,
+      "to": 53.83
+     }
+    },
+    {
+     "ok": true,
+     "msg": "Bodo can be talked to again",
+     "data": {
+      "st": "dialog",
+      "flags": {
+       "intro": true
+      }
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 6319
+  },
   {
    "name": "movement_8dir",
    "ok": true,
@@ -185,7 +243,7 @@
      "ok": true,
      "msg": "keyboard diagonal (D+S) moves diagonally & normalized",
      "data": {
-      "dx": 30.360000000000014,
+      "dx": 33.10000000000002,
       "dy": 33.09000000000003
      }
     }
@@ -194,95 +252,154 @@
     "diagonal facing: {\"dr\":\"down\",\"dl\":\"down\",\"ur\":\"up\",\"ul\":\"up\"}"
    ],
    "errors": [],
-   "ms": 3755
+   "ms": 3568
   },
   {
-   "name": "random_walk_collision",
-   "ok": false,
+   "name": "corner_slide",
+   "ok": true,
    "checks": [
     {
      "ok": true,
-     "msg": "random walk overworld@12,23: player never inside solid (2000 frames, 56 cells)",
+     "msg": "corner slide up-rightEdge (3px overlap) glides around the tree",
+     "data": {
+      "name": "up-rightEdge",
+      "passed": true,
+      "x": 261.4,
+      "y": 82.7,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "corner slide up-rightEdge: not stuck",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk overworld@22,16: player never inside solid (2000 frames, 55 cells)",
+     "msg": "corner slide up-leftEdge (3px overlap) glides around the tree",
+     "data": {
+      "name": "up-leftEdge",
+      "passed": true,
+      "x": 234.6,
+      "y": 131.3,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "corner slide up-leftEdge: not stuck",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk overworld@7,9: player never inside solid (2000 frames, 67 cells)",
+     "msg": "walking straight into a tree centre is blocked",
+     "data": {
+      "name": "up-center",
+      "passed": false,
+      "x": 248,
+      "y": 164.1,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "corner slide up-center: not stuck",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk overworld@38,11: player never inside solid (2000 frames, 89 cells)",
+     "msg": "corner slide right-topEdge (3px overlap) glides around the tree",
+     "data": {
+      "name": "right-topEdge",
+      "passed": true,
+      "x": 318.3,
+      "y": 147.6,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "corner slide right-topEdge: not stuck",
+     "data": null
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 2685
+  },
+  {
+   "name": "random_walk_collision",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "random walk overworld@12,23: player never inside solid (2000 frames, 59 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk overworld@36,25: player never inside solid (2000 frames, 76 cells)",
-     "data": null
-    },
-    {
-     "ok": false,
-     "msg": "random walk overworld@36,25: walker enemies inside solid tiles",
-     "data": [
-      "octorok: tile(38,15)=grass h0 vs lvl1"
-     ]
-    },
-    {
-     "ok": true,
-     "msg": "random walk overworld@14,27: player never inside solid (2000 frames, 59 cells)",
+     "msg": "random walk overworld@22,16: player never inside solid (2000 frames, 60 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk house_elder@5,6: player never inside solid (2000 frames, 33 cells)",
+     "msg": "random walk overworld@7,9: player never inside solid (2000 frames, 54 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk cave@6,7: player never inside solid (2000 frames, 47 cells)",
+     "msg": "random walk overworld@38,11: player never inside solid (2000 frames, 88 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_1@8,10: player never inside solid (2000 frames, 66 cells)",
+     "msg": "random walk overworld@36,25: player never inside solid (2000 frames, 75 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_2@7,9: player never inside solid (2000 frames, 49 cells)",
+     "msg": "random walk overworld@14,27: player never inside solid (2000 frames, 55 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_3@7,10: player never inside solid (2000 frames, 78 cells)",
+     "msg": "random walk house_elder@5,6: player never inside solid (2000 frames, 38 cells)",
      "data": null
     },
     {
-     "ok": false,
-     "msg": "random walk dungeon_3@7,10: walker enemies inside solid tiles",
-     "data": [
-      "soldier: tile(11,5)=pit h0 vs lvl0"
-     ]
+     "ok": true,
+     "msg": "random walk cave@6,7: player never inside solid (2000 frames, 54 cells)",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "random walk dungeon_4@8,11: player never inside solid (2000 frames, 59 cells)",
+     "msg": "random walk dungeon_1@8,10: player never inside solid (2000 frames, 59 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_2@7,9: player never inside solid (2000 frames, 61 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_3@7,10: player never inside solid (2000 frames, 44 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_4@8,11: player never inside solid (2000 frames, 82 cells)",
      "data": null
     }
    ],
    "notes": [
+    "random walk overworld@12,23: warped through: [\"overworld\",\"house_elder\"]",
     "random walk: teleport target 8,10 is blocked → started at 7,9",
-    "random walk overworld@38,11: warped through: [\"overworld\",\"dungeon_1\"]",
     "random walk: teleport target 36,26 is blocked → started at 36,25",
     "random walk house_elder@5,6: warped through: [\"house_elder\",\"overworld\"]"
    ],
    "errors": [],
-   "ms": 11865
+   "ms": 11420
   },
   {
    "name": "stairs_height",
@@ -399,7 +516,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 2679
+   "ms": 2633
   },
   {
    "name": "stairs_side_exit",
@@ -700,7 +817,515 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 2732
+   "ms": 2931
+  },
+  {
+   "name": "ledge_jump",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "ledge jump south: jumps down a level",
+     "data": {
+      "name": "south",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 8,
+      "ty": 14,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump south: lands free",
+     "data": {
+      "name": "south",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 8,
+      "ty": 14,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump east: jumps down a level",
+     "data": {
+      "name": "east",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 12,
+      "ty": 4,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump east: lands free",
+     "data": {
+      "name": "east",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 12,
+      "ty": 4,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump stein-west: jumps down a level",
+     "data": {
+      "name": "stein-west",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 33,
+      "ty": 12,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump stein-west: lands free",
+     "data": {
+      "name": "stein-west",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 33,
+      "ty": 12,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge north(no): no jump upwards/north",
+     "data": {
+      "name": "north(no)",
+      "from": 2,
+      "to": 2,
+      "jumped": false,
+      "tx": 6,
+      "ty": 0,
+      "state": "normal",
+      "stuck": "solid object:barrier @(0,0)"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump stein-south: jumps down a level",
+     "data": {
+      "name": "stein-south",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 43,
+      "ty": 15,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump stein-south: lands free",
+     "data": {
+      "name": "stein-south",
+      "from": 1,
+      "to": 0,
+      "jumped": true,
+      "tx": 43,
+      "ty": 15,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump ruin-west: jumps down a level",
+     "data": {
+      "name": "ruin-west",
+      "from": 3,
+      "to": 2,
+      "jumped": true,
+      "tx": 37,
+      "ty": 3,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump ruin-west: lands free",
+     "data": {
+      "name": "ruin-west",
+      "from": 3,
+      "to": 2,
+      "jumped": true,
+      "tx": 37,
+      "ty": 3,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump ruin-south: jumps down a level",
+     "data": {
+      "name": "ruin-south",
+      "from": 3,
+      "to": 2,
+      "jumped": true,
+      "tx": 41,
+      "ty": 6,
+      "state": "normal",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "ledge jump ruin-south: lands free",
+     "data": {
+      "name": "ruin-south",
+      "from": 3,
+      "to": 2,
+      "jumped": true,
+      "tx": 41,
+      "ty": 6,
+      "state": "normal",
+      "stuck": null
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 2645
+  },
+  {
+   "name": "sword_vs_enemies",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "slime: found",
+     "data": {
+      "found": true,
+      "type": "slime",
+      "hp0": 1,
+      "dead": true,
+      "swings": 1,
+      "dmgSeen": [
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "slime: sword kills it (hp 1, 1 swings)",
+     "data": {
+      "found": true,
+      "type": "slime",
+      "hp0": 1,
+      "dead": true,
+      "swings": 1,
+      "dmgSeen": [
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "soldier: found",
+     "data": {
+      "found": true,
+      "type": "soldier",
+      "hp0": 3,
+      "dead": true,
+      "swings": 3,
+      "dmgSeen": [
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "soldier: sword kills it (hp 3, 3 swings)",
+     "data": {
+      "found": true,
+      "type": "soldier",
+      "hp0": 3,
+      "dead": true,
+      "swings": 3,
+      "dmgSeen": [
+       1,
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "octorok: found",
+     "data": {
+      "found": true,
+      "type": "octorok",
+      "hp0": 2,
+      "dead": true,
+      "swings": 2,
+      "dmgSeen": [
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "octorok: sword kills it (hp 2, 2 swings)",
+     "data": {
+      "found": true,
+      "type": "octorok",
+      "hp0": 2,
+      "dead": true,
+      "swings": 2,
+      "dmgSeen": [
+       1,
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "bat: found",
+     "data": {
+      "found": true,
+      "type": "bat",
+      "hp0": 1,
+      "dead": true,
+      "swings": 1,
+      "dmgSeen": [
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "bat: sword kills it (hp 1, 1 swings)",
+     "data": {
+      "found": true,
+      "type": "bat",
+      "hp0": 1,
+      "dead": true,
+      "swings": 1,
+      "dmgSeen": [
+       1
+      ]
+     }
+    },
+    {
+     "ok": true,
+     "msg": "sword deals 1 damage per hit",
+     "data": [
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "holding attack charges and releasing spins",
+     "data": {
+      "charged": true,
+      "state": "spin"
+     }
+    }
+   ],
+   "notes": [
+    "slime drops: [\"rupee\"]",
+    "drop table (300 rolls): {\"heart\":36,\"rupee\":150,\"none\":99,\"rupee5\":15}"
+   ],
+   "errors": [],
+   "ms": 2805
+  },
+  {
+   "name": "player_damage_knockback",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "hurt() removes HP",
+     "data": {
+      "hp0": 6,
+      "hp": 5,
+      "x": 21.075757575757574,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "knockback into a wall never leaves the player inside it",
+     "data": {
+      "hp0": 6,
+      "hp": 5,
+      "x": 21.075757575757574,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "knockback into a tree never leaves the player inside it",
+     "data": {
+      "startStuck": null,
+      "stuck": null,
+      "y": 164,
+      "treeY": 158
+     }
+    },
+    {
+     "ok": true,
+     "msg": "i-frames prevent double damage",
+     "data": {
+      "before": 3,
+      "after": 2
+     }
+    },
+    {
+     "ok": true,
+     "msg": "enemy contact hurts the player",
+     "data": {
+      "before": 2,
+      "after": 1
+     }
+    }
+   ],
+   "notes": [
+    "knockback towards pit (dungeon_2): {\"map\":\"dungeon_2\",\"x\":219.01,\"y\":135.7,\"tx\":13,\"ty\":8,\"lvl\":0,\"z\":0,\"state\":\"normal\",\"dir\":\"up\",\"hp\":4,\"maxHp\":6,\"keys\":0,\"bombs\":0,\"rupees\":0,\"carry\":null,\"gstate\":\"play\",\"ui\":\"hud\"}"
+   ],
+   "errors": [],
+   "ms": 2491
+  },
+  {
+   "name": "death_gameover_continue",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "hp 0 → state dead",
+     "data": "dead"
+    },
+    {
+     "ok": true,
+     "msg": "game over screen appears",
+     "data": {
+      "dead": "dead",
+      "g1": "gameover",
+      "ui1": "gameover",
+      "after": {
+       "map": "dungeon_1",
+       "x": 136,
+       "y": 184,
+       "tx": 8,
+       "ty": 11,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "restart": {
+       "map": "house_elder",
+       "x": 88,
+       "y": 104,
+       "tx": 5,
+       "ty": 6,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "dialog",
+       "ui": "dialog"
+      }
+     }
+    },
+    {
+     "ok": true,
+     "msg": "Weiter → play again at last entry with ≥3 hearts",
+     "data": {
+      "map": "dungeon_1",
+      "x": 136,
+      "y": 184,
+      "tx": 8,
+      "ty": 11,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "respawn is free",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "Neustart → new game in Bodos Haus",
+     "data": {
+      "map": "house_elder",
+      "x": 88,
+      "y": 104,
+      "tx": 5,
+      "ty": 6,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "dialog",
+      "ui": "dialog"
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 2483
   },
   {
    "name": "pits_fall",
@@ -813,7 +1438,1937 @@
     "holding → into a pit for 3 s (respawn next to the pit): {\"falls\":3,\"hpLeft\":16}"
    ],
    "errors": [],
-   "ms": 2523
+   "ms": 2534
+  },
+  {
+   "name": "bush_cut_lift_throw",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "sword cuts a bush",
+     "data": {
+      "existed": true,
+      "dead": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "action lifts a bush",
+     "data": {
+      "existed": true,
+      "carry": "bush",
+      "state": "normal"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "carry while walking",
+     "data": {
+      "carry": "bush"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "attack throws the carried bush",
+     "data": {
+      "carry": null,
+      "projectiles": 1
+     }
+    },
+    {
+     "ok": true,
+     "msg": "thrown object lands/breaks within 2 s",
+     "data": []
+    },
+    {
+     "ok": true,
+     "msg": "pot can be lifted",
+     "data": {
+      "carry": "pot"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "sword cuts tall grass",
+     "data": {
+      "before": "grass_tall",
+      "after": "grass"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "rock can be lifted",
+     "data": {
+      "carry": "rock"
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 2591
+  },
+  {
+   "name": "chest_sign_npc",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "opening a chest shows a dialog",
+     "data": "dialog"
+    },
+    {
+     "ok": true,
+     "msg": "chest gives 10 rupees + sets flag",
+     "data": {
+      "r0": 0,
+      "r1": 10,
+      "flag": true,
+      "state": "normal",
+      "r2": 10
+     }
+    },
+    {
+     "ok": true,
+     "msg": "chest can only be opened once",
+     "data": {
+      "r0": 0,
+      "r1": 10,
+      "flag": true,
+      "state": "normal",
+      "r2": 10
+     }
+    },
+    {
+     "ok": true,
+     "msg": "chest stays open after re-entering",
+     "data": true
+    },
+    {
+     "ok": true,
+     "msg": "signs can be read",
+     "data": "dialog"
+    },
+    {
+     "ok": true,
+     "msg": "merchant talks",
+     "data": "dialog"
+    }
+   ],
+   "notes": [
+    "merchant purchase without a yes/no choice: {\"rupees\":30,\"bombs\":6}"
+   ],
+   "errors": [],
+   "ms": 2568
+  },
+  {
+   "name": "dungeon_full_run",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "overworld ruin entrance → dungeon_1",
+     "data": [
+      "enter",
+      {
+       "map": "dungeon_1",
+       "x": 136,
+       "y": 184,
+       "tx": 8,
+       "ty": 11,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      }
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "locked door blocks without a key"
+    },
+    {
+     "ok": true,
+     "msg": "NW door → dungeon_2"
+    },
+    {
+     "ok": true,
+     "msg": "push block onto switch sets d2_switch",
+     "data": [
+      [
+       "blockAfterRight",
+       [
+        7,
+        7
+       ]
+      ],
+      [
+       "blockAfterUp",
+       [
+        7,
+        3
+       ]
+      ]
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "switch chest gives the small key",
+     "data": 1
+    },
+    {
+     "ok": true,
+     "msg": "back to room 1, free spawn",
+     "data": {
+      "map": "dungeon_1",
+      "snap": {
+       "map": "dungeon_1",
+       "x": 72,
+       "y": 41,
+       "tx": 4,
+       "ty": 2,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 1,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "pushing into the locked door with a key opens it",
+     "data": {
+      "flag": true,
+      "keys": 0
+     }
+    },
+    {
+     "ok": true,
+     "msg": "NE door → dungeon_3"
+    },
+    {
+     "ok": true,
+     "msg": "cracked wall blocks before bombing"
+    },
+    {
+     "ok": true,
+     "msg": "killing all enemies sets d3_clear (462 frames)"
+    },
+    {
+     "ok": true,
+     "msg": "bomb chest gives bombs",
+     "data": {
+      "bombs": 10,
+      "chestVisible": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "bomb opens the cracked wall (d3_wall)",
+     "data": {
+      "at": {
+       "map": "dungeon_3",
+       "x": 120,
+       "y": 42,
+       "tx": 7,
+       "ty": 2,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 5,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 10,
+       "rupees": 6,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "bombsLeft": 9
+     }
+    },
+    {
+     "ok": true,
+     "msg": "through the bombed wall → boss room",
+     "data": {
+      "map": "dungeon_4",
+      "snap": {
+       "map": "dungeon_4",
+       "x": 136,
+       "y": 198,
+       "tx": 8,
+       "ty": 12,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 5,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 9,
+       "rupees": 6,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 2587
+  },
+  {
+   "name": "boss_fight",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "golem is beatable with sword + godMode (2359 frames ≈ 39 s, 120 swings)",
+     "data": {
+      "sleep": 70,
+      "roar": 66,
+      "walk": 816,
+      "throw": 396,
+      "leap": 570,
+      "tired": 293,
+      "dying": 148
+     }
+    },
+    {
+     "ok": true,
+     "msg": "shutter closes during the fight"
+    },
+    {
+     "ok": true,
+     "msg": "shutter opens after the fight"
+    },
+    {
+     "ok": true,
+     "msg": "player never stuck during boss fight"
+    },
+    {
+     "ok": true,
+     "msg": "boss drops a heart container (collected)",
+     "data": [
+      "crystal"
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "heart container +1 heart",
+     "data": [
+      6,
+      8
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "crystal collected"
+    },
+    {
+     "ok": true,
+     "msg": "portal appears after the ending"
+    },
+    {
+     "ok": true,
+     "msg": "portal → overworld, free spawn",
+     "data": {
+      "map": "overworld",
+      "x": 533.29,
+      "y": 138.81,
+      "tx": 33,
+      "ty": 8,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "left",
+      "hp": 8,
+      "maxHp": 8,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "boss does not respawn",
+     "data": {
+      "boss": false,
+      "portal": true,
+      "shutter": false
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 2896
+  },
+  {
+   "name": "balance_bot",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "naive bot can kill the golem within 3 min",
+     "data": {
+      "seconds": 40,
+      "halfHeartsLost": 30,
+      "killed": true
+     }
+    }
+   ],
+   "notes": [
+    "naive bot: seconds / half-hearts lost (start HP is 6 half-hearts): {\"room3\":{\"seconds\":10.4,\"halfHeartsLost\":8},\"room1\":{\"seconds\":4.3,\"halfHeartsLost\":2},\"boss\":{\"seconds\":40,\"halfHeartsLost\":30,\"killed\":true},\"heightsSoldiers\":{\"seconds\":60,\"halfHeartsLost\":11}}"
+   ],
+   "errors": [],
+   "ms": 3518
+  },
+  {
+   "name": "warps_roundtrip",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "warp house_elder → overworld",
+     "data": {
+      "map": "overworld",
+      "x": 128,
+      "y": 362,
+      "tx": 8,
+      "ty": 22,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp house_elder → overworld: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp house_elder → overworld: no immediate bounce back",
+     "data": {
+      "from": "house_elder",
+      "to": "overworld",
+      "arrived": true,
+      "snap": {
+       "map": "overworld",
+       "x": 128,
+       "y": 362,
+       "tx": 8,
+       "ty": 22,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → house_elder",
+     "data": {
+      "map": "house_elder",
+      "x": 88,
+      "y": 122,
+      "tx": 5,
+      "ty": 7,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → house_elder: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → house_elder: no immediate bounce back",
+     "data": {
+      "from": "overworld",
+      "to": "house_elder",
+      "arrived": true,
+      "snap": {
+       "map": "house_elder",
+       "x": 88,
+       "y": 122,
+       "tx": 5,
+       "ty": 7,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp house_elder → overworld",
+     "data": {
+      "map": "overworld",
+      "x": 128,
+      "y": 362,
+      "tx": 8,
+      "ty": 22,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp house_elder → overworld: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp house_elder → overworld: no immediate bounce back",
+     "data": {
+      "from": "house_elder",
+      "to": "overworld",
+      "arrived": true,
+      "snap": {
+       "map": "overworld",
+       "x": 128,
+       "y": 362,
+       "tx": 8,
+       "ty": 22,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → dungeon_1",
+     "data": {
+      "map": "dungeon_1",
+      "x": 136,
+      "y": 184,
+      "tx": 8,
+      "ty": 11,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → dungeon_1: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → dungeon_1: no immediate bounce back",
+     "data": {
+      "from": "overworld",
+      "to": "dungeon_1",
+      "arrived": true,
+      "snap": {
+       "map": "dungeon_1",
+       "x": 136,
+       "y": 184,
+       "tx": 8,
+       "ty": 11,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → overworld",
+     "data": {
+      "map": "overworld",
+      "x": 648,
+      "y": 91,
+      "tx": 40,
+      "ty": 5,
+      "lvl": 2,
+      "z": 2,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → overworld: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → overworld: no immediate bounce back",
+     "data": {
+      "from": "dungeon_1",
+      "to": "overworld",
+      "arrived": true,
+      "snap": {
+       "map": "overworld",
+       "x": 648,
+       "y": 91,
+       "tx": 40,
+       "ty": 5,
+       "lvl": 2,
+       "z": 2,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → cave",
+     "data": {
+      "map": "cave",
+      "x": 104,
+      "y": 138,
+      "tx": 6,
+      "ty": 8,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → cave: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp overworld → cave: no immediate bounce back",
+     "data": {
+      "from": "overworld",
+      "to": "cave",
+      "arrived": true,
+      "snap": {
+       "map": "cave",
+       "x": 104,
+       "y": 138,
+       "tx": 6,
+       "ty": 8,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp cave → overworld",
+     "data": {
+      "map": "overworld",
+      "x": 72,
+      "y": 234,
+      "tx": 4,
+      "ty": 14,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp cave → overworld: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp cave → overworld: no immediate bounce back",
+     "data": {
+      "from": "cave",
+      "to": "overworld",
+      "arrived": true,
+      "snap": {
+       "map": "overworld",
+       "x": 72,
+       "y": 234,
+       "tx": 4,
+       "ty": 14,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → dungeon_2",
+     "data": {
+      "map": "dungeon_2",
+      "x": 120,
+      "y": 168,
+      "tx": 7,
+      "ty": 10,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → dungeon_2: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → dungeon_2: no immediate bounce back",
+     "data": {
+      "from": "dungeon_1",
+      "to": "dungeon_2",
+      "arrived": true,
+      "snap": {
+       "map": "dungeon_2",
+       "x": 120,
+       "y": 168,
+       "tx": 7,
+       "ty": 10,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_2 → dungeon_1",
+     "data": {
+      "map": "dungeon_1",
+      "x": 72,
+      "y": 41,
+      "tx": 4,
+      "ty": 2,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_2 → dungeon_1: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_2 → dungeon_1: no immediate bounce back",
+     "data": {
+      "from": "dungeon_2",
+      "to": "dungeon_1",
+      "arrived": true,
+      "snap": {
+       "map": "dungeon_1",
+       "x": 72,
+       "y": 41,
+       "tx": 4,
+       "ty": 2,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → dungeon_3",
+     "data": {
+      "map": "dungeon_3",
+      "x": 120,
+      "y": 184,
+      "tx": 7,
+      "ty": 11,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → dungeon_3: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_1 → dungeon_3: no immediate bounce back",
+     "data": {
+      "from": "dungeon_1",
+      "to": "dungeon_3",
+      "arrived": true,
+      "snap": {
+       "map": "dungeon_3",
+       "x": 120,
+       "y": 184,
+       "tx": 7,
+       "ty": 11,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_3 → dungeon_1",
+     "data": {
+      "map": "dungeon_1",
+      "x": 200,
+      "y": 41,
+      "tx": 12,
+      "ty": 2,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_3 → dungeon_1: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_3 → dungeon_1: no immediate bounce back",
+     "data": {
+      "from": "dungeon_3",
+      "to": "dungeon_1",
+      "arrived": true,
+      "snap": {
+       "map": "dungeon_1",
+       "x": 200,
+       "y": 41,
+       "tx": 12,
+       "ty": 2,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_3 → dungeon_4",
+     "data": {
+      "map": "dungeon_4",
+      "x": 136,
+      "y": 198,
+      "tx": 8,
+      "ty": 12,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_3 → dungeon_4: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_3 → dungeon_4: no immediate bounce back",
+     "data": {
+      "from": "dungeon_3",
+      "to": "dungeon_4",
+      "arrived": true,
+      "snap": {
+       "map": "dungeon_4",
+       "x": 136,
+       "y": 198,
+       "tx": 8,
+       "ty": 12,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "up",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_4 → dungeon_3",
+     "data": {
+      "map": "dungeon_3",
+      "x": 120,
+      "y": 41,
+      "tx": 7,
+      "ty": 2,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_4 → dungeon_3: spawn not inside a wall",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "warp dungeon_4 → dungeon_3: no immediate bounce back",
+     "data": {
+      "from": "dungeon_4",
+      "to": "dungeon_3",
+      "arrived": true,
+      "snap": {
+       "map": "dungeon_3",
+       "x": 120,
+       "y": 41,
+       "tx": 7,
+       "ty": 2,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "spawnInWarp": [],
+      "stillThere": true
+     }
+    }
+   ],
+   "notes": [
+    "walking into Mia's house door: {\"arrived\":false,\"to\":\"overworld\"}"
+   ],
+   "errors": [],
+   "ms": 2670
+  },
+  {
+   "name": "bomb_cave",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "item key places a bomb"
+    },
+    {
+     "ok": true,
+     "msg": "bomb next to the cracked rock opens the cave",
+     "data": {
+      "beforeMap": "overworld",
+      "bombObj": true,
+      "flag": true,
+      "hp": [
+       6,
+       4
+      ],
+      "map": "cave",
+      "maxHp": [
+       6,
+       8
+      ],
+      "carryBomb": "bomb",
+      "afterThrow": {
+       "map": "overworld",
+       "x": 341.09,
+       "y": 369.54,
+       "tx": 21,
+       "ty": 22,
+       "lvl": 0,
+       "z": 0,
+       "state": "hurt",
+       "dir": "down",
+       "hp": 7,
+       "maxHp": 8,
+       "keys": 0,
+       "bombs": 3,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      }
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk into the opened cave",
+     "data": "cave"
+    },
+    {
+     "ok": true,
+     "msg": "cave chest gives a heart container",
+     "data": [
+      6,
+      8
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "a placed bomb can be lifted",
+     "data": "bomb"
+    },
+    {
+     "ok": true,
+     "msg": "throwing a lifted bomb does not throw"
+    }
+   ],
+   "notes": [
+    "HP when standing next to own bomb (hp before/after): [6,4]"
+   ],
+   "errors": [],
+   "ms": 2734
+  },
+  {
+   "name": "pause_menu",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "Enter opens pause",
+     "data": {
+      "g": "pause",
+      "ui": "pause",
+      "x": 88
+     }
+    },
+    {
+     "ok": true,
+     "msg": "game frozen while paused",
+     "data": {
+      "a": 88,
+      "b": 88
+     }
+    },
+    {
+     "ok": true,
+     "msg": "Esc closes pause",
+     "data": {
+      "g": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "P opens pause too",
+     "data": {
+      "ui": "pause"
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 5353
+  },
+  {
+   "name": "zoom",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "+ zooms in",
+     "data": [
+      3,
+      4
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "- zooms out",
+     "data": [
+      4,
+      2
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "zoom clamps at max",
+     "data": [
+      6,
+      6
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "zoom clamps at min",
+     "data": [
+      0.5,
+      1
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "mouse wheel zooms",
+     "data": 1
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 6095
+  },
+  {
+   "name": "touch_390x844",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "tap on title starts the game",
+     "data": {
+      "map": "house_elder",
+      "x": 88,
+      "y": 104,
+      "tx": 5,
+      "ty": 6,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "dialog can be tapped away",
+     "data": "hud"
+    },
+    {
+     "ok": true,
+     "msg": "touch mode active",
+     "data": true
+    },
+    {
+     "ok": true,
+     "msg": "touch controls exist",
+     "data": [
+      "stick",
+      "A",
+      "B",
+      "item",
+      "menu",
+      "zin",
+      "zout"
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "control stick inside viewport",
+     "data": {
+      "id": "stick",
+      "x": 0,
+      "y": 278.515625,
+      "w": 210,
+      "h": 565.46875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control A inside viewport",
+     "data": {
+      "id": "A",
+      "x": 303.90625,
+      "y": 707.90625,
+      "w": 76.15625,
+      "h": 76.15625,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control B inside viewport",
+     "data": {
+      "id": "B",
+      "x": 266.515625,
+      "y": 763.515625,
+      "w": 64.953125,
+      "h": 64.953125,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control item inside viewport",
+     "data": {
+      "id": "item",
+      "x": 231.109375,
+      "y": 700.109375,
+      "w": 53.75,
+      "h": 53.75,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control menu inside viewport",
+     "data": {
+      "id": "menu",
+      "x": 335.59375,
+      "y": 56.59375,
+      "w": 44.796875,
+      "h": 44.796875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control zin inside viewport",
+     "data": {
+      "id": "zin",
+      "x": 285.59375,
+      "y": 56.59375,
+      "w": 44.796875,
+      "h": 44.796875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control zout inside viewport",
+     "data": {
+      "id": "zout",
+      "x": 235.59375,
+      "y": 56.59375,
+      "w": 44.796875,
+      "h": 44.796875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "button A ≥ 44 px",
+     "data": {
+      "id": "A",
+      "x": 303.90625,
+      "y": 707.90625,
+      "w": 76.15625,
+      "h": 76.15625,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "button B ≥ 44 px",
+     "data": {
+      "id": "B",
+      "x": 266.515625,
+      "y": 763.515625,
+      "w": 64.953125,
+      "h": 64.953125,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "button item ≥ 44 px",
+     "data": {
+      "id": "item",
+      "x": 231.109375,
+      "y": 700.109375,
+      "w": 53.75,
+      "h": 53.75,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "virtual stick left moves the player left",
+     "data": {
+      "a": 88,
+      "b": 21.29
+     }
+    },
+    {
+     "ok": true,
+     "msg": "virtual stick up moves the player up",
+     "data": {
+      "b": 104,
+      "c": 51.01
+     }
+    },
+    {
+     "ok": true,
+     "msg": "axis resets after release",
+     "data": {
+      "x": 0,
+      "y": 0
+     }
+    },
+    {
+     "ok": true,
+     "msg": "A button swings the sword"
+    },
+    {
+     "ok": true,
+     "msg": "B button talks to NPC",
+     "data": "dialog"
+    },
+    {
+     "ok": true,
+     "msg": "menu button opens pause",
+     "data": "pause"
+    },
+    {
+     "ok": true,
+     "msg": "zoom + button zooms in",
+     "data": {
+      "z0": 4,
+      "z1": 5
+     }
+    }
+   ],
+   "notes": [
+    "≡ button visible while paused (to close it again): false"
+   ],
+   "errors": [],
+   "ms": 18236
+  },
+  {
+   "name": "touch_844x390",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "tap on title starts the game",
+     "data": {
+      "map": "house_elder",
+      "x": 88,
+      "y": 104,
+      "tx": 5,
+      "ty": 6,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "dialog can be tapped away",
+     "data": "hud"
+    },
+    {
+     "ok": true,
+     "msg": "touch mode active",
+     "data": true
+    },
+    {
+     "ok": true,
+     "msg": "touch controls exist",
+     "data": [
+      "stick",
+      "A",
+      "B",
+      "item",
+      "menu",
+      "zin",
+      "zout"
+     ]
+    },
+    {
+     "ok": true,
+     "msg": "control stick inside viewport",
+     "data": {
+      "id": "stick",
+      "x": 0,
+      "y": 128.6875,
+      "w": 464.1875,
+      "h": 261.296875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control A inside viewport",
+     "data": {
+      "id": "A",
+      "x": 757.90625,
+      "y": 253.90625,
+      "w": 76.15625,
+      "h": 76.15625,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control B inside viewport",
+     "data": {
+      "id": "B",
+      "x": 720.515625,
+      "y": 309.515625,
+      "w": 64.953125,
+      "h": 64.953125,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control item inside viewport",
+     "data": {
+      "id": "item",
+      "x": 685.109375,
+      "y": 246.109375,
+      "w": 53.75,
+      "h": 53.75,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control menu inside viewport",
+     "data": {
+      "id": "menu",
+      "x": 789.59375,
+      "y": 67.59375,
+      "w": 44.796875,
+      "h": 44.796875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control zin inside viewport",
+     "data": {
+      "id": "zin",
+      "x": 739.59375,
+      "y": 67.59375,
+      "w": 44.796875,
+      "h": 44.796875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "control zout inside viewport",
+     "data": {
+      "id": "zout",
+      "x": 689.59375,
+      "y": 67.59375,
+      "w": 44.796875,
+      "h": 44.796875,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "button A ≥ 44 px",
+     "data": {
+      "id": "A",
+      "x": 757.90625,
+      "y": 253.90625,
+      "w": 76.15625,
+      "h": 76.15625,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "button B ≥ 44 px",
+     "data": {
+      "id": "B",
+      "x": 720.515625,
+      "y": 309.515625,
+      "w": 64.953125,
+      "h": 64.953125,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "button item ≥ 44 px",
+     "data": {
+      "id": "item",
+      "x": 685.109375,
+      "y": 246.109375,
+      "w": 53.75,
+      "h": 53.75,
+      "vis": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "virtual stick left moves the player left",
+     "data": {
+      "a": 88,
+      "b": 21.12
+     }
+    },
+    {
+     "ok": true,
+     "msg": "virtual stick up moves the player up",
+     "data": {
+      "b": 104,
+      "c": 51.58
+     }
+    },
+    {
+     "ok": true,
+     "msg": "axis resets after release",
+     "data": {
+      "x": 0,
+      "y": 0
+     }
+    },
+    {
+     "ok": true,
+     "msg": "A button swings the sword"
+    },
+    {
+     "ok": true,
+     "msg": "B button talks to NPC",
+     "data": "dialog"
+    },
+    {
+     "ok": true,
+     "msg": "menu button opens pause",
+     "data": "pause"
+    },
+    {
+     "ok": true,
+     "msg": "zoom + button zooms in",
+     "data": {
+      "z0": 5,
+      "z1": 6
+     }
+    }
+   ],
+   "notes": [
+    "≡ button visible while paused (to close it again): false"
+   ],
+   "errors": [],
+   "ms": 19432
+  },
+  {
+   "name": "input_quick_tap",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "a key tapped within one frame (keydown+keyup before the next poll) is not lost",
+     "data": {
+      "attack": true,
+      "pause": true
+     }
+    }
+   ],
+   "notes": [
+    "tap inside one frame registered?: {\"attack\":true,\"pause\":true}"
+   ],
+   "errors": [],
+   "ms": 3969
+  },
+  {
+   "name": "bomb_throw_realloop",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "bomb can be lifted with E"
+    },
+    {
+     "ok": true,
+     "msg": "game loop keeps running after throwing a bomb",
+     "data": {
+      "f0": 205,
+      "f1": 236
+     }
+    },
+    {
+     "ok": true,
+     "msg": "an exploded bomb is not still held over the head",
+     "data": {
+      "carriedBefore": "bomb",
+      "carryAfter": null,
+      "carryDead": false,
+      "hp": 4
+     }
+    }
+   ],
+   "notes": [
+    "carried: \"bomb\"",
+    "bomb held for 3.3 s: {\"carriedBefore\":\"bomb\",\"carryAfter\":null,\"carryDead\":false,\"hp\":4}"
+   ],
+   "errors": [],
+   "ms": 5753
+  },
+  {
+   "name": "perf_2d",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "2D renderer > 15 fps headless",
+     "data": {
+      "overworld@12,24": 32.5,
+      "overworld@38,8": 33,
+      "dungeon_1@8,10": 44
+     }
+    }
+   ],
+   "notes": [
+    "2D FPS (headless, software canvas): {\"overworld@12,24\":32.5,\"overworld@38,8\":33,\"dungeon_1@8,10\":44}"
+   ],
+   "errors": [],
+   "ms": 10590
+  },
+  {
+   "name": "memory_room_changes",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "entity count stable after room cycling",
+     "data": {
+      "first": 323,
+      "last": 323
+     }
+    },
+    {
+     "ok": true,
+     "msg": "fx drawables stable",
+     "data": {
+      "first": 10,
+      "last": 10
+     }
+    }
+   ],
+   "notes": [
+    "overworld entity counts per cycle: [{\"k\":0,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":10,\"timers\":0,\"heap\":28},{\"k\":0,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":14,\"timers\":0,\"heap\":28},{\"k\":0,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":11,\"timers\":0,\"heap\":28},{\"k\":1,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":13,\"timers\":0,\"heap\":28},{\"k\":1,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":13,\"timers\":0,\"heap\":28},{\"k\":1,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":3,\"timers\":0,\"heap\":28},{\"k\":2,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":6,\"timers\":0,\"heap\":28},{\"k\":2,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":11,\"timers\":0,\"heap\":28},{\"k\":2,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":9,\"timers\":0,\"heap\":28},{\"k\":3,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":15,\"timers\":0,\"heap\":28},{\"k\":3,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":16,\"timers\":0,\"heap\":28},{\"k\":3,\"ents\":323,\"objs\":306,\"enemies\":13,\"pickups\":0,\"fx\":10,\"timers\":0,\"heap\":28}]",
+    "JS heap MB first/last: [28,28]"
+   ],
+   "errors": [],
+   "ms": 2532
+  },
+  {
+   "name": "save_continue",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "reload + start continues at last entry",
+     "data": {
+      "map": "dungeon_1",
+      "x": 136,
+      "y": 184,
+      "tx": 8,
+      "ty": 11,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "up",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 33,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "rupees persisted",
+     "data": 33
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 5003
   }
  ]
 }

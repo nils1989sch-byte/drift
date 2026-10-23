@@ -178,7 +178,7 @@ export default function build() {
   enemies.push(
     { t: 'slime', x: 23, y: 17 }, { t: 'slime', x: 26, y: 16 },
     { t: 'slime', x: 41, y: 29 }, { t: 'slime', x: 43, y: 27 },
-    { t: 'octorok', x: 28, y: 11 }, { t: 'octorok', x: 34, y: 20 }, { t: 'octorok', x: 35, y: 28 },
+    { t: 'octorok', x: 28, y: 6 }, { t: 'octorok', x: 34, y: 20 }, { t: 'octorok', x: 35, y: 28 },
     { t: 'octorok', x: 18, y: 3 },
     { t: 'soldier', x: 36, y: 12, patrol: [[35, 12], [43, 12], [43, 10], [36, 10]] },
     { t: 'soldier', x: 43, y: 8, patrol: [[37, 8], [43, 8]] },

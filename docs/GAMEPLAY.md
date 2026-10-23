@@ -57,6 +57,19 @@ Warps sind Rechtecke in Tiles mit `to`, `spawn`, `dirReq` (nur beim Laufen in di
   den Helden zu. Fledermaus ruht, bis der Held nah ist, und fliegt dann im Zickzack. **Golem:** gehen → Steinfächer
   werfen → 2–3 Stampfsprünge (Schockwelle r=46, fallende Felsen, Kamerawackeln) → müde Phase (nur jetzt verwundbar,
   sonst „tink“). Bomben treffen ihn immer und machen ihn müde. 12 HP, ab der Hälfte schneller.
+- **Treppen:** Die Fußbox darf auf einer Treppe den Absatz darunter bzw. die Kante darüber überlappen, aber nur
+  in der Treppenspalte. Beim vertikalen Laufen wird der Held zur Treppenmitte gezogen. Die Stufe sinkt erst, wenn
+  keine Fußecke mehr höher steht. Damit gibt es keinen Softlock und kein seitliches Aufsteigen.
+- **Schaden:** Kontaktschaden von Soldat und Golem 1 HP, Felsbrocken 1 HP, Golem-Stampfwelle 2 HP. Bei ≤ 2 HP fallen
+  häufiger Herzen. Der Golem pulsiert in der müden Phase und funkelt; beim ersten Mal erscheint ein Hinweis-Toast.
+- **Gruben:** Nach einem Sturz ist die Eingabe 0,6 s gesperrt; der Respawn hält Abstand zur Grube. Im godMode
+  fällt man nicht.
+- **Händler:** Ja/Nein-Auswahl über `ui.dialog({choices})`.
+- **Türen ohne Innenraum** (Mia, Lutz) zeigen einen Hinweis-Toast (`warps[].hint`).
+- **Requisiten:** barrel, crate, sack, hay, cart, well, gravestone, lantern, tools, bench, flowerbox (fest, kleine
+  Fußboxen). Sie stehen in Clustern an den Hausfronten, am Brunnenplatz (Karren mit Säcken und Heu) und auf dem
+  Friedhof am Fluss; an Kreuzungen stehen Schild und Laterne. Lichtungen nutzen die Tiles `grass_light` und
+  `clearing`. Am Südrand stehen nur noch einzelne kleine Bäume und Büsche.
 - **Drops:** Herzen, Rupien (1/5/20), Bomben (wenn vorhanden). Händler Lutz verkauft später 5 Bomben für 20 Rupien.
 - **Speichern** (`save.js`, localStorage `drift_save_v1`): automatisch bei Raumwechsel, Truhen, Türen und Flags.
   `game.start()` setzt einen Spielstand fort, `game.start('new')` beginnt neu.
@@ -68,7 +81,7 @@ Warps sind Rechtecke in Tiles mit `to`, `spawn`, `dirReq` (nur beim Laufen in di
 
 ## Debug-API (`window.__drift.game.debug`)
 ```js
-teleport(mapId, tx?, ty?)  // Tile-Koordinaten; ohne x/y → Standard-Spawn. Maps: debug.maps
+teleport(mapId, tx?, ty?)  // Tile-Koordinaten; ohne x/y → Standard-Spawn; weicht Objekten/Gruben/Wasser aus. Maps: debug.maps
 give('bombs'|'key'|'rupees'|'heart'|'heart_container'|'crystal'|'sword'|'all', amount?)
 godMode(true|false)
 listEntities()             // [{kind, type, x, y, tx, ty, lvl, hp, state}]

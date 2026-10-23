@@ -49,17 +49,13 @@ export function blocked(g, e, x, y) {
   }
   const lvl = e.lvl;
   const cs = onStairs(world, e);
-  const ccs = world.def(cellOf(e.x), cellOf(centerY(e))).stairs;
-  // cells the foot box overlaps right now: leaving a stairs column must never get stuck on its rim
-  let cur = null;
   for (const [px, py] of pts) {
     const tx = cellOf(px), ty = cellOf(py);
-    if (cellOk(world, tx, ty, lvl, ccs, e)) continue;
-    const hh = world.heightAt(tx, ty);
-    if (cs && (hh === lvl + 1 || hh === lvl - 1) && !world.def(tx, ty).solid) {
-      if (!cur) { const fb0 = e.foot || FOOT; cur = new Set(); for (const qx of [e.x - fb0.hw, e.x + fb0.hw - 0.01]) for (const qy of [e.y - fb0.top, e.y + fb0.bottom - 0.01]) cur.add(cellOf(qx) + ',' + cellOf(qy)); }
-      if (cur.has(tx + ',' + ty)) continue;
-    }
+    if (cellOk(world, tx, ty, lvl, false, e)) continue;
+    // around a staircase the foot box may straddle the landing (below) or the rim (above) – but only
+    // in the staircase's own column, so nobody slips sideways onto a cliff
+    const d = world.def(tx, ty), h = world.heightAt(tx, ty);
+    if (cs && !d.solid && !(e.avoidPits && d.pit) && (h === lvl - 1 || h === lvl + 1) && stairsColumn(world, tx, ty, h)) continue;
     return true;
   }
   if (e.noSolids) return false;
@@ -70,6 +66,16 @@ export function blocked(g, e, x, y) {
     if (e.ignoreSolid && e.ignoreSolid(s)) continue;
     if (overlap(fr, s.solidBox())) return true;
   }
+  return false;
+}
+
+// Is (tx,ty) the landing below or the rim above a staircase (vertically adjacent stairs cell)?
+function stairsColumn(world, tx, ty, h) {
+  const d = world.def(tx, ty);
+  if (d.stairs) return true;
+  const n = world.def(tx, ty - 1), s = world.def(tx, ty + 1);
+  if (n.stairs && world.heightAt(tx, ty - 1) === h + 1) return true;   // landing below the stairs
+  if (s.stairs && world.heightAt(tx, ty + 1) === h) return true;       // plateau rim above the stairs
   return false;
 }
 
@@ -84,6 +90,18 @@ export function onStairs(world, e) {
 
 // Level of the cell under the entity's centre (walkers).
 export function levelUnder(world, e) { return world.heightAt(cellOf(e.x), cellOf(centerY(e))); }
+
+// Level follows the cell under the centre, but only drops once no foot corner stands on higher ground.
+export function updateLevel(world, e) {
+  const nl = levelUnder(world, e);
+  if (nl >= e.lvl) { e.lvl = nl; return; }
+  const fb = e.foot || FOOT;
+  for (const qx of [e.x - fb.hw, e.x + fb.hw - 0.01]) for (const qy of [e.y - fb.top, e.y + fb.bottom - 0.01]) {
+    const tx = cellOf(qx), ty = cellOf(qy);
+    if (world.heightAt(tx, ty) > nl && !world.def(tx, ty).stairs) return;
+  }
+  e.lvl = nl;
+}
 
 // Visual z: smooth along stairs, integer elsewhere.
 export function visualZ(world, x, y, lvl) {
@@ -114,7 +132,7 @@ export function move(g, e, dx, dy, o = {}) {
       if (!blocked(g, e, e.x, e.y + sy)) e.y += sy;
       else { hitY = true; if (o.slide && Math.abs(dx) < Math.abs(dy) * 0.25) slide(g, e, 'y', sy); }
     }
-    if (!e.flying) e.lvl = levelUnder(g.world, e);
+    if (!e.flying) updateLevel(g.world, e);
   }
   return { hitX, hitY, moved: Math.hypot(e.x - x0, e.y - y0) };
 }

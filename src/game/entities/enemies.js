@@ -45,7 +45,15 @@ export class Enemy extends Entity {
     if (this.flash > 0) this.flash -= dt;
     this.t -= dt;
     const knocked = this.kb && this.kb.t > 0;
-    if (knocked) { this.avoidPits = false; updateKnock(g, this, dt); this.avoidPits = !this.flying; }
+    if (knocked) {
+      updateKnock(g, this, dt);
+      // knocked against a pit edge → it tumbles in (never stands half over the hole)
+      if (!this.flying) {
+        const l = Math.hypot(this.kb.vx, this.kb.vy) || 1;
+        const px = this.x + (this.kb.vx / l) * (this.foot.hw + 3), py = this.y - 2 + (this.kb.vy / l) * 6;
+        if (g.world.def(cellOf(px), cellOf(py)).pit) { this.fallIn(); return; }
+      }
+    }
     else this.ai(dt);
     this.syncZ();
     this.anim?.update(dt);

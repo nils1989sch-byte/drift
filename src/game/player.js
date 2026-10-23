@@ -1,7 +1,7 @@
 // The hero: 8-way movement, 4-way facing, sword + spin attack, lift/carry/throw, push blocks,
 // ledge jumps, pits, shallow water, damage with knockback and i-frames.
 import { Entity, makeAnim, playAnim } from './entities/base.js';
-import { move, findLedge, cellOf, centerY, levelUnder, visualZ, FOOT } from './collision.js';
+import { move, findLedge, cellOf, centerY, levelUnder, visualZ, FOOT, onStairs, updateLevel } from './collision.js';
 import { DIR_VEC, dirFromVec, animFrame, overlap, spriteFrame, TILE, LEVEL, rand, clamp } from './util.js';
 import { damage, knock, updateKnock, hits, screenBox } from './combat.js';
 import { throwObject } from './entities/projectiles.js';
@@ -181,7 +181,7 @@ export class Player extends Entity {
         break;
     }
     if (this.state !== 'jump' && this.state !== 'fall') {
-      this.lvl = levelUnder(g.world, this);
+      updateLevel(g.world, this);
       this.z = visualZ(g.world, this.x, this.y, this.lvl);
     }
     // pits
@@ -216,8 +216,11 @@ export class Player extends Entity {
       this.dir = dirFromVec(ax, ay, this.dir);
       const r = move(g, this, ax * speed * dt, ay * speed * dt, { slide: true });
       // on stairs, walking up/down gently centres the hero on the staircase column
-      if (cell.stairs && Math.abs(ay) > Math.abs(ax)) {
-        const cx = cellOf(this.x) * TILE + 8, d = cx - this.x;
+      if (Math.abs(ay) > Math.abs(ax) && onStairs(g.world, this)) {
+        const w = g.world, fb = this.foot;
+        let sx = cellOf(this.x);
+        for (const qx of [this.x - fb.hw, this.x + fb.hw - 0.01]) for (const qy of [this.y - fb.top, this.y + fb.bottom - 0.01]) if (w.def(cellOf(qx), cellOf(qy)).stairs) sx = cellOf(qx);
+        const cx = sx * TILE + 8, d = cx - this.x;
         if (Math.abs(d) > 0.3) move(g, this, Math.sign(d) * Math.min(Math.abs(d), 40 * dt), 0);
       }
       const cardinalX = Math.abs(ax) > 0.6 && Math.abs(ay) < 0.35, cardinalY = Math.abs(ay) > 0.6 && Math.abs(ax) < 0.35;
