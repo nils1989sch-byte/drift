@@ -54,7 +54,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   scene.add(sun, sun.target);
   const SUN_DIR = new THREE.Vector3(-0.6, 0.52, 0.3).normalize(); // top-left, slightly from the front, ~38° high: long shadows
   const torchLights = [];
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 6; i++) {
     const l = new THREE.PointLight('#ffa040', 0, 110, 1.6);
     scene.add(l); torchLights.push(l);
   }
@@ -900,7 +900,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const d = curDrawable;
       if (d && (d.model === 'house' || key === 'house')) { houseSeen(d, img, x, y, z); return; }
       if (d && MODEL_KEYS[key] && R.models3d) { modelSeen(d, key, x, y, z, o.hop || 0); return; }
-      if (key === 'torch' || key === 'torch_lit') torchSpots.push([x, y, z]);
+      if (key === 'torch' || key === 'torch_lit' || (key === 'lantern' && R.night > 0.2)) torchSpots.push([x, y, z]);
       const floor = d?.layer === 'floor';
       const kind = floor ? 'floor' : a < 1 ? 'trans' : 'solid';
       const m = getBB(kind);
@@ -1032,6 +1032,44 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     });
   }
 
+  // ---------- time of day (overworld) ----------
+  // Keyframes: hour -> sun colour/intensity, ambient, haze. Sun swings from east (morning) to west (evening).
+  const DAY = [
+    [0, '#5070c0', 0.55, '#304068', 0.32, '#1a2440'],
+    [5, '#7088c8', 0.6, '#384870', 0.36, '#2a3450'],
+    [6.5, '#ffb890', 1.8, '#a0a8c8', 0.6, '#c8a8a0'],
+    [9, '#ffe0b0', 3.0, '#a8c4e0', 0.8, '#a8bcc8'],
+    [15, '#ffd8a0', 3.2, '#a8c4e0', 0.8, '#a8bcc8'],
+    [18, '#ffa060', 2.6, '#a8a0c0', 0.65, '#d0a888'],
+    [19.5, '#e07850', 1.4, '#6870a0', 0.45, '#6a5a78'],
+    [21, '#5070c0', 0.6, '#344070', 0.34, '#1e2848'],
+    [24, '#5070c0', 0.55, '#304068', 0.32, '#1a2440'],
+  ];
+  const _c1 = new THREE.Color(), _c2 = new THREE.Color();
+  const sunDir = SUN_DIR.clone();
+  R.hours = null; R.night = 0;
+  R.setTime = (h) => { R.hours = h == null ? null : ((h % 24) + 24) % 24; };
+  function applyDaylight() {
+    const h = R.hours;
+    hemi.groundColor.set('#4a4030');
+    if (h == null) {
+      hemi.intensity = 0.8; hemi.color.set('#a8c4e0'); sun.intensity = 3.2; sun.color.set('#ffd8a0');
+      scene.fog.color.copy(HAZE); scene.background = SKY; sunDir.copy(SUN_DIR); R.night = 0; return;
+    }
+    let i = 0; while (i < DAY.length - 2 && h >= DAY[i + 1][0]) i++;
+    const a = DAY[i], b = DAY[i + 1], t = (h - a[0]) / (b[0] - a[0]);
+    sun.color.copy(_c1.set(a[1])).lerp(_c2.set(b[1]), t); sun.intensity = a[2] + (b[2] - a[2]) * t;
+    hemi.color.copy(_c1.set(a[3])).lerp(_c2.set(b[3]), t); hemi.intensity = a[4] + (b[4] - a[4]) * t;
+    scene.fog.color.copy(_c1.set(a[5])).lerp(_c2.set(b[5]), t);
+    const day = h >= 6 && h <= 20;
+    R.night = h < 5 || h > 21 ? 1 : h < 7 ? (7 - h) / 2 : h > 19 ? (h - 19) / 2 : 0;
+    scene.background = R.night > 0.5 ? scene.fog.color : SKY;
+    // sun (or moon at night) path: azimuth east -> west, low in the morning/evening
+    const p = day ? (h - 6) / 14 : ((h + 4) % 24) / 10;            // 0..1 across the sky
+    const az = (-0.9 + p * 1.8), el = 0.25 + Math.sin(p * Math.PI) * 0.6;
+    sunDir.set(Math.sin(az) * -0.9, el, 0.3 + Math.cos(az) * 0.2).normalize();
+  }
+
   // ---------- camera ----------
   const look = new THREE.Vector3(), camY = { v: 0, init: false };
   function placeCamera(cam, world) {
@@ -1041,8 +1079,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     stretch = THREE.MathUtils.clamp(Math.tan(elev) * 1.25, 1, 1.5);
     const fov = 30;
     camera.fov = fov;
-    const dist = 120 / Math.tan((fov / 2) * DEG) / zf * 0.6 * (W >= H ? (H / W < 0.7 ? 1 : 1.25) : Math.min(2.2, (H / W) * 0.9));
-    const f = cam.follow;
+    const dist = 120 / Math.tan((fov / 2) * DEG) / zf * 0.6 * (cam.battleFocus ? 0.88 : 1) * (W >= H ? (H / W < 0.7 ? 1 : 1.25) : Math.min(2.2, (H / W) * 0.9));
+    const f = cam.battleFocus || cam.follow;
     const fy = f ? ((f.z || 0) * LEVEL) : 0;
     if (!camY.init) { camY.v = fy; camY.init = true; }
     camY.v += (fy - camY.v) * 0.12;
@@ -1055,7 +1093,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     scene.fog.near = dist * 1.2; scene.fog.far = dist * 4.2;
     // sun follows the view so the shadow map stays sharp where we look
     const span = Math.min(1100, dist * 1.4 + 120);
-    sun.position.copy(look).addScaledVector(SUN_DIR, 900);
+    sun.position.copy(look).addScaledVector(sunDir, 900);
     sun.target.position.copy(look);
     const sc = sun.shadow.camera;
     sc.left = -span; sc.right = span; sc.top = span; sc.bottom = -span; sc.near = 100; sc.far = 2200;
@@ -1096,7 +1134,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
     // lighting mood per map
     if (cur.dark) { hemi.intensity = 0.55; hemi.color.set('#8090c8'); sun.intensity = 0.9; sun.color.set('#c8c8ff'); scene.fog.color.copy(BG); scene.background = BG; }
-    else { hemi.intensity = 0.8; hemi.color.set('#a8c4e0'); hemi.groundColor.set('#4a4030'); sun.intensity = 3.2; sun.color.set('#ffd8a0'); scene.fog.color.copy(HAZE); scene.background = SKY; }
+    else applyDaylight();
 
     // collect billboards
     used.solid = used.trans = used.floor = 0; blobUsed = 0; xrayUsed = 0; order = 0; torchSpots.length = 0;
@@ -1123,7 +1161,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const t = torchSpots[i];
       if (!t) { l.intensity = 0; return; }
       l.position.set(t[0], t[2] * LEVEL + 18, t[1] + 2);
-      l.intensity = (cur.dark ? 4200 : 2500) * (0.85 + 0.15 * Math.sin(time * 13 + i * 2.1) * Math.sin(time * 7.3 + i));
+      l.intensity = (cur.dark ? 4200 : 1500 * Math.max(0.35, R.night)) * (0.85 + 0.15 * Math.sin(time * 13 + i * 2.1) * Math.sin(time * 7.3 + i));
     });
 
     // scene -> rtScene

@@ -96,6 +96,7 @@ function boot() {
     }
     if (steps === 6) acc = 0;
     const drawables = game.world ? [...game.entities, ...fx.drawables()] : [];
+    renderer.setTime?.(game.world?.outdoor === false ? null : game.clock?.hours ?? null);
     renderer.render(game.world, drawables, camera, dt, game.drawOverlay);
     if (renderer.degrade && game.world) {
       if (dt > 1 / 40) { slowT += dt; fastT = 0; } else { fastT += dt; slowT = Math.max(0, slowT - dt * 0.5); }

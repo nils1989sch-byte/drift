@@ -1,81 +1,114 @@
 {
- "date": "2026-10-23T05:15:37.476Z",
- "seed": 1,
- "frames": 2000,
+ "date": "2026-10-23T05:16:45.494Z",
+ "seed": 3,
+ "frames": 3000,
  "results": [
   {
-   "name": "report1_fixes",
+   "name": "random_walk_collision",
    "ok": true,
    "checks": [
     {
      "ok": true,
-     "msg": "debug.teleport tp_8_10 lands on a free spot",
+     "msg": "random walk overworld@12,23: player never inside solid (3000 frames, 94 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "debug.teleport tp_36_26 lands on a free spot",
+     "msg": "random walk overworld@22,16: player never inside solid (3000 frames, 88 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "debug.teleport tp_20_29 lands on a free spot",
+     "msg": "random walk overworld@6,24: player never inside solid (3000 frames, 96 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "debug.teleport tp_16_22 lands on a free spot",
+     "msg": "random walk overworld@12,27: player never inside solid (3000 frames, 105 cells)",
      "data": null
     },
     {
      "ok": true,
-     "msg": "soldier contact damage = 1 (half heart)",
-     "data": 1
+     "msg": "random walk overworld@19,28: player never inside solid (3000 frames, 105 cells)",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "golem contact damage = 1",
-     "data": 1
+     "msg": "random walk overworld@26,29: player never inside solid (3000 frames, 49 cells)",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "more heart drops at ≤ 2 HP",
-     "data": {
-      "full": 13.8,
-      "low": 47
-     }
+     "msg": "random walk overworld@15,23: player never inside solid (3000 frames, 113 cells)",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "golem reaches its tired phase",
-     "data": "tired"
+     "msg": "random walk overworld@36,22: player never inside solid (3000 frames, 47 cells)",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "golem tired phase shows a hint toast the first time",
-     "data": [
-      "Der Kern des Golems glüht – jetzt zuschlagen!"
-     ]
+     "msg": "random walk overworld@7,9: player never inside solid (3000 frames, 126 cells)",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "spawn outside Bodo's door is not inside the door warp"
+     "msg": "random walk overworld@38,11: player never inside solid (3000 frames, 71 cells)",
+     "data": null
     },
     {
      "ok": true,
-     "msg": "godMode: no pit fall",
-     "data": {
-      "fell": false,
-      "hp": 6
-     }
+     "msg": "random walk overworld@36,25: player never inside solid (3000 frames, 119 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@14,27: player never inside solid (3000 frames, 110 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk house_elder@5,6: player never inside solid (3000 frames, 86 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk cave@6,7: player never inside solid (3000 frames, 101 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_1@8,10: player never inside solid (3000 frames, 80 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_2@7,9: player never inside solid (3000 frames, 51 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_3@7,10: player never inside solid (3000 frames, 80 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_4@8,11: player never inside solid (3000 frames, 100 cells)",
+     "data": null
     }
    ],
    "notes": [
-    "toasts when the golem gets tired: [\"Der Kern des Golems glüht – jetzt zuschlagen!\"]",
-    "sounds in the first 5 frames of the boss room: [\"door\"]"
+    "random walk: teleport target 20,29 is blocked → started at 19,28",
+    "random walk: teleport target 16,22 is blocked → started at 15,23",
+    "random walk: teleport target 8,10 is blocked → started at 7,9",
+    "random walk: teleport target 36,26 is blocked → started at 36,25",
+    "random walk house_elder@5,6: warped through: [\"house_elder\",\"overworld\"]",
+    "random walk cave@6,7: warped through: [\"cave\",\"overworld\"]",
+    "random walk dungeon_1@8,10: warped through: [\"dungeon_1\",\"overworld\"]"
    ],
    "errors": [],
-   "ms": 2687
+   "ms": 26043
   }
  ]
 }

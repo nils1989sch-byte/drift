@@ -98,3 +98,33 @@ def('glow', '#7ae8e0', { colors: ['#2a8a98', '#4cc0c8', '#7ae8e0', '#c0fff4', '#
 def('glow_hot', '#f8c860', { colors: ['#c86a20', '#f09a38', '#f8c860', '#fff0a8', '#fffbe8'], line: '#4a2010', noLine: true, amb: 0.7, k: 0.3 });
 def('flash', '#fbf6ec', { colors: ['#d8d0e0', '#e8e2ec', '#f4f0f0', '#fbf8f4', '#fffdf8'], line: '#8a7a98', lineLit: '#b0a4bc' });
 def('slash', '#c8f4f4', { colors: ['#4a8ab0', '#7ac8dc', '#c8f4f4', '#f8fffc'], noLine: true, noOutline: true });
+
+// --- monsters (type colours: fire = ember/lava orange, water = petrol/turquoise, plant = green/moss,
+//     stone = ochre/grey, spark = yellow/violet, wind = white/sky blue) ---
+def('ember', '#e2683a', { dk: 0.08, lt: 0.07, hsD: 10, shadowHue: 330, lightHue: 45, line: '#3e1218', lineLit: '#6a2420', amb: 0.38, k: 0.64 });
+def('ember_belly', '#f6d08a', { dk: 0.08, lt: 0.05, hsD: 10, shadowHue: 10, line: '#6a2a1e' });
+def('basalt', '#4e3e46', { dk: 0.06, lt: 0.075, hsD: 6, shadowHue: 260, lightHue: 20, line: '#160e16', lineLit: '#2a1e26', spec: 0.95 });
+def('flame', '#f8a038', { colors: ['#c8401e', '#ea6a26', '#f8a038', '#fcd264', '#fff4c0'], line: '#5a1a10', noLine: true, amb: 0.62, k: 0.36 });
+def('otter', '#3a8c98', { dk: 0.075, lt: 0.07, hsD: 9, shadowHue: 240, lightHue: 160, line: '#0e2236', lineLit: '#163a50', amb: 0.38, k: 0.64 });
+def('otter_dk', '#2a5e78', { dk: 0.07, lt: 0.07, hsD: 8, shadowHue: 245, line: '#0c1a30', lineLit: '#142a44' });
+def('cream', '#f2e4c8', { dk: 0.075, lt: 0.04, hsD: 12, shadowHue: 250, sD: -0.03, line: '#5a4a50', lineLit: '#867680', amb: 0.42, k: 0.58 });
+def('seashell', '#f2bca8', { dk: 0.08, lt: 0.05, hsD: 10, shadowHue: 320, line: '#5e2a34', lineLit: '#8a4a50', spec: 0.93 });
+def('water', '#5ccad6', { colors: ['#1e6a8a', '#2e94b0', '#5ccad6', '#a2ecee', '#eafffc'], line: '#103a58', noLine: true, amb: 0.5, k: 0.5, spec: 0.85 });
+def('spine', '#6aa63e', { dk: 0.08, lt: 0.08, hsD: 10, shadowHue: 200, lightHue: 70, line: '#143018', lineLit: '#1e4a24', amb: 0.36, k: 0.66 });
+def('fur_brn', '#a8784e', { dk: 0.08, lt: 0.07, hsD: 8, shadowHue: 330, line: '#3a1e1a', lineLit: '#5a3226' });
+def('ochre', '#c49a58', { dk: 0.08, lt: 0.07, hsD: 8, shadowHue: 330, lightHue: 50, line: '#3e2418', lineLit: '#5e3a24', amb: 0.36, k: 0.64 });
+def('crystal', '#8ad0e0', { colors: ['#2e5a88', '#4a8ab8', '#8ad0e0', '#c8f4f4', '#ffffff'], line: '#1a2a52', spec: 0.82, amb: 0.45, k: 0.6 });
+def('volt', '#f2cc3a', { dk: 0.08, lt: 0.06, hsD: 10, shadowHue: 15, lightHue: 60, line: '#4e2a14', lineLit: '#7a4a18', amb: 0.4, k: 0.62 });
+def('violet', '#7a52c0', { dk: 0.075, lt: 0.075, hsD: 8, shadowHue: 260, lightHue: 300, line: '#1c1240', lineLit: '#2c1e5a' });
+def('spark', '#fff08a', { colors: ['#a868e8', '#d2a0ff', '#fff08a', '#fffbe0'], line: '#3a1a6a', noLine: true, noOutline: true });
+def('feather', '#eef0ee', { colors: ['#8a94b4', '#aab4cc', '#ccd4e0', '#eef0ee', '#fbfcf8'], line: '#34405e', lineLit: '#5a6684', amb: 0.4, k: 0.6 });
+def('sky', '#72b2e2', { dk: 0.075, lt: 0.07, hsD: 6, shadowHue: 245, lightHue: 185, line: '#142a52', lineLit: '#1e3c6e', amb: 0.38, k: 0.64 });
+def('beak', '#f0b040', { dk: 0.09, lt: 0.06, hsD: 10, shadowHue: 10, line: '#4e2410' });
+def('snail', '#d6c48c', { dk: 0.08, lt: 0.05, hsD: 10, shadowHue: 300, lightHue: 60, line: '#4a3a2a', lineLit: '#6e5a40', amb: 0.42, k: 0.58 });
+def('cap', '#7a9a3e', { dk: 0.08, lt: 0.075, hsD: 10, shadowHue: 210, lightHue: 65, line: '#1e2a14', lineLit: '#2e3e1e', amb: 0.38, k: 0.64 });
+def('stem', '#ece0c0', { dk: 0.08, lt: 0.04, hsD: 12, shadowHue: 270, sD: -0.03, line: '#56485a', lineLit: '#80727e' });
+def('petal', '#f2a0b8', { dk: 0.08, lt: 0.05, hsD: 8, shadowHue: 300, line: '#5a2240', noLine: true });
+def('bronze', '#b8743a', { dk: 0.09, lt: 0.08, hsD: 8, shadowHue: 340, lightHue: 45, line: '#341810', lineLit: '#5a2a18', spec: 0.86, amb: 0.32, k: 0.76 });
+def('petrol', '#2a7682', { dk: 0.08, lt: 0.08, hsD: 9, shadowHue: 240, lightHue: 170, line: '#0e2034', lineLit: '#16364a', spec: 0.9, amb: 0.32, k: 0.74 });
+def('ranger', '#4e7a3e', { dk: 0.075, lt: 0.075, hsD: 8, shadowHue: 220, lightHue: 70, line: '#142614', lineLit: '#203a1e' });
+def('tool_wood', '#b07c48', { dk: 0.08, lt: 0.07, hsD: 8, shadowHue: 340, line: '#3a1e14', lineLit: '#5a3020' });

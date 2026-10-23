@@ -6,10 +6,11 @@ const KEYMAP = {
   KeyK: 'action', KeyE: 'action',
   KeyL: 'item', KeyQ: 'item',
   Enter: 'start', Escape: 'start', KeyP: 'start',
+  ShiftLeft: 'dodge', ShiftRight: 'dodge', Digit1: 'skill3', Digit2: 'skill4',
   Equal: 'zoomIn', NumpadAdd: 'zoomIn', BracketRight: 'zoomIn',
   Minus: 'zoomOut', NumpadSubtract: 'zoomOut', Slash: 'zoomOut', BracketLeft: 'zoomOut',
 };
-const ACTIONS = ['up', 'down', 'left', 'right', 'attack', 'action', 'item', 'start', 'zoomIn', 'zoomOut'];
+const ACTIONS = ['up', 'down', 'left', 'right', 'attack', 'action', 'item', 'start', 'zoomIn', 'zoomOut', 'dodge', 'skill3', 'skill4'];
 
 export function createInput(target = window) {
   const keys = new Set();
@@ -59,7 +60,8 @@ export function createInput(target = window) {
         if (b(0)) cur.add('attack'); if (b(1)) cur.add('action'); if (b(2)) cur.add('item');
         if (b(9)) cur.add('start'); if (b(12)) cur.add('up'); if (b(13)) cur.add('down');
         if (b(14)) cur.add('left'); if (b(15)) cur.add('right');
-        if (b(4)) cur.add('zoomOut'); if (b(5)) cur.add('zoomIn');
+        if (b(3)) cur.add('dodge'); if (b(6)) cur.add('zoomOut'); if (b(7)) cur.add('zoomIn');
+        if (b(4)) cur.add('skill3'); if (b(5)) cur.add('skill4');
       }
       let x = (cur.has('right') ? 1 : 0) - (cur.has('left') ? 1 : 0) + gx + vAxis.x;
       let y = (cur.has('down') ? 1 : 0) - (cur.has('up') ? 1 : 0) + gy + vAxis.y;

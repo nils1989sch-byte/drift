@@ -36,8 +36,10 @@ export function createCamera() {
       const d = cam.target - cam.scale;
       cam.scale += d * Math.min(1, dt * 12);
       if (Math.abs(d) < 0.01) cam.scale = cam.target;
-      if (cam.follow) {
-        const tx = cam.follow.x, ty = cam.follow.y - (cam.follow.z || 0) * LEVEL - 8;
+      // battleFocus (set by gameplay during fights) overrides the follow target
+      const f = cam.battleFocus || cam.follow;
+      if (f) {
+        const tx = f.x, ty = f.y - (f.z || 0) * LEVEL - 8;
         const k = Math.min(1, dt * 10);
         cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
       }
