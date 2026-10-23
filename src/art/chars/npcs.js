@@ -6,10 +6,11 @@ import { CX, skeleton } from './human.js';
 import { lerp } from './rig.js';
 
 function torsoN(cx, cy, hw, hh) {
+  const N = [0, 0, 1];
   return (x, y) => {
     const u = Math.max(-1, Math.min(1, (x + 0.5 - cx) / hw)), v = Math.max(-1, Math.min(1, (y + 0.5 - cy) / hh));
     const nx = u * 0.9, ny = -0.2 + v * 0.3;
-    return [nx, ny, Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny))];
+    N[0] = nx; N[1] = ny; N[2] = Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny)); return N;
   };
 }
 // long garment from the shoulders down to `hemY`; folds sway with the walk phase

@@ -1,11 +1,788 @@
 {
- "date": "2026-10-22T21:58:42.646Z",
+ "date": "2026-10-22T22:08:21.182Z",
  "seed": 1,
  "frames": 2000,
  "results": [
   {
+   "name": "movement_8dir",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "walk right: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": 41,
+      "dy": 0,
+      "dir": "right",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk right: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "walk left: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": -41,
+      "dy": 0,
+      "dir": "left",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk left: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "walk down: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": 0,
+      "dy": 41,
+      "dir": "down",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "walk up: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": 0,
+      "dy": -39,
+      "dir": "up",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk up: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "walk dr: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": 29,
+      "dy": 29,
+      "dir": "down",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk dr: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "walk dl: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": -29,
+      "dy": 29,
+      "dir": "down",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk dl: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "walk ur: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": 28.4,
+      "dy": -28.4,
+      "dir": "up",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk ur: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "walk ul: ~41px in 0.5s (82px/s)",
+     "data": {
+      "dx": -25.1,
+      "dy": -29,
+      "dir": "up",
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk ul: not stuck",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "facing follows cardinal input",
+     "data": {
+      "right": {
+       "dx": 41,
+       "dy": 0,
+       "dir": "right",
+       "stuck": null
+      },
+      "left": {
+       "dx": -41,
+       "dy": 0,
+       "dir": "left",
+       "stuck": null
+      },
+      "down": {
+       "dx": 0,
+       "dy": 41,
+       "dir": "down",
+       "stuck": null
+      },
+      "up": {
+       "dx": 0,
+       "dy": -39,
+       "dir": "up",
+       "stuck": null
+      },
+      "dr": {
+       "dx": 29,
+       "dy": 29,
+       "dir": "down",
+       "stuck": null
+      },
+      "dl": {
+       "dx": -29,
+       "dy": 29,
+       "dir": "down",
+       "stuck": null
+      },
+      "ur": {
+       "dx": 28.4,
+       "dy": -28.4,
+       "dir": "up",
+       "stuck": null
+      },
+      "ul": {
+       "dx": -25.1,
+       "dy": -29,
+       "dir": "up",
+       "stuck": null
+      }
+     }
+    },
+    {
+     "ok": true,
+     "msg": "keyboard diagonal (D+S) moves diagonally & normalized",
+     "data": {
+      "dx": 34.06,
+      "dy": 32.69
+     }
+    }
+   ],
+   "notes": [
+    "diagonal facing: {\"dr\":\"down\",\"dl\":\"down\",\"ur\":\"up\",\"ul\":\"up\"}"
+   ],
+   "errors": [],
+   "ms": 4092
+  },
+  {
+   "name": "stairs_height",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "Nordklippen stairs: 0 → 1",
+     "data": {
+      "startLvl": 0,
+      "lvl": 1,
+      "ty": 7,
+      "zMonotone": true,
+      "zmax": 1,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "visual z rises smoothly on the stairs",
+     "data": {
+      "startLvl": 0,
+      "lvl": 1,
+      "ty": 7,
+      "zMonotone": true,
+      "zmax": 1,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "Nordklippen upper stairs: 1 → 2",
+     "data": {
+      "lvl": 2,
+      "ty": 2
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walking down the stairs: 1 → 0",
+     "data": {
+      "lvl": 0,
+      "ty": 19,
+      "state": "normal"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "Steinwacht stairs: 0 → 1",
+     "data": {
+      "lvl": 1,
+      "ty": 10
+     }
+    },
+    {
+     "ok": true,
+     "msg": "Steinwacht upper stairs: 1 → 2",
+     "data": {
+      "lvl": 2,
+      "ty": 7
+     }
+    },
+    {
+     "ok": true,
+     "msg": "cannot walk up a cliff face without stairs",
+     "data": {
+      "lvl": 0,
+      "ty": 16,
+      "stuck": null
+     }
+    },
+    {
+     "ok": true,
+     "msg": "no stuck at cliffs/stairs",
+     "data": {
+      "nord": {
+       "startLvl": 0,
+       "lvl": 1,
+       "ty": 7,
+       "zMonotone": true,
+       "zmax": 1,
+       "stuck": null
+      },
+      "nord2": {
+       "lvl": 2,
+       "ty": 2
+      },
+      "down": {
+       "lvl": 0,
+       "ty": 19,
+       "state": "normal"
+      },
+      "stein": {
+       "lvl": 1,
+       "ty": 10
+      },
+      "stein2": {
+       "lvl": 2,
+       "ty": 7
+      },
+      "cliffUp": {
+       "lvl": 0,
+       "ty": 16,
+       "stuck": null
+      },
+      "sideFromStairs": {
+       "startLvl": 1,
+       "lvl": 1,
+       "tx": 11,
+       "stuck": null
+      }
+     }
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 3065
+  },
+  {
+   "name": "stairs_side_exit",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "hill(42,20) left: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "hill(42,20) left",
+      "start": null,
+      "stuck": null,
+      "snap": {
+       "map": "overworld",
+       "x": 680,
+       "y": 384.67,
+       "tx": 42,
+       "ty": 23,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "canLeave": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "hill(42,20) left: can escape afterwards (any direction)",
+     "data": {
+      "map": "overworld",
+      "x": 680,
+      "y": 384.67,
+      "tx": 42,
+      "ty": 23,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "hill(42,20) right: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "hill(42,20) right",
+      "start": null,
+      "stuck": null,
+      "snap": {
+       "map": "overworld",
+       "x": 680,
+       "y": 384.67,
+       "tx": 42,
+       "ty": 23,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "canLeave": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "hill(42,20) right: can escape afterwards (any direction)",
+     "data": {
+      "map": "overworld",
+      "x": 680,
+      "y": 384.67,
+      "tx": 42,
+      "ty": 23,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "nord(9,13) left: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "nord(9,13) left",
+      "start": null,
+      "stuck": null,
+      "snap": {
+       "map": "overworld",
+       "x": 152,
+       "y": 272.67,
+       "tx": 9,
+       "ty": 16,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "canLeave": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "nord(9,13) left: can escape afterwards (any direction)",
+     "data": {
+      "map": "overworld",
+      "x": 152,
+      "y": 272.67,
+      "tx": 9,
+      "ty": 16,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "nord(9,13) right: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "nord(9,13) right",
+      "start": null,
+      "stuck": null,
+      "snap": {
+       "map": "overworld",
+       "x": 152,
+       "y": 272.67,
+       "tx": 9,
+       "ty": 16,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "down",
+       "hp": 6,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "canLeave": true
+     }
+    },
+    {
+     "ok": true,
+     "msg": "nord(9,13) right: can escape afterwards (any direction)",
+     "data": {
+      "map": "overworld",
+      "x": 152,
+      "y": 272.67,
+      "tx": 9,
+      "ty": 16,
+      "lvl": 0,
+      "z": 0,
+      "state": "normal",
+      "dir": "down",
+      "hp": 6,
+      "maxHp": 6,
+      "keys": 0,
+      "bombs": 0,
+      "rupees": 0,
+      "carry": null,
+      "gstate": "play",
+      "ui": "hud"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off -7px: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "walk down nord stairs, off -7px",
+      "stuck": null,
+      "canLeave": true,
+      "escapes": 7
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off -7px: can escape afterwards (any direction)"
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off -5px: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "walk down nord stairs, off -5px",
+      "stuck": null,
+      "canLeave": true,
+      "escapes": 7
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off -5px: can escape afterwards (any direction)"
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off -4px: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "walk down nord stairs, off -4px",
+      "stuck": null,
+      "canLeave": true,
+      "escapes": 7
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off -4px: can escape afterwards (any direction)"
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off 3px: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "walk down nord stairs, off 3px",
+      "stuck": null,
+      "canLeave": true,
+      "escapes": 7
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off 3px: can escape afterwards (any direction)"
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off 4px: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "walk down nord stairs, off 4px",
+      "stuck": null,
+      "canLeave": true,
+      "escapes": 7
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off 4px: can escape afterwards (any direction)"
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off 5px: walking straight down off misaligned (4px) stairs does not get stuck",
+     "data": {
+      "name": "walk down nord stairs, off 5px",
+      "stuck": null,
+      "canLeave": true,
+      "escapes": 7
+     }
+    },
+    {
+     "ok": true,
+     "msg": "walk down nord stairs, off 5px: can escape afterwards (any direction)"
+    }
+   ],
+   "notes": [],
+   "errors": [],
+   "ms": 3196
+  },
+  {
+   "name": "pits_fall",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "walking into a pit → fall",
+     "data": {
+      "rep": {
+       "falls": 3,
+       "hpLeft": 16
+      },
+      "fell": true,
+      "hp0": 6,
+      "hp": 4,
+      "snap": {
+       "map": "dungeon_2",
+       "x": 152,
+       "y": 122,
+       "tx": 9,
+       "ty": 7,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "right",
+       "hp": 4,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "cell": "dungeon_floor"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "pit costs one heart",
+     "data": {
+      "rep": {
+       "falls": 3,
+       "hpLeft": 16
+      },
+      "fell": true,
+      "hp0": 6,
+      "hp": 4,
+      "snap": {
+       "map": "dungeon_2",
+       "x": 152,
+       "y": 122,
+       "tx": 9,
+       "ty": 7,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "right",
+       "hp": 4,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "cell": "dungeon_floor"
+     }
+    },
+    {
+     "ok": true,
+     "msg": "respawn on safe ground",
+     "data": {
+      "rep": {
+       "falls": 3,
+       "hpLeft": 16
+      },
+      "fell": true,
+      "hp0": 6,
+      "hp": 4,
+      "snap": {
+       "map": "dungeon_2",
+       "x": 152,
+       "y": 122,
+       "tx": 9,
+       "ty": 7,
+       "lvl": 0,
+       "z": 0,
+       "state": "normal",
+       "dir": "right",
+       "hp": 4,
+       "maxHp": 6,
+       "keys": 0,
+       "bombs": 0,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      },
+      "stuck": null,
+      "cell": "dungeon_floor"
+     }
+    }
+   ],
+   "notes": [
+    "holding → into a pit for 3 s (respawn next to the pit): {\"falls\":3,\"hpLeft\":16}"
+   ],
+   "errors": [],
+   "ms": 3010
+  },
+  {
+   "name": "chest_sign_npc",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "opening a chest shows a dialog",
+     "data": "dialog"
+    },
+    {
+     "ok": true,
+     "msg": "chest gives 10 rupees + sets flag",
+     "data": {
+      "r0": 0,
+      "r1": 10,
+      "flag": true,
+      "state": "normal",
+      "r2": 10
+     }
+    },
+    {
+     "ok": true,
+     "msg": "chest can only be opened once",
+     "data": {
+      "r0": 0,
+      "r1": 10,
+      "flag": true,
+      "state": "normal",
+      "r2": 10
+     }
+    },
+    {
+     "ok": true,
+     "msg": "chest stays open after re-entering",
+     "data": true
+    },
+    {
+     "ok": true,
+     "msg": "signs can be read",
+     "data": "dialog"
+    },
+    {
+     "ok": true,
+     "msg": "merchant talks",
+     "data": "dialog"
+    }
+   ],
+   "notes": [
+    "merchant purchase without a yes/no choice: {\"rupees\":30,\"bombs\":6}"
+   ],
+   "errors": [],
+   "ms": 3174
+  },
+  {
    "name": "bomb_cave",
-   "ok": false,
+   "ok": true,
    "checks": [
     {
      "ok": true,
@@ -28,7 +805,25 @@
        8
       ],
       "carryBomb": "bomb",
-      "throwError": "TypeError: Cannot set properties of undefined (setting 'carried')"
+      "afterThrow": {
+       "map": "overworld",
+       "x": 344,
+       "y": 362.41,
+       "tx": 21,
+       "ty": 22,
+       "lvl": 0,
+       "z": 0,
+       "state": "hurt",
+       "dir": "down",
+       "hp": 7,
+       "maxHp": 8,
+       "keys": 0,
+       "bombs": 3,
+       "rupees": 0,
+       "carry": null,
+       "gstate": "play",
+       "ui": "hud"
+      }
      }
     },
     {
@@ -50,16 +845,49 @@
      "data": "bomb"
     },
     {
-     "ok": false,
-     "msg": "throwing a lifted bomb does not throw",
-     "data": "TypeError: Cannot set properties of undefined (setting 'carried')"
+     "ok": true,
+     "msg": "throwing a lifted bomb does not throw"
     }
    ],
    "notes": [
     "HP when standing next to own bomb (hp before/after): [6,4]"
    ],
    "errors": [],
-   "ms": 3430
+   "ms": 3624
+  },
+  {
+   "name": "bomb_throw_realloop",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "bomb can be lifted with E"
+    },
+    {
+     "ok": true,
+     "msg": "game loop keeps running after throwing a bomb",
+     "data": {
+      "f0": 215,
+      "f1": 248
+     }
+    },
+    {
+     "ok": true,
+     "msg": "an exploded bomb is not still held over the head",
+     "data": {
+      "carriedBefore": "bomb",
+      "carryAfter": null,
+      "carryDead": false,
+      "hp": 4
+     }
+    }
+   ],
+   "notes": [
+    "carried: \"bomb\"",
+    "bomb held for 3.3 s: {\"carriedBefore\":\"bomb\",\"carryAfter\":null,\"carryDead\":false,\"hp\":4}"
+   ],
+   "errors": [],
+   "ms": 6871
   }
  ]
 }

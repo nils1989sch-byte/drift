@@ -221,7 +221,6 @@ export class Fig {
   }
   // resolve to a canvas. ax/ay = foot anchor in sprite pixels; ws = 0.5 (HD density)
   canvas(ax, ay, o = {}) {
-    const __t0 = performance.now();
     const w = this.w, h = this.h, n = w * h, M = this.m;
     // content bounding box
     let X0 = w, X1 = -1, Y0 = h, Y1 = -1;
@@ -288,13 +287,10 @@ export class Fig {
         out.set(res);
       }
     }
-    globalThis.__rigR = (globalThis.__rigR || 0) + performance.now() - __t0;
-    const __t = performance.now();
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     const gx = c.getContext('2d', { willReadFrequently: true }), id = gx.createImageData(w, h);
     new Uint32Array(id.data.buffer).set(out);
     gx.putImageData(id, 0, 0);
-    globalThis.__rigT = (globalThis.__rigT || 0) + performance.now() - __t;
     c.ax = ax; c.ay = ay; c.ws = o.ws ?? 0.5;
     if (o.release !== false) this.release();
     return c;

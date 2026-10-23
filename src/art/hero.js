@@ -22,13 +22,19 @@ export const HERO_LOOK = {
 };
 
 // render one pose; base frame 32×48, foot anchor (16, 47). Larger canvases keep the foot at (ax, ay).
+// Side views are drawn once: the 'left' buffer is kept and re-resolved mirrored (and relit) for 'right'.
+const SIDE = new Map();
 export function renderPose(look, dir, pose, o = {}) {
   const w = o.w ?? 32, h = o.h ?? 48, ax = o.ax ?? 16, ay = o.ay ?? 47;
+  const side = dir === 'left' || dir === 'right';
+  const sig = side && look.id ? `${look.id}|${w},${h},${ax},${ay}|${o.post ? 'p' + (o.tag ?? o.post.toString().length) : ''}|${JSON.stringify(pose)}` : null;
+  if (dir === 'right' && sig && SIDE.has(sig)) { const f = SIDE.get(sig); SIDE.delete(sig); f.flip(); return f.canvas(w - 1 - ax, ay); }
   const f = new Fig(w, h, ax - 16, ay - 47);
   const view = viewOf(dir);
   (o.draw || drawHuman)(f, view, pose, look);
   if (o.post) o.post(f);
   if (dir === 'right') { f.flip(); return f.canvas(w - 1 - ax, ay); }
+  if (sig) { if (SIDE.size > 160) SIDE.clear(); const c = f.canvas(ax, ay, { release: false }); SIDE.set(sig, f); return c; }
   return f.canvas(ax, ay);
 }
 
@@ -55,8 +61,8 @@ export function walkPose(view, i, n = 8, o = {}) {
   } else {
     const sg = view === 'down' ? 1 : -1, fwd = view === 'down' ? 1 : -1;
     pose.feet = {
-      R: [CX - 2.7 * sg + 0.3 * sg * lift(cs), FOOT + fwd * 1.3 * sn * st, lift(cs)],
-      L: [CX + 2.7 * sg - 0.3 * sg * lift(-cs), FOOT - fwd * 1.3 * sn * st, lift(-cs)],
+      R: [CX - 3.0 * sg + 0.3 * sg * lift(cs), FOOT + fwd * 1.5 * sn * st, lift(cs) * 1.25],
+      L: [CX + 3.0 * sg - 0.3 * sg * lift(-cs), FOOT - fwd * 1.5 * sn * st, lift(-cs) * 1.25],
     };
     const J = skeleton(view, pose);
     pose.hands = {
@@ -151,7 +157,7 @@ export function buildHero() {
     // charge: sword held forward, glint travels along the blade
     const chA = { down: 100, up: 262, side: 190 }[v];
     const ch = (gl) => renderPose(L, dir, { ...attackPose(v, 2, { ang: chA, reach: 5.4 }), bob: 0, lean: 0, mouth: undefined }, {
-      ...big, post: gl ? (f) => {
+      ...big, tag: 'charge' + gl, post: gl ? (f) => {
         const J = skeleton(v, {}); const sh = v === 'side' ? J.shF : J.shR;
         const hx = sh[0] + Math.cos(chA * D2R) * 5.4, hy = sh[1] + Math.sin(chA * D2R) * 5.4 * (v === 'side' ? 0.85 : 0.8) + (v === 'side' ? 1 : 1.2);
         const tx = hx + Math.cos(chA * D2R) * 15, ty = hy + Math.sin(chA * D2R) * 15;
@@ -183,7 +189,7 @@ export function buildHero() {
       return renderPose(L, dir, p);
     }), { fps: 10 });
     // swim: upper body in water, arms stroking, ripple ring
-    S[`hero_swim_${dir}`] = frames([0, 1, 2, 3].map((k) => renderPose(L, dir, swimPose(v, k), { ay: 47, post: (f) => waterCut(f, k) })), { fps: 7.5 });
+    S[`hero_swim_${dir}`] = frames([0, 1, 2, 3].map((k) => renderPose(L, dir, swimPose(v, k), { ay: 47, tag: 'swim' + k, post: (f) => waterCut(f, k) })), { fps: 7.5 });
   }
   // item get: both arms up, happy face
   {

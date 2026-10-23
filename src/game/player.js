@@ -387,7 +387,7 @@ export class Player extends Entity {
       this.hp = Math.max(0, this.hp - 2);
       this.flash = 0.12;
       this.g.play('hurt');
-      if (this.hp <= 0) this.die(); else { this.iframes = 1.0; this.lock = 0.4; }
+      if (this.hp <= 0) this.die(); else { this.iframes = 1.0; this.lock = 0.6; }
     }
   }
 

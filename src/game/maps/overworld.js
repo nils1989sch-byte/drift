@@ -10,10 +10,11 @@ export default function build() {
   const W = 48, H = 36;
   const P = painter(W, H, '.', 0);
 
-  // --- ground variation -------------------------------------------------------------
-  P.blob(16, 6, 5, 3, ',').blob(26, 30, 3, 2, '*').blob(40, 22, 4, 2, '*').blob(8, 17, 3, 1.5, '*');
-  P.blob(24, 4, 3, 2, '*').blob(42, 31, 3, 2, ',');
-
+  // --- ground variation: bright clearings (stages for the figures), shady edges, flower nests ----------
+  P.blob(16, 6, 5, 3, ',').blob(42, 31, 3, 2, ',').blob(27, 9, 2, 3, ',');
+  P.blob(18, 17, 4, 2.2, ';').blob(24, 6, 3.5, 2.2, ';').blob(40, 24, 4.5, 2.5, ';').blob(8, 26, 4, 3, ';');
+  P.blob(26, 27, 2.5, 2, ';').blob(41, 12, 3, 1.5, ';').blob(7, 4, 2, 1.5, ';');
+  for (const [x, y, r] of [[22, 30, 1.6], [40, 22, 1.8], [24, 3, 1.4], [8, 17, 1.6], [15, 21, 1.2], [5, 10, 1.3]]) P.blob(x, y, r, r * 0.7, '*');
   // --- plateaus -------------------------------------------------------------------------
   // Nordklippen
   P.height(2, 0, 11, 13, 1);
@@ -44,19 +45,25 @@ export default function build() {
   P.blob(22, 10.5, 3.6, 2.6, '-').blob(22, 10.5, 2.6, 1.7, '~');
   P.rect(21, 13, 23, 13, 's', null);
 
-  // --- paths ----------------------------------------------------------------------------
-  P.rect(2, 23, 29, 24, '=');           // village road to the bridge
-  P.rect(33, 23, 37, 24, '=');
-  P.rect(36, 15, 37, 22, '=');          // up to the heights
-  P.rect(12, 14, 13, 22, '=');          // north path through the meadow
-  P.rect(9, 14, 11, 15, '=');           // to the cliffs' stairs
-  P.rect(10, 25, 15, 27, 'o');          // village square (paved)
-  P.rect(8, 28, 8, 30, '=');            // to the shop
-  P.rect(8, 27, 9, 27, '=');
+  // --- paths (gentle curves) ---------------------------------------------------------------
+  for (let x = 2; x <= 29; x++) {               // village road to the bridge, dips south between the houses
+    const off = x >= 20 && x <= 24 ? 1 : 0;
+    P.rect(x, 23 + off, x, 24 + off, '=');
+    if (x === 20 || x === 24) P.set(x, 23, '=');
+  }
+  P.rect(33, 23, 37, 24, '=').set(35, 22, '=').set(33, 25, '=');
+  for (let y = 15; y <= 22; y++) { const off = y >= 18 && y <= 20 ? 1 : 0; P.rect(36 - off, y, 37 - off, y, '='); }
+  for (let y = 14; y <= 22; y++) { const off = y <= 17 ? 1 : 0; P.rect(12 + off, y, 13 + off, y, '='); }
+  P.set(12, 18, '=').set(14, 18, '=');
+  P.rect(9, 14, 12, 15, '=').set(9, 16, '=');   // to the cliffs' stairs
+  P.blob(12.5, 26.5, 3.6, 2.4, 'c');             // village square: bright clearing
+  P.rect(11, 25, 14, 27, 'o');                   // paved core around the well
+  P.rect(8, 27, 9, 27, '=').rect(8, 28, 8, 30, '=');  // to the shop
   P.rect(15, 22, 16, 22, '=').rect(7, 22, 8, 22, '=');  // house fronts
-  P.rect(37, 10, 40, 13, '=', null);    // heights path
+  P.rect(37, 10, 40, 13, '=', null);             // heights path
   P.rect(40, 10, 40, 10, '=', null);
-
+  P.blob(22, 14.6, 2.2, 0.9, 'c');               // fisher's clearing at the pond
+  P.rect(25, 28, 28, 31, ':');                   // graveyard soil
   // --- tall grass ------------------------------------------------------------------------
   P.rect(21, 15, 27, 19, '"').rectIf(20, 16, 28, 18, '"', '.,*');
   P.rect(15, 3, 18, 5, '"');
@@ -75,41 +82,52 @@ export default function build() {
   const O = (t, x, y, o = {}) => objects.push({ t, x, y, ...o });
   const isWater = (x, y) => P.get(x, y) === '~';
 
-  // forest border trees (non-solid: a barrier covers the whole band)
-  const tree = (px, py) => objects.push({ t: 'tree', px, py, solid: false, border: true });
+  // forest border trees (non-solid: a barrier covers the whole band). The camera looks from the south,
+  // so the southern edge only gets a sparse row of small trees and bushes.
+  const tree = (px, py, t = 'tree') => objects.push({ t, px, py, solid: false, border: true });
   for (let x = 0; x < W; x += 2) {
     if (!isWater(x, 1) && !isWater(x + 1, 1)) tree(x * 16 + 16, 28);
     if (!isWater(x + 1, 0) && x + 2 < W) tree(x * 16 + 32, 10);
-    if (!isWater(x, 35) && !isWater(x + 1, 35)) tree(x * 16 + 16, 35 * 16 + 12);
-    if (!isWater(x + 1, 34) && x + 2 < W) tree(x * 16 + 32, 34 * 16 + 8);
   }
-  for (let y = 3; y < 34; y += 2) { tree(16, y * 16 + 12); tree(46 * 16 + 16, y * 16 + 12); }
-  for (let y = 4; y < 33; y += 4) { tree(4, y * 16 + 4); tree(47 * 16 + 12, y * 16 + 4); }
+  for (let x = 1; x < W - 1; x += 3) if (!isWater(x, 35)) tree(x * 16 + 8, 35 * 16 + 12, x % 2 ? 'tree_small' : 'bush');
+  for (let y = 3; y < 33; y += 2) { tree(16, y * 16 + 12); tree(46 * 16 + 16, y * 16 + 12); }
+  for (let y = 4; y < 31; y += 4) { tree(4, y * 16 + 4); tree(47 * 16 + 12, y * 16 + 4); }
   objects.push({ t: 'barrier', x: 0, y: 0, w: W, h: 2 }, { t: 'barrier', x: 0, y: 34, w: W, h: 2 },
     { t: 'barrier', x: 0, y: 0, w: 2, h: H }, { t: 'barrier', x: 46, y: 0, w: 2, h: H });
 
   // --- village Driftwald -------------------------------------------------------------------------
-  O('house', 0, 0, { px: 8 * 16, py: 22 * 16 - 1, id: 'elder' });
-  O('house', 0, 0, { px: 16 * 16, py: 22 * 16 - 1, id: 'mia' });
-  O('house', 0, 0, { px: 6 * 16, py: 31 * 16 - 1, id: 'shop' });
-  O('sign', 4, 22, { text: ['Driftwald', 'Ein ruhiges Dorf am Rande der Welt. Bitte nicht davontreiben.'] });
-  O('sign', 27, 22, { text: ['→ Osten: Steinwacht-Ruine', 'Achtung: Seit Neuestem treiben sich dort Soldaten herum!'] });
-  O('sign', 10, 16, { text: ['↑ Nordklippen', 'Aussichtspunkt. Betreten auf eigene Gefahr.'] });
+  const HOUSES = [{ id: 'elder', x: 8 * 16, y: 22 * 16 - 1 }, { id: 'mia', x: 16 * 16, y: 22 * 16 - 1 }, { id: 'shop', x: 6 * 16, y: 31 * 16 - 1 }];
+  for (const h of HOUSES) O('house', 0, 0, { px: h.x, py: h.y, id: h.id });
+  // props along the house fronts (clusters of 3–4, door kept free)
+  const front = (h, list) => { for (const [t, dx] of list) objects.push({ t, px: h.x + dx, py: h.y + 7 }); };
+  front(HOUSES[0], [['barrel', -26], ['crate', -14], ['flowerbox', 15], ['lantern', 27]]);
+  front(HOUSES[1], [['tools', -26], ['sack', -16], ['flowerbox', 15], ['bench', 32]]);
+  front(HOUSES[2], [['crate', -27], ['crate', -27 + 0.01], ['sack', -15], ['barrel', 15], ['barrel', 27]].filter((v, i) => i !== 1));
+  O('pot', 10, 21); O('pot', 11, 21);
   O('sign', 9, 28, { text: ['Lutz’ Krämerladen', 'Bomben · Kram · Krempel'] });
-  O('statue', 12, 26); O('flower', 11, 25); O('flower', 14, 27); O('flower', 10, 27); O('flower', 15, 25);
-  O('pot', 10, 21); O('pot', 11, 21); O('pot', 18, 21);
-  O('pot', 3, 29); O('pot', 3, 30);
+  // square: well + cart with sacks/hay
+  O('well', 12, 26);
+  O('cart', 15, 27); O('sack', 14, 28); O('hay', 16, 29);
+  O('bench', 9, 25); O('lantern', 10, 24 + 0.0, { py: 25 * 16 + 2 });
+  // crossings: sign + lantern
+  O('sign', 4, 22, { text: ['Driftwald', 'Ein ruhiges Dorf am Rande der Welt. Bitte nicht davontreiben.'] }); O('lantern', 5, 22);
+  O('sign', 27, 22, { text: ['→ Osten: Steinwacht-Ruine', 'Über die Brücke, dann nach Norden die Treppe hinauf.'] }); O('lantern', 28, 22);
+  O('sign', 10, 16, { text: ['↑ Nordklippen', 'Aussichtspunkt. Betreten auf eigene Gefahr.'] }); O('lantern', 11, 16);
   // garden with fence
   for (let x = 18; x <= 23; x++) { if (x !== 20) O('fence_h', x, 27); O('fence_h', x, 32); }
   for (let y = 28; y <= 31; y++) { O('fence_v', 17, y); O('fence_v', 24, y); }
   O('fence_h', 17, 27); O('fence_h', 24, 27); O('fence_h', 17, 32); O('fence_h', 24, 32);
-  for (const [x, y] of [[19, 29], [21, 29], [22, 30], [19, 31], [23, 28], [21, 31]]) O('flower', x, y);
-  O('bush', 22, 28); O('bush', 18, 30);
-  // trees around the village
-  for (const [x, y] of [[3, 20], [4, 26], [3, 32], [11, 32], [16, 31], [26, 26], [27, 32], [19, 20], [25, 21], [5, 19]]) O('tree', x, y);
-  for (const [x, y] of [[13, 30], [14, 32], [9, 33], [27, 29], [26, 20], [20, 24]]) O('tree_small', x, y);
-  for (const [x, y] of [[2, 25], [2, 26], [5, 33], [6, 33], [15, 33], [25, 33], [26, 33], [17, 25], [18, 25], [24, 22], [11, 19], [10, 19]]) O('bush', x, y);
-  O('stump', 22, 25); O('mushroom', 25, 25); O('mushroom', 4, 31);
+  for (const [x, y] of [[19, 29], [19, 30], [21, 29], [22, 29], [22, 30], [21, 31], [23, 31]]) O('flower', x, y);
+  O('bush', 23, 28); O('bush', 18, 31); O('sack', 18, 28);
+  // graveyard at the river side
+  for (const [x, y] of [[25, 29], [27, 29], [25, 31], [27, 31], [26, 28]]) O('gravestone', x, y);
+  O('lantern', 26, 30); O('tree_small', 28, 27);
+  O('sign', 24, 26, { text: ['Friedhof von Driftwald', '„Hier ruhen die Gründer, die das Dorf einst an den Kristall banden.“'] });
+  // trees frame the village (big ones at the sides, few in the south foreground)
+  for (const [x, y] of [[3, 20], [4, 26], [26, 25], [19, 20], [25, 21], [5, 19]]) O('tree', x, y);
+  for (const [x, y] of [[13, 30]]) O('tree_small', x, y);
+  for (const [x, y] of [[2, 25], [2, 26], [17, 25], [18, 25], [24, 22], [11, 19], [10, 19], [3, 31], [3, 32], [12, 32], [15, 31]]) O('bush', x, y);
+  O('stump', 22, 26); O('mushroom', 23, 26); O('mushroom', 4, 31);
 
   // --- meadow & pond ------------------------------------------------------------------------------
   for (const [x, y] of [[15, 9], [27, 6], [14, 13], [26, 12], [17, 16], [28, 14], [19, 2], [23, 2]]) O('tree', x, y);
@@ -117,7 +135,7 @@ export default function build() {
   for (const [x, y] of [[14, 6], [14, 7], [20, 6], [21, 6], [17, 13], [18, 14], [26, 8], [27, 8], [15, 18], [16, 19], [19, 15], [18, 16]]) O('bush', x, y);
   for (const [x, y] of [[24, 14], [25, 14], [13, 4], [28, 18]]) O('rock', x, y);
   O('lilypad', 21, 10); O('lilypad', 23, 11); O('lilypad', 22, 9);
-  for (const [x, y] of [[17, 8], [25, 13], [24, 6], [16, 15]]) O('flower', x, y);
+  for (const [x, y] of [[17, 8], [18, 8], [17, 9]]) O('flower', x, y);
   npcs.push({ t: 'girl', x: 20, y: 29, wander: true }, { t: 'merchant', x: 9, y: 30, dir: 'down' });
   npcs.push({ t: 'elder', x: 20, y: 13, dir: 'up', dialog: 'fisher', sprite: 'npc_elder' });
 
@@ -132,19 +150,20 @@ export default function build() {
   O('rock_cracked', 4, 13, { flag: 'cave_open', reveal: 'cave_entrance', lvl: 0 });
   O('cave_entrance', 4, 13, { lvl: 0, showFlag: 'cave_open' });
   // trees on the cliff foot
-  O('tree', 2, 16); O('tree_small', 7, 15); O('bush', 6, 15); O('bush', 3, 15);
+  O('tree', 2, 16); O('tree_small', 7, 15); O('bush', 6, 15); O('bush', 3, 15); O('flower', 4, 16); O('flower', 5, 16);
 
   // --- river banks ------------------------------------------------------------------------------------
   for (const [x, y] of [[28, 4], [28, 20], [28, 26], [34, 18], [34, 27], [34, 32]]) O('bush', x, y);
   O('rock', 28, 33); O('rock', 34, 30);
 
   // --- east bank & hill ------------------------------------------------------------------------------
-  for (const [x, y] of [[38, 19], [45, 24], [36, 30], [44, 33], [39, 33]]) O('tree', x, y);
+  for (const [x, y] of [[38, 19], [45, 24], [36, 30]]) O('tree', x, y);
   for (const [x, y] of [[35, 25], [36, 26], [38, 25], [44, 25], [45, 29], [37, 32]]) O('bush', x, y);
   O('tree_small', 41, 17); O('tree_small', 44, 18);
   O('chest', 43, 18, { item: 'rupees', amount: 5, text: ['Du hast 5 Rupien gefunden!'] });
   O('rock', 40, 22); O('rock', 41, 22); O('pot', 41, 20);
-  O('sign', 38, 16, { text: ['↑ Steinwacht-Höhen', 'Die alte Ruine wurde einst von Steinhütern bewacht.'] });
+  O('sign', 38, 16, { text: ['↑ Steinwacht-Ruine', 'Die Treppe hinauf, dann weiter nach Norden. Die Ruine wurde einst von Steinhütern bewacht.'] });
+  O('lantern', 35, 16); O('sign', 34, 22, { text: ['↑ Steinwacht-Ruine', '← Driftwald'] });
 
   // --- Steinwacht-Höhen ---------------------------------------------------------------------------------
   for (const [x, y] of [[35, 7], [45, 4], [45, 13]]) O('tree', x, y);
@@ -172,13 +191,15 @@ export default function build() {
     rows: P.rows(), heights: P.heights(),
     objects, enemies, npcs,
     warps: [
-      { x: 7.6, y: 21.7, w: 0.8, h: 0.7, to: 'house_elder', spawn: 'door', dirReq: 'up' },
+      { x: 7.6, y: 21.7, w: 0.8, h: 0.6, to: 'house_elder', spawn: 'door', dirReq: 'up' },
+      { x: 15.6, y: 21.7, w: 0.8, h: 0.6, dirReq: 'up', hint: 'Die Tür ist verschlossen. Mia ist draußen im Garten.' },
+      { x: 5.6, y: 30.7, w: 0.8, h: 0.6, dirReq: 'up', hint: 'Geschlossen – Lutz verkauft heute draußen vor dem Laden.' },
       { x: 4, y: 14, w: 1, h: 0.5, to: 'cave', spawn: 'entry', dirReq: 'up', needFlag: 'cave_open' },
       { x: 40, y: 5, w: 1, h: 0.5, to: 'dungeon_1', spawn: 'entry', dirReq: 'up' },
     ],
     spawns: {
       start: { x: 8 * 16, y: 23 * 16 + 4, dir: 'down' },
-      house: { x: 8 * 16, y: 22 * 16 + 6, dir: 'down' },
+      house: { x: 8 * 16, y: 22 * 16 + 10, dir: 'down' },
       cave: { x: 4 * 16 + 8, y: 14 * 16 + 10, dir: 'down' },
       dungeon: { x: 40 * 16 + 8, y: 5 * 16 + 11, dir: 'down' },
     },

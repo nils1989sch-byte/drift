@@ -15,7 +15,10 @@ function eye(f, x, y, rx, ry, look = [0, 0], o = {}) {
   f.ell(x + look[0] * rx * 0.35, y + look[1] * ry * 0.3 + 0.3, rx * 0.55, ry * 0.62, M.eye, { tone: 0 });
   if (!o.noGlint) f.touch(x - rx * 0.3, y - ry * 0.35, { m: M.glint, t: 0 });
 }
+const SPIT = new Map();
 function spitter(dir, step, puff = 0) {
+  const key = `${step}|${puff}`;
+  if (dir === 'right' && SPIT.has(key)) { const f = SPIT.get(key); SPIT.delete(key); f.flip(); return f.canvas(15, 30); }
   const f = new Fig(32, 32);
   const [dx, dy] = D[dir];
   const side = dir === 'left' || dir === 'right';
@@ -59,6 +62,7 @@ function spitter(dir, step, puff = 0) {
   f.chain([[cx + 0.8, sy - 2, 0.8], [cx - 2.4, sy - 4 + sw, 1.8], [cx - 5.2, sy - 3.2 + sw, 0.6]], M.leaf, { flat: 0.3 });
   f.chain([[cx + 0.8, sy - 2, 0.8], [cx + 3.6, sy - 4.6 - sw, 1.6], [cx + 6, sy - 4.2 - sw, 0.5]], M.leaf, { flat: 0.3, bias: 0.3 });
   if (dir === 'right') { f.flip(); return f.canvas(15, 30); }
+  if (dir === 'left') { const c = f.canvas(16, 30, { release: false }); SPIT.set(key, f); return c; }
   return f.canvas(16, 30);
 }
 function pebble(k) {
@@ -103,7 +107,7 @@ function batF(k) {
     const tips = up
       ? [[16 + s * 13.5, by - 9], [16 + s * 14.5, by - 2.5], [16 + s * 11, by + 2], [16 + s * 7, by + 2.6]]
       : [[16 + s * 14, by + 1], [16 + s * 12.6, by + 6.4], [16 + s * 9, by + 8], [16 + s * 5.6, by + 5.4]];
-    f.poly([[sx, sy - 1.5], ...tips, [sx, sy + 3]], M.membrane, { nf: (x, y) => [s * 0.25, up ? -0.35 : 0.1, 0.9], bias: -0.2 });
+    f.poly([[sx, sy - 1.5], ...tips, [sx, sy + 3]], M.membrane, { n: [s * 0.25, up ? -0.35 : 0.1, 0.9], bias: -0.2 });
     // scallop the trailing edge
     for (let i = 0; i < 3; i++) { const a = tips[i + 1], b = tips[i]; const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; f.ell(mx - s * 0.4, my - 0.4 + (up ? 0 : -0.8), 1.6, 1.4, M.membrane, { tone: -1 }); for (let yy = -1; yy <= 1; yy++) for (let xx = -1; xx <= 1; xx++) if (Math.abs(xx) + Math.abs(yy) < 2) f.erase(Math.round(mx) + xx - s * 0.5, Math.round(my) + yy + (up ? 0.6 : 0.4)); }
     // bones

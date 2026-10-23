@@ -155,10 +155,11 @@ export function drawHead(f, view, hc, look, pose = {}) {
 
 // ---------------- parts ----------------
 function torsoN(cx, cy, hw, hh) {
+  const N = [0, 0, 1];
   return (x, y) => {
     const u = Math.max(-1, Math.min(1, (x + 0.5 - cx) / hw)), v = Math.max(-1, Math.min(1, (y + 0.5 - cy) / hh));
     const nx = u * 0.9, ny = -0.25 + v * 0.35;
-    return [nx, ny, Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny))];
+    N[0] = nx; N[1] = ny; N[2] = Math.sqrt(Math.max(0.05, 1 - nx * nx - ny * ny)); return N;
   };
 }
 
@@ -185,7 +186,7 @@ function leg(f, J, hip, foot, look, view, near, o = {}) {
     f.limb(hip[0], hip[1], kn[0], kn[1], 2.5, 2.2, pm, { grp: g, bias: near ? 0 : -0.9 });
     f.limb(kn[0], kn[1], fx, ay, 2.2, 1.9, pm, { grp: g, bias: near ? 0 : -0.9 });
   } else {
-    f.limb(hip[0], hip[1], fx, ay, 2.6, 2.1, pm, { grp: g, bias: o.bias ?? 0 });
+    f.limb(hip[0], hip[1], fx, ay, 2.4, 1.9, pm, { grp: g, bias: o.bias ?? 0 });
   }
   if (!look.noBoots) boot(f, view, fx, fy, lift, look.boot ?? M.boot, { grp: f.newGroup(), toe: -1 });
 }
@@ -319,8 +320,8 @@ function jacket(f, J, view, look, pose) {
   const g = f.poly(pts, jm, { nf });
   if (view === 'down' && look.shirt) {
     // open front: shirt V + lapels
-    f.poly([[cx - 2.6, top], [cx + 2.6, top], [cx + 1.6, bot + 1], [cx - 1.6, bot + 1]], look.shirt, { nf, grp: g });
-    for (let y = Math.round(top); y < bot; y++) { const w = lerp(2.6, 1.6, (y - top) / (bot - top)); f.touch(cx - w - 0.5, y, { b: 1.2 }); f.touch(cx + w - 0.5, y, { b: -1 }); }
+    f.poly([[cx - 2.2, top], [cx + 2.2, top], [cx + 1.1, bot + 1], [cx - 1.1, bot + 1]], look.shirt, { nf, grp: g });
+    for (let y = Math.round(top); y < bot; y++) { const w = lerp(2.2, 1.1, (y - top) / (bot - top)); f.touch(cx - w - 0.5, y, { b: 1.2 }); f.touch(cx + w - 0.5, y, { b: -1 }); }
     if (look.laces) for (let y = Math.round(top + 2); y < bot - 1; y += 2) f.touch(cx - 0.5, y, { b: -1 });
   }
   if (view === 'up') { // back seam + shoulder yoke

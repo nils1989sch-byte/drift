@@ -32,6 +32,18 @@ export const OBJ = {
   switch:      { sprite: 'switch_up', solid: false, shadow: false, layer: 'floor', foot: [8, 12] },
   portal:      { sprite: 'portal', solid: false, shadow: false, layer: 'floor', foot: [8, 10], fps: 8 },
   barrier:     { sprite: null, shadow: false },
+  // village props (solid, small foot boxes)
+  barrel:      { sprite: 'barrel', box: [-6, -6, 12, 7], shadow: 5 },
+  crate:       { sprite: 'crate', box: [-7, -7, 14, 8], shadow: 6 },
+  sack:        { sprite: 'sack', box: [-5, -5, 10, 6], shadow: 4 },
+  hay:         { sprite: 'hay', box: [-7, -6, 14, 7], shadow: 6 },
+  cart:        { sprite: 'cart', box: [-13, -7, 26, 8], foot: [16, 14], shadow: 12 },
+  well:        { sprite: 'well', box: [-12, -10, 24, 11], foot: [16, 15], shadow: 12 },
+  gravestone:  { sprite: 'gravestone', box: [-6, -5, 12, 6], shadow: 5 },
+  lantern:     { sprite: 'lantern', box: [-3, -4, 6, 5], shadow: 3, fps: 5 },
+  tools:       { sprite: 'tools', box: [-6, -4, 12, 5], shadow: false },
+  bench:       { sprite: 'bench', box: [-10, -4, 20, 5], foot: [16, 14], shadow: 8 },
+  flowerbox:   { sprite: 'flowerbox', box: [-7, -5, 14, 6], shadow: false },
 };
 
 export class Obj extends Entity {

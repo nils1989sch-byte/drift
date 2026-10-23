@@ -9,7 +9,6 @@ import { Pickup } from './entities/pickups.js';
 import { Bomb } from './entities/objects.js';
 import { damage, sameLayer } from './combat.js';
 import { safe, TILE, overlap, chance, choice, pointIn } from './util.js';
-import { blocked } from './collision.js';
 import { saveGame, loadGame, hasSave, clearSave } from './save.js';
 
 // our sound names → audio module names (docs/ANIMATION.md)
@@ -418,15 +417,19 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
       if (x == null) return g.loadMap(mapId);
       const ok = g.loadMap(mapId, { x: x * TILE + 8, y: y * TILE + 10, dir: player.dir });
       // nudge to the nearest free cell (not in trees/bushes/water/pits)
+      // (only objects, pits and water count – wall tiles are left alone so QA can stand right at a wall)
       const free = (cx, cy) => {
         const w = g.world, d = w.def(cx, cy);
-        if (!w.inside(cx, cy) || d.solid || d.pit) return false;
-        const probe = { ...player, x: cx * TILE + 8, y: cy * TILE + 10, lvl: w.heightAt(cx, cy), foot: player.foot };
-        return !blocked(g, probe, probe.x, probe.y);
+        if (!w.inside(cx, cy) || d.pit || d.water) return false;
+        const fr = { x: cx * TILE + 3, y: cy * TILE + 5, w: 10, h: 6 }, lv = w.heightAt(cx, cy);
+        return !g.solids.some((s) => s.solid && !s.dead && (s.lvl === -1 ? !s.hidden || s.type !== 'barrier' : s.lvl === lv) && s.type !== 'barrier' && overlap(fr, s.solidBox()));
       };
       if (!free(x, y)) {
-        outer: for (let r = 1; r < 8; r++) for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !free(x + dx, y + dy)) continue;
+        const cand = [];
+        for (let dy = -7; dy <= 7; dy++) for (let dx = -7; dx <= 7; dx++) if (dx || dy) cand.push([dx, dy]);
+        cand.sort((a, b) => Math.hypot(...a) - Math.hypot(...b));
+        outer: for (const [dx, dy] of cand) {
+          if (!free(x + dx, y + dy)) continue;
           player.place((x + dx) * TILE + 8, (y + dy) * TILE + 10, player.dir); safe(camera, 'snap'); break outer;
         }
       }
