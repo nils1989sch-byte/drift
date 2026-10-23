@@ -10,6 +10,7 @@
 //   dir:      false = sprite key has no direction suffix (hero_fall, slime_idle …); default: try both
 //   fallback: list of other actions whose SPRITES are used if this action has none (timing/events stay this one's)
 //   key:      explicit sprite-key base (instead of `${name}_${action}`)
+//   pick:     use only these frame indices of the sprite (e.g. carry_idle = first carry frame)
 
 export const MIN_MS = 33;
 export const DEFAULT_DEF = { ms: 120, loop: true };
@@ -18,17 +19,17 @@ const fx = (n, ms) => ({ ms: Array(n).fill(ms), loop: false, dir: false });
 
 export const ANIM_DEFS = {
   hero: {
-    idle:     { ms: [600, 600], loop: true },
-    walk:     { ms: Array(6).fill(90), loop: true, events: { 0: 'step', 3: 'step' } },
+    idle:     { ms: [300, 300, 300, 300], loop: true },
+    walk:     { ms: Array(8).fill(68), loop: true, events: { 0: 'step', 4: 'step' } },
     attack:   { ms: [40, 40, 50, 60, 80], loop: false, events: { 0: 'swing', 2: 'hit' }, fallback: ['idle'] },
     spin:     { ms: Array(8).fill(40), loop: false, dir: false, events: { 0: 'hit', 2: 'hit', 4: 'hit', 6: 'hit' }, fallback: ['attack', 'idle'] },
     charge:   { ms: [80, 80], loop: true, fallback: ['attack', 'idle'] },
     hurt:     { ms: [60, 60], loop: true, fallback: ['idle'] },
     lift:     { ms: [80, 80, 80], loop: false, events: { 2: 'lifted' }, fallback: ['idle'] },
     carry:    { ms: Array(4).fill(110), loop: true, events: { 0: 'step', 2: 'step' }, fallback: ['walk', 'idle'] },
-    carry_idle: { ms: [600], loop: true, key: 'hero_carry', fallback: ['idle'] },
+    carry_idle: { ms: [600], loop: true, key: 'hero_carry', pick: [0], fallback: ['idle'] },
     throw:    { ms: [60, 120], loop: false, events: { 0: 'release' }, fallback: ['attack', 'idle'] },
-    push:     { ms: Array(4).fill(130), loop: true, events: { 0: 'step', 2: 'step' }, fallback: ['walk'] },
+    push:     { ms: Array(4).fill(130), loop: true, frames: 4, events: { 0: 'step', 2: 'step' }, fallback: ['walk'] },
     item_get: { ms: [1200], loop: false, dir: false, fallback: ['idle'] },
     fall:     { ms: [120, 120, 120, 120], loop: false, dir: false, fallback: ['hurt', 'idle'] },
     dead:     { ms: [150, 150, 900], loop: false, dir: false, fallback: ['hurt', 'idle'] },
@@ -43,7 +44,7 @@ export const ANIM_DEFS = {
   octorok_rock: { idle: { ms: [70, 70], loop: true, dir: false, key: 'octorok_rock' } },
   soldier: {
     walk:   { ms: Array(4).fill(125), loop: true, events: { 0: 'step', 2: 'step' } },
-    idle:   { ms: [500], loop: true, fallback: ['walk'] },
+    idle:   { ms: [500, 500], loop: true, fallback: ['walk'] },
     attack: { ms: [120, 260], loop: false, events: { 1: 'hit' }, fallback: ['walk'] },
     hurt:   { ms: [60, 60], loop: true, fallback: ['walk'] },
   },
@@ -54,28 +55,27 @@ export const ANIM_DEFS = {
   },
   bat: {
     fly:  { ms: [80, 80], loop: true, dir: false, events: { 0: 'flap' } },
-    idle: { ms: [80, 80], loop: true, dir: false, fallback: ['fly'] },
     hurt: { ms: [60, 60], loop: true, dir: false, fallback: ['fly'] },
   },
   boss_golem: {
     idle:   { ms: [420, 420], loop: true, dir: false, events: { 0: 'stomp' } },
     walk:   { ms: [260, 260], loop: true, dir: false, events: { 0: 'stomp', 1: 'stomp' }, fallback: ['idle'] },
     attack: { ms: [360, 90, 520], loop: false, dir: false, events: { 1: 'hit' }, fallback: ['idle'] },
-    hurt:   { ms: [70, 70], loop: true, dir: false, fallback: ['idle'] },
+    hurt:   { ms: [140], loop: true, dir: false, fallback: ['idle'] },
   },
-  npc_elder:    { idle: { ms: [500, 500], loop: true } },
-  npc_girl:     { idle: { ms: [500, 500], loop: true } },
-  npc_merchant: { idle: { ms: [500, 500], loop: true } },
+  npc_elder:    { idle: { ms: [500, 500], loop: true }, walk: { ms: Array(4).fill(140), loop: true, events: { 0: 'step', 2: 'step' }, fallback: ['idle'] } },
+  npc_girl:     { idle: { ms: [500, 500], loop: true }, walk: { ms: Array(4).fill(140), loop: true, events: { 0: 'step', 2: 'step' }, fallback: ['idle'] } },
+  npc_merchant: { idle: { ms: [500, 500], loop: true }, walk: { ms: Array(4).fill(140), loop: true, events: { 0: 'step', 2: 'step' }, fallback: ['idle'] } },
 
   // objects (sprite key = name itself)
-  flower:      { idle: { ms: [320, 320, 320], loop: true, dir: false, key: 'flower' } },
+  flower:      { idle: { ms: [320, 320, 320, 320], loop: true, dir: false, key: 'flower' } },
   torch:       { idle: { ms: [90, 90, 90, 90], loop: true, dir: false, key: 'torch' } },
   bomb:        { idle: { ms: [80, 80, 80], loop: true, dir: false, key: 'bomb' } },
-  rupee_green: { idle: { ms: [600, 120, 120, 120], loop: true, dir: false, key: 'rupee_green' } },
-  rupee_blue:  { idle: { ms: [600, 120, 120, 120], loop: true, dir: false, key: 'rupee_blue' } },
-  rupee_red:   { idle: { ms: [600, 120, 120, 120], loop: true, dir: false, key: 'rupee_red' } },
-  heart_container: { idle: { ms: [400, 120], loop: true, dir: false, key: 'heart_container' } },
-  water_lily:  { idle: { ms: [700, 700], loop: true, dir: false, key: 'lilypad' } },
+  rupee_green: { idle: { ms: [600, 120, 120], loop: true, dir: false, key: 'rupee_green' } },
+  rupee_blue:  { idle: { ms: [600, 120, 120], loop: true, dir: false, key: 'rupee_blue' } },
+  rupee_red:   { idle: { ms: [600, 120, 120], loop: true, dir: false, key: 'rupee_red' } },
+  heart_container: { idle: { ms: [400, 120, 120, 120], loop: true, dir: false, key: 'heart_container' } },
+  water_lily:  { idle: { ms: [700], loop: true, dir: false, key: 'lilypad' } },
 
   // effects (usually driven by createFX, listed for the demo / direct use)
   fx_slash:     { idle: { ms: [40, 40, 40], loop: false, key: 'fx_slash' } },

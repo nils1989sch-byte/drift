@@ -111,6 +111,10 @@ export class Animator {
       if (!f) { const p = getPlaceholder(); f = p ? [p] : [null]; }
       found = { frames: f, flip: false };
     }
+    if (def.pick && real) {
+      const sub = def.pick.map((i) => found.frames[Math.min(found.frames.length - 1, i)]).filter(Boolean);
+      if (sub.length) found = { ...found, frames: sub };
+    }
     const n = found.frames.length;
     const msArr = Array.isArray(def.ms) ? def.ms : Array(def.frames || n).fill(def.ms ?? DEFAULT_DEF.ms);
     const expected = def.frames || msArr.length;

@@ -49,12 +49,14 @@ export function blocked(g, e, x, y) {
   }
   const lvl = e.lvl;
   const cs = onStairs(world, e);
+  const ccs = world.def(cellOf(e.x), cellOf(centerY(e))).stairs;
   // cells the foot box overlaps right now: leaving a stairs column must never get stuck on its rim
   let cur = null;
   for (const [px, py] of pts) {
     const tx = cellOf(px), ty = cellOf(py);
-    if (cellOk(world, tx, ty, lvl, cs, e)) continue;
-    if (cs && world.heightAt(tx, ty) === lvl + 1 && !world.def(tx, ty).solid) {
+    if (cellOk(world, tx, ty, lvl, ccs, e)) continue;
+    const hh = world.heightAt(tx, ty);
+    if (cs && (hh === lvl + 1 || hh === lvl - 1) && !world.def(tx, ty).solid) {
       if (!cur) { const fb0 = e.foot || FOOT; cur = new Set(); for (const qx of [e.x - fb0.hw, e.x + fb0.hw - 0.01]) for (const qy of [e.y - fb0.top, e.y + fb0.bottom - 0.01]) cur.add(cellOf(qx) + ',' + cellOf(qy)); }
       if (cur.has(tx + ',' + ty)) continue;
     }

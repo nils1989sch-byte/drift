@@ -60,7 +60,12 @@ for (const key of Object.keys(S)) {
   const name = defNames.find((n) => base === n || base.startsWith(n + '_'));
   if (name && base !== name) addGroup(name, base.slice(name.length + 1), !!dir);
   else if (name && base === name && ANIM_DEFS[name].idle?.key) addGroup(name, 'idle', false);
-  else if (!name) { const i = base.indexOf('_'); if (dir && i > 0) addGroup(base.slice(0, i), base.slice(i + 1), true); else addGroup(base, 'idle', !!dir); }
+  else if (!name) {
+    // directional only if the base exists in ≥3 directions (switch_up/switch_down are two objects, not directions)
+    const nd = dir ? ['down', 'up', 'left', 'right'].filter((d) => S[base + '_' + d]).length : 0;
+    if (dir && nd < 3) addGroup(key, 'idle', false);
+    else { const i = base.indexOf('_'); if (dir && i > 0) addGroup(base.slice(0, i), base.slice(i + 1), true); else addGroup(base, 'idle', !!dir); }
+  }
 }
 
 // ---------- layout ----------

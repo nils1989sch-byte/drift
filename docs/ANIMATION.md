@@ -28,13 +28,13 @@ werden – `attack` feuert also `'hit'` und wird `done`, selbst ohne Angriffs-Ar
 
 | Entity | Aktionen (ms/Frame, Modus, Events) |
 |---|---|
-| hero | idle 600 loop · walk 6×90 loop `step`@0,3 · attack 40/40/50/60/80 once `swing`@0 `hit`@2 · spin 8×40 once `hit`@0,2,4,6 · charge · hurt 2×60 loop · lift 3×80 once `lifted`@2 · carry 4×110 loop `step` · carry_idle · throw 60/120 once `release`@0 · push 4×130 `step` · item_get 1200 once · fall 4×120 once · dead 150/150/900 once · swim `stroke` |
+| hero | idle 4×300 loop · walk 8×68 loop `step`@0,4 · attack 40/40/50/60/80 once `swing`@0 `hit`@2 · spin 8×40 once `hit`@0,2,4,6 · charge · hurt 2×60 loop · lift 3×80 once `lifted`@2 · carry 4×110 loop `step` · carry_idle (1. Carry-Frame, `pick:[0]`) · throw 60/120 once `release`@0 · push 4×130 `step` · item_get 1200 once · fall 4×120 once · dead 150/150/900 once · swim `stroke` |
 | octorok | walk 2×150 · idle · attack once `shoot`@1 · hurt |
-| soldier | walk 4×125 `step` · idle · attack 120/260 once `hit`@1 · hurt |
+| soldier | walk 4×125 `step` · idle 2×500 · attack 120/260 once `hit`@1 · hurt |
 | slime | idle 3×180 `hop`@1 · walk · hurt |
-| bat | fly 2×80 `flap` |
+| bat | fly 2×80 `flap` · hurt (idle → fly per generischem Fallback) |
 | boss_golem | idle 2×420 `stomp` · walk `stomp` · attack 360/90/520 once `hit`@1 · hurt |
-| npc_elder/girl/merchant | idle 2×500 |
+| npc_elder/girl/merchant | idle 2×500 · walk 4×140 loop `step`@0,2 (alle 4 Richtungen) |
 | Objekte | flower, torch, bomb, rupee_green/blue/red, heart_container (`new Animator(assets,'torch')` → Key `torch`) |
 
 `TIMING` (aus defs): `hitstop 0.05, knockback 0.22, knockbackDist 20, invuln 1.0, blinkHz 10, flash 0.12, itemGetHold 1.2, walkSpeed 85`.
