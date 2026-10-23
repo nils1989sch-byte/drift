@@ -300,7 +300,7 @@ S('corner_slide', async ({ page, assert, ev }) => {
 
 // Random walk with invariant: the player never stands inside a solid tile/object.
 const RW_MAPS = [
-  ['overworld', 12, 23], ['overworld', 22, 16], ['overworld', 8, 10], ['overworld', 38, 11], ['overworld', 36, 26], ['overworld', 14, 27],
+  ['overworld', 12, 23], ['overworld', 22, 16], ['overworld', 6, 24], ['overworld', 12, 27], ['overworld', 20, 29], ['overworld', 26, 29], ['overworld', 16, 22], ['overworld', 36, 22], ['overworld', 8, 10], ['overworld', 38, 11], ['overworld', 36, 26], ['overworld', 14, 27],
   ['house_elder', 5, 6], ['cave', 6, 7], ['dungeon_1', 8, 10], ['dungeon_2', 7, 9], ['dungeon_3', 7, 10], ['dungeon_4', 8, 11],
 ];
 S('random_walk_collision', async ({ page, assert, note, ev }) => {
@@ -366,6 +366,85 @@ S('random_walk_collision', async ({ page, assert, note, ev }) => {
   }
 });
 
+// Walkable reachability (4-px grid, real move()/blocked() rules, no slides/jumps) from the start spawn.
+S('reachability_overworld', async ({ page, assert, note, ev }) => {
+  await newGame(page);
+  const r = await ev(() => {
+    const g = __drift.game, col = __qa.col;
+    __qa.tp('overworld'); g.debug.godMode(true);
+    const w = g.world, st = g.mapDef.spawns.start;
+    const probe = { x: st.x, y: st.y, lvl: 0, foot: col.FOOT, kind: 'probe' };
+    probe.lvl = col.levelUnder(w, probe);
+    const key = (x, y, l) => `${x},${y},${l}`;
+    const seen = new Set([key(st.x, st.y, probe.lvl)]), q = [[st.x, st.y, probe.lvl]], cells = new Map();
+    const S = 4;
+    while (q.length) {
+      const [x, y, l] = q.shift();
+      const c = Math.floor(x / 16) + ',' + Math.floor((y - 2) / 16);
+      cells.set(c, Math.max(cells.get(c) ?? -1, l));
+      for (const [dx, dy] of [[S, 0], [-S, 0], [0, S], [0, -S]]) {
+        probe.x = x; probe.y = y; probe.lvl = l;
+        col.move(g, probe, dx, dy);
+        if (Math.abs(probe.x - (x + dx)) > 0.01 || Math.abs(probe.y - (y + dy)) > 0.01) continue;
+        const k = key(probe.x, probe.y, probe.lvl);
+        if (seen.has(k)) continue;
+        seen.add(k); q.push([probe.x, probe.y, probe.lvl]);
+      }
+    }
+    // interaction / goal spots: tile in front of each sign/chest/NPC, warps
+    const goals = [];
+    for (const o of g.objects) if (['sign', 'chest'].includes(o.type) && !o.hidden) goals.push({ what: o.type + (o.spec.text ? ':' + String(o.spec.text[0]).slice(0, 24) : ''), tx: Math.floor(o.x / 16), ty: Math.floor(o.y / 16) });
+    for (const n of g.npcs) goals.push({ what: 'npc:' + n.spec.t, tx: Math.floor(n.x / 16), ty: Math.floor(n.y / 16) });
+    for (const wp of g.mapDef.warps) goals.push({ what: 'warp:' + (wp.to || 'hint'), tx: Math.floor(wp.x), ty: Math.floor(wp.y), warp: true });
+    const res = goals.map((gl) => {
+      const near = [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => cells.has(`${gl.tx + dx},${gl.ty + dy}`));
+      return { ...gl, reachable: near };
+    });
+    // map cells that are walkable-looking (non-solid, not water) but never reached: candidate dead zones
+    let open = 0;
+    const dead = [];
+    for (let ty = 2; ty < w.h - 2; ty++) for (let tx = 2; tx < w.w - 2; tx++) {
+      const d = w.def(tx, ty); if (d.solid || d.water) continue;
+      const blockedByObj = g.solids.some((s) => s.solid && !s.dead && s.lvl !== -1 && Math.floor(s.x / 16) === tx && Math.floor(s.y / 16) === ty);
+      if (blockedByObj) continue;
+      open++; if (!cells.has(tx + ',' + ty)) dead.push([tx, ty]);
+    }
+    g.debug.godMode(false);
+    return { nodes: seen.size, cells: cells.size, open, goals: res, dead };
+  });
+  note(`reachability: ${r.cells}/${r.open} open cells reachable by walking (${r.nodes} nodes)`);
+  for (const gl of r.goals) assert(gl.reachable || gl.what === 'warp:cave', `reachable: ${gl.what} @${gl.tx},${gl.ty}`, gl);
+  if (r.dead.length) note('open cells never reached by walking (enclosed by props/cliffs, or only via ledge jump)', r.dead.map((c) => c.join(',')).join(' '));
+});
+
+// A wandering NPC (Mia) can walk into the player – can the player still walk away?
+S('npc_walks_into_player', async ({ page, assert, note, ev }) => {
+  await newGame(page);
+  const r = await ev(() => {
+    const g = __drift.game, p = __qa.p(), out = [];
+    for (const [ox, oy] of [[0, -4], [4, 0], [0, 5], [-6, 0]]) {
+      __qa.tp('overworld', 20, 29, true);
+      const mia = g.npcs.find((n) => n.spec.t === 'girl');
+      mia.wander = false; mia.walking = false;
+      mia.x = p.x + ox; mia.y = p.y + oy;
+      __qa.run(1);
+      const overlap = /npc/.test(__qa.playerStuck() || '');
+      const x0 = p.x, y0 = p.y, esc = [];
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { p.x = x0; p.y = y0; __qa.run(20, () => ({ x: dx, y: dy })); esc.push(Math.hypot(p.x - x0, p.y - y0) > 2); }
+      out.push({ off: [ox, oy], overlap, escapes: esc.filter(Boolean).length });
+    }
+    // natural: how often does wandering Mia end up overlapping a standing player?
+    __qa.tp('overworld', 20, 29, true);
+    const mia = g.npcs.find((n) => n.spec.t === 'girl');
+    p.x = mia.home.x + 10; p.y = mia.home.y; let frames = 0;
+    __qa.run(3600, null, () => { if (/npc/.test(__qa.playerStuck() || '')) frames++; return null; });
+    return { cases: out, overlapFramesPerMinute: frames };
+  });
+  for (const c of r.cases) if (c.overlap) assert(c.escapes >= 1, `player overlapped by NPC at offset ${c.off} can walk away`, c);
+  note('NPC overlap cases', r.cases);
+  note('standing next to wandering Mia for 60 s: frames with NPC overlap', r.overlapFramesPerMinute);
+});
+
 S('stairs_height', async ({ page, assert, ev }) => {
   await newGame(page);
   const r = await ev(() => {
@@ -415,7 +494,7 @@ S('stairs_height', async ({ page, assert, ev }) => {
 });
 
 // Leaving a stairs cell downwards while the foot box still overlaps the plateau cell beside the stairs.
-S('stairs_side_exit', async ({ page, assert, ev }) => {
+S('stairs_side_exit', async ({ page, assert, note, ev }) => {
   await newGame(page);
   const r = await ev(() => {
     const p = __qa.p(), out = [];
@@ -442,8 +521,25 @@ S('stairs_side_exit', async ({ page, assert, ev }) => {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]]) { p.x = x0; p.y = y0; __qa.run(20, () => ({ x: dx, y: dy })); esc.push(Math.hypot(p.x - x0, p.y - y0) > 2); }
       out.push({ name: `walk down nord stairs, off ${off}px`, stuck: stuckAt?.s || null, snap: stuckAt?.snap, canLeave: esc.some(Boolean), escapes: esc.filter(Boolean).length });
     }
+    // every staircase on the map: walk down from above and up from below with offsets −7…7 px
+    const w = __drift.game.world, stairs = [];
+    for (let ty = 0; ty < w.h; ty++) for (let tx = 0; tx < w.w; tx++) if (w.def(tx, ty).stairs && w.heightAt(tx, ty + 1) === w.heightAt(tx, ty) - 1) stairs.push([tx, ty]);
+    const sweep = [];
+    for (const [tx, ty] of stairs) for (const off of [-7, -5, -3, 0, 3, 5, 7]) for (const dir of [1, -1]) {
+      __qa.tp('overworld', tx, dir > 0 ? ty - 1 : ty + 1, true);
+      p.x = tx * 16 + 8 + off; p.y = (dir > 0 ? ty - 1 : ty + 1) * 16 + 10; p.lvl = __qa.col.levelUnder(w, p);
+      if (__qa.playerStuck()) continue;                 // start spot blocked by a prop → skip
+      const l0 = p.lvl; let stuck = null;
+      __qa.run(70, () => ({ y: dir }), () => { const s = __qa.playerStuck(); if (s) { stuck = s; return 'STUCK'; } return null; });
+      sweep.push({ stair: `${tx},${ty}`, off, dir: dir > 0 ? 'down' : 'up', l0, l1: p.lvl, state: p.state, stuck });
+    }
+    out.push({ sweep });
     return out;
   });
+  const sw = r.pop().sweep;
+  const bad = sw.filter((c) => c.stuck), noChange = sw.filter((c) => !c.stuck && c.l1 === c.l0 && c.state !== 'jump');
+  assert(bad.length === 0, `stairs sweep (${sw.length} runs over all staircases): never stuck`, bad.slice(0, 5));
+  note('stairs sweep: runs that did not change level (blocked by the cliff next to the stairs = expected for big offsets)', noChange.map((c) => `${c.stair} ${c.dir} ${c.off}px`).join(' | '));
   for (const c of r) { assert(!c.stuck, `${c.name}: walking straight down off misaligned (4px) stairs does not get stuck`, c); assert(c.canLeave, `${c.name}: can escape afterwards (any direction)`, c.snap); }
 });
 
@@ -707,10 +803,24 @@ S('chest_sign_npc', async ({ page, assert, note, ev }) => {
     __qa.tp('overworld', 9, 31);
     __qa.face('up'); __qa.tap('action', 5);
     out.merchant = __drift.ui.state; await __qa.clearDialogs();
-    // merchant with bombs & rupees: does buying ask for confirmation?
-    g.debug.give('bombs', 1); p.rupees = 50;
-    __qa.tap('action', 5); await __qa.clearDialogs();
-    out.buy = { rupees: p.rupees, bombs: p.bombs };
+    // merchant with bombs & rupees: Ja/Nein choice
+    g.debug.give('bombs', 1); p.bombs = 1; p.rupees = 50;
+    const talkChoose = async (down) => {
+      __qa.tap('action', 2);
+      await __qa.flush();
+      const opened = __drift.ui.state === 'dialog';
+      __qa.run(240);                       // let the typewriter finish → choice box opens
+      if (down) __qa.tap('down', 4);
+      __qa.tap('attack', 4);
+      await __qa.clearDialogs();
+      return { opened, rupees: p.rupees, bombs: p.bombs, state: p.state, ui: __drift.ui.state };
+    };
+    out.buyNo = await talkChoose(true);
+    out.buyYes = await talkChoose(false);
+    p.rupees = 5;
+    out.buyPoor = await talkChoose(false);
+    p.bombs = p.maxBombs; p.rupees = 50;
+    out.buyFull = await talkChoose(false);
     // Mia
     __qa.tp('overworld', 20, 30);
     const mia = g.npcs.find((n) => n.spec.t === 'girl');
@@ -723,7 +833,11 @@ S('chest_sign_npc', async ({ page, assert, note, ev }) => {
   assert(r.chestReload === true, 'chest stays open after re-entering', r.chestReload);
   assert(r.sign === 'dialog', 'signs can be read', r.sign);
   assert(r.merchant === 'dialog', 'merchant talks', r.merchant);
-  note('merchant purchase without a yes/no choice', r.buy);
+  assert(r.buyNo.opened && r.buyNo.rupees === 50 && r.buyNo.bombs === 1, 'merchant: "Nein" buys nothing', r.buyNo);
+  assert(r.buyYes.rupees === 30 && r.buyYes.bombs === 6, 'merchant: "Ja" buys 5 bombs for 20 rupees', r.buyYes);
+  assert(r.buyPoor.rupees === 5 && r.buyPoor.bombs === 6, 'merchant: not enough rupees → no purchase', r.buyPoor);
+  assert(r.buyFull.rupees === 50, 'merchant: full bomb bag → no purchase', r.buyFull);
+  assert([r.buyNo, r.buyYes, r.buyPoor, r.buyFull].every((b) => b.state === 'normal' && b.ui === 'hud'), 'merchant: player free after every dialog');
 });
 
 S('dungeon_full_run', async ({ page, assert, note, ev }) => {
@@ -976,19 +1090,26 @@ S('warps_roundtrip', async ({ page, assert, note, ev }) => {
     __qa.tp('dungeon_1', 12, 2); out.push(go(0, -1)); out.push(go(0, 1));
     g.debug.setFlag('d3_wall', true);
     __qa.tp('dungeon_3', 7, 2); out.push(go(0, -1)); out.push(go(0, 1));
-    // do the other houses have doors?
-    __qa.tp('overworld', 16, 23); out.push(go(0, -1, 60));
+    // do the other houses have doors? (hint toast instead of a warp)
+    const toasts = []; const ot = __drift.ui.toast; __drift.ui.toast = (t, o) => { toasts.push(t); return ot.call(__drift.ui, t, o); };
+    __qa.tp('overworld', 16, 23, true); const mia = go(0, -1, 60); mia.toasts = [...toasts];
+    toasts.length = 0; __qa.tp('overworld', 6, 32, true); const lutz = go(0, -1, 60); lutz.toasts = [...toasts];
+    __drift.ui.toast = ot;
+    out.push(lutz); out.push(mia);
     g.debug.godMode(false);
     return out;
   });
-  for (const w of r.slice(0, -1)) {
+  for (const w of r.slice(0, -2)) {
     assert(w.arrived, `warp ${w.from} → ${w.to}`, w.snap);
     assert(!w.stuck, `warp ${w.from} → ${w.to}: spawn not inside a wall`, w.stuck);
     assert(w.stillThere, `warp ${w.from} → ${w.to}: no immediate bounce back`, w);
     if (w.spawnInWarp.length) note(`spawn ${w.from}→${w.to} lies inside a warp rect (dirReq protects it)`, w.spawnInWarp);
   }
-  const mia = r[r.length - 1];
-  note('walking into Mia\'s house door', { arrived: mia.arrived, to: mia.to });
+  for (const [name, d] of [['Lutz', r[r.length - 2]], ['Mia', r[r.length - 1]]]) {
+    assert(!d.arrived, `${name}'s door: no warp`, d.to);
+    assert(d.toasts.length > 0, `${name}'s door: shows a hint toast`, d.toasts);
+    note(`${name}'s door hint`, d.toasts);
+  }
 });
 
 S('bomb_cave', async ({ page, assert, note, ev }) => {
@@ -1224,7 +1345,7 @@ S('save_continue', async ({ page, assert, ev }) => {
 
 // ---------------- 3D samples ----------------
 const SHOT_SPOTS = [
-  ['3d_village', 'overworld', 9, 24], ['3d_cliffs', 'overworld', 8, 15], ['3d_heights', 'overworld', 40, 8],
+  ['3d_village', 'overworld', 9, 24], ['3d_well', 'overworld', 12, 24], ['3d_graveyard', 'overworld', 24, 29], ['3d_crossroad', 'overworld', 36, 22], ['3d_cliffs', 'overworld', 8, 15], ['3d_heights', 'overworld', 40, 8],
   ['3d_house', 'house_elder', 5, 6], ['3d_dungeon1', 'dungeon_1', 8, 10], ['3d_boss', 'dungeon_4', 8, 11],
 ];
 S('3d_screens_and_fps', async ({ page, assert, note, ev }) => {
