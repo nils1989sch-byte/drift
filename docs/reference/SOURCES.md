@@ -40,3 +40,15 @@ Nur zum Abgleich. **Keine** fremden Grafiken übernehmen, keine Nintendo-Assets 
 - Analyse Octopath-Postprocessing (AO, Lens-Flare, Vignette, DOF, Bloom): https://www.tfgonline.lapinf.ufn.edu.br/media/midias/TCC2_Final_4M2dWJZ.pdf
 - Three.js Billboards: https://threejs.org/manual/en/billboards.html
 - Three.js Billboard + Depth: https://discourse.threejs.org/t/is-billboard-depth-supported/6504
+
+## Monster / Echtzeit-Kampf / Farming
+- Cassette Beasts – visuelle Sprache & Fusion (Interview): https://wireframe.raspberrypi.com/articles/creature-collecting-gets-an-analogue-upgrade-in-cassette-beasts
+- Cassette Beasts – Abgrenzung zum Genre-Vorbild: https://www.endlessmode.com/video-games/cassette-beasts/cassette-beasts-is-a-cool-stylish-take-on-the-pokemon-formula
+- Legends Arceus – sichtbare Wildmonster, Schleichen, Zielwurf: https://www.thegamer.com/pokemon-legends-arceus-seamless-catching/
+- Legends Arceus – Review (aggressive Monster brechen eher aus): https://beacon.betheluniversity.edu/2022/02/pokemon-legends-arceus/
+- Fangraten-Mechanik (Genre-Referenz, HP-Faktor, Wackler): https://bulbapedia.bulbagarden.net/wiki/Catch_rate
+- Telegraph-Design (Windup, Familien, Konsistenz): https://bugnet.io/blog/how-to-design-enemy-attack-telegraphs
+- Telegraph-Formsprache Top-Down: https://gamineai.com/blog/enemy-telegraph-shape-language-top-down-boss-fights-fast-visual-consistency-audit-2026
+- Stardew Valley Crops (Wachstum/Preise als Taktreferenz): https://carlsguides.com/stardewvalley/farming/crops.php
+- Stardew Spring Crops: https://www.gamerevolution.com/guides/350535-stardew-valley-seasonal-crops-guide
+- Nintendo vs. Pocketpair (Patente, Trade Dress): https://asiaiplaw.com/section/in-depth/pikachu-with-guns-nintendo-fires-back
