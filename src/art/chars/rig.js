@@ -240,7 +240,7 @@ export class Fig {
         const i = y * w + x, mi = M[i]; if (!mi) continue;
         const top = TOP[mi];
         if (TF[i] >= 0) { tone[i] = TF[i] > top ? top : TF[i]; continue; }
-        const v = AMB[mi] + (NX[i] * lx + NY[i] * ly + NZ[i] * lz) * KK[mi] + B[i] * 0.16 + light;
+        const v = AMB[mi] - 0.035 + (NX[i] * lx + NY[i] * ly + NZ[i] * lz) * KK[mi] * 1.12 + B[i] * 0.16 + light;
         let tt = Math.floor(v * (top + 0.2));
         if (tt >= top && v < SPEC[mi]) tt = top - 1;
         tone[i] = tt < 0 ? 0 : tt > top ? top : tt;

@@ -49,7 +49,17 @@ export function blocked(g, e, x, y) {
   }
   const lvl = e.lvl;
   const cs = onStairs(world, e);
-  for (const [px, py] of pts) if (!cellOk(world, cellOf(px), cellOf(py), lvl, cs, e)) return true;
+  // cells the foot box overlaps right now: leaving a stairs column must never get stuck on its rim
+  let cur = null;
+  for (const [px, py] of pts) {
+    const tx = cellOf(px), ty = cellOf(py);
+    if (cellOk(world, tx, ty, lvl, cs, e)) continue;
+    if (cs && world.heightAt(tx, ty) === lvl + 1 && !world.def(tx, ty).solid) {
+      if (!cur) { const fb0 = e.foot || FOOT; cur = new Set(); for (const qx of [e.x - fb0.hw, e.x + fb0.hw - 0.01]) for (const qy of [e.y - fb0.top, e.y + fb0.bottom - 0.01]) cur.add(cellOf(qx) + ',' + cellOf(qy)); }
+      if (cur.has(tx + ',' + ty)) continue;
+    }
+    return true;
+  }
   if (e.noSolids) return false;
   const fr = { x: x0, y: y0, w: fb.hw * 2, h: fb.top + fb.bottom };
   for (const s of g.solids) {

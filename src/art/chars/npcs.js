@@ -46,9 +46,9 @@ const ELDER_HEAD = {
     front: [[-3, 0, -6.6, 2, -6, 6, 2.6], [3, 0, 6.6, 2, 6, 6, 2.6], [0, 1, -1, 4, -0.6, 7.6, 2.6], [-1.6, 1, -3.6, 4, -3.4, 7.4, 2.2], [1.6, 1, 3.6, 4, 3.4, 7.4, 2.2]],
   },
   side: {
-    mass: [1.6, 0, 6, 6.2], ears: [[1.2, 3.2]], face: [-2.2, 2.6, 5.2, 5.6], chin: 0.4, nose: [-7, 3.6], feat: 'side',
+    mass: [2.2, 1, 5.4, 5.6], ears: [[1.0, 3.4]], face: [-2.0, 2.4, 5.4, 5.8], chin: 0.4, nose: [-7.1, 3.6], feat: 'side',
     back: [[2, -1, 6, 1, 6.4, 5.6, 2.6], [1, 1, 3.4, 4, 3.6, 7.4, 2.2]],
-    front: [],
+    front: [[3.4, -1.6, 5.4, 1.4, 5.2, 4.8, 2.0], [1.6, 0, 2.6, 2.6, 2.4, 5.6, 1.6]],
   },
 };
 function bald(f, view, hc, pose, s) {
@@ -84,7 +84,7 @@ const ELDER = {
   },
   prop(f, J, view, pose, hand) {
     // staff in the near / left hand with a glowing gem
-    const x = view === 'up' ? hand[0] : hand[0] + (view === 'side' ? -2.6 : 0.6);
+    const x = view === 'up' ? hand[0] : hand[0] + (view === 'side' ? -3.4 : 0.6);
     f.limb(x, hand[1] - 13, x + 0.3, 45.6, 1.0, 0.9, M.staff);
     f.chain([[x, hand[1] - 13, 1.2], [x - 1.6, hand[1] - 15.4, 1.1], [x - 0.4, hand[1] - 17.6, 1.0], [x + 1.4, hand[1] - 16.4, 0.9]], M.staff);
     f.ell(x - 0.2, hand[1] - 15.4, 1.5, 1.5, M.gem);
@@ -205,7 +205,7 @@ export function buildNPCs(renderPose, walkPose, viewOf) {
       S[`npc_${name}_idle_${dir}`] = frames([0, 1].map((k) => {
         const p = { bob: k, scale, wind: 0, phase: k * 1.5, eyes: name === 'elder' && k ? 'closed' : undefined };
         const J = skeleton(v, p);
-        if (v === 'side') p.hands = { N: [J.shN[0] + (name === 'elder' ? -3.6 : 0.6), J.shN[1] + (name === 'elder' ? 6.8 : 7.2)], F: [J.shF[0] - 0.4, J.shF[1] + 7.2] };
+        if (v === 'side') p.hands = { N: [J.shN[0] + (name === 'elder' ? -6.4 : 0.6), J.shN[1] + (name === 'elder' ? 5.6 : 7.2)], F: [J.shF[0] - 0.4, J.shF[1] + 7.2] };
         else p.hands = name === 'merchant' && v === 'down'
           ? { R: [CX - 2.4, J.shR[1] + 7.4], L: [CX + 2.4, J.shL[1] + 7.4] } // hands folded on the belly
           : { R: [J.shR[0] - 0.7 * J.sg, J.shR[1] + 7.4], L: [J.shL[0] + (name === 'elder' ? 1.8 : 0.7) * J.sg, J.shL[1] + (name === 'elder' ? 6.2 : 7.4)] };
@@ -214,7 +214,7 @@ export function buildNPCs(renderPose, walkPose, viewOf) {
       S[`npc_${name}_walk_${dir}`] = frames([0, 2, 4, 6].map((i) => {
         const p = walkPose(v, i, 8, { wind: 0.5, stride: name === 'elder' ? 0.6 : 0.85, arm: name === 'elder' ? 0.3 : 0.8 });
         p.scale = scale;
-        if (name === 'elder') { const J = skeleton(v, p); if (v === 'side') p.hands.N = [J.shN[0] - 3.6, J.shN[1] + 6.8]; else p.hands.L = [J.shL[0] + 1.8 * J.sg, J.shL[1] + 6.2]; }
+        if (name === 'elder') { const J = skeleton(v, p); if (v === 'side') p.hands.N = [J.shN[0] - 6.4, J.shN[1] + 5.6]; else p.hands.L = [J.shL[0] + 1.8 * J.sg, J.shL[1] + 6.2]; }
         return renderPose(look, dir, p);
       }), { fps: 7 });
     }

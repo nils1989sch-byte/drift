@@ -1,5 +1,5 @@
 {
- "date": "2026-10-22T22:08:21.182Z",
+ "date": "2026-10-23T04:48:51.940Z",
  "seed": 1,
  "frames": 2000,
  "results": [
@@ -185,7 +185,7 @@
      "ok": true,
      "msg": "keyboard diagonal (D+S) moves diagonally & normalized",
      "data": {
-      "dx": 34.06,
+      "dx": 31.329999999999984,
       "dy": 32.69
      }
     }
@@ -194,7 +194,81 @@
     "diagonal facing: {\"dr\":\"down\",\"dl\":\"down\",\"ur\":\"up\",\"ul\":\"up\"}"
    ],
    "errors": [],
-   "ms": 4092
+   "ms": 3639
+  },
+  {
+   "name": "random_walk_collision",
+   "ok": true,
+   "checks": [
+    {
+     "ok": true,
+     "msg": "random walk overworld@12,23: player never inside solid (2000 frames, 59 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@22,16: player never inside solid (2000 frames, 60 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@7,9: player never inside solid (2000 frames, 54 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@38,11: player never inside solid (2000 frames, 75 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@36,25: player never inside solid (2000 frames, 60 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk overworld@14,27: player never inside solid (2000 frames, 55 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk house_elder@5,6: player never inside solid (2000 frames, 38 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk cave@6,7: player never inside solid (2000 frames, 55 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_1@8,10: player never inside solid (2000 frames, 63 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_2@7,9: player never inside solid (2000 frames, 61 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_3@7,10: player never inside solid (2000 frames, 44 cells)",
+     "data": null
+    },
+    {
+     "ok": true,
+     "msg": "random walk dungeon_4@8,11: player never inside solid (2000 frames, 81 cells)",
+     "data": null
+    }
+   ],
+   "notes": [
+    "random walk overworld@12,23: warped through: [\"overworld\",\"house_elder\"]",
+    "random walk: teleport target 8,10 is blocked → started at 7,9",
+    "random walk: teleport target 36,26 is blocked → started at 36,25",
+    "random walk house_elder@5,6: warped through: [\"house_elder\",\"overworld\"]"
+   ],
+   "errors": [],
+   "ms": 11534
   },
   {
    "name": "stairs_height",
@@ -311,7 +385,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 3065
+   "ms": 2933
   },
   {
    "name": "stairs_side_exit",
@@ -612,282 +686,7 @@
    ],
    "notes": [],
    "errors": [],
-   "ms": 3196
-  },
-  {
-   "name": "pits_fall",
-   "ok": true,
-   "checks": [
-    {
-     "ok": true,
-     "msg": "walking into a pit → fall",
-     "data": {
-      "rep": {
-       "falls": 3,
-       "hpLeft": 16
-      },
-      "fell": true,
-      "hp0": 6,
-      "hp": 4,
-      "snap": {
-       "map": "dungeon_2",
-       "x": 152,
-       "y": 122,
-       "tx": 9,
-       "ty": 7,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "right",
-       "hp": 4,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "stuck": null,
-      "cell": "dungeon_floor"
-     }
-    },
-    {
-     "ok": true,
-     "msg": "pit costs one heart",
-     "data": {
-      "rep": {
-       "falls": 3,
-       "hpLeft": 16
-      },
-      "fell": true,
-      "hp0": 6,
-      "hp": 4,
-      "snap": {
-       "map": "dungeon_2",
-       "x": 152,
-       "y": 122,
-       "tx": 9,
-       "ty": 7,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "right",
-       "hp": 4,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "stuck": null,
-      "cell": "dungeon_floor"
-     }
-    },
-    {
-     "ok": true,
-     "msg": "respawn on safe ground",
-     "data": {
-      "rep": {
-       "falls": 3,
-       "hpLeft": 16
-      },
-      "fell": true,
-      "hp0": 6,
-      "hp": 4,
-      "snap": {
-       "map": "dungeon_2",
-       "x": 152,
-       "y": 122,
-       "tx": 9,
-       "ty": 7,
-       "lvl": 0,
-       "z": 0,
-       "state": "normal",
-       "dir": "right",
-       "hp": 4,
-       "maxHp": 6,
-       "keys": 0,
-       "bombs": 0,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      },
-      "stuck": null,
-      "cell": "dungeon_floor"
-     }
-    }
-   ],
-   "notes": [
-    "holding → into a pit for 3 s (respawn next to the pit): {\"falls\":3,\"hpLeft\":16}"
-   ],
-   "errors": [],
-   "ms": 3010
-  },
-  {
-   "name": "chest_sign_npc",
-   "ok": true,
-   "checks": [
-    {
-     "ok": true,
-     "msg": "opening a chest shows a dialog",
-     "data": "dialog"
-    },
-    {
-     "ok": true,
-     "msg": "chest gives 10 rupees + sets flag",
-     "data": {
-      "r0": 0,
-      "r1": 10,
-      "flag": true,
-      "state": "normal",
-      "r2": 10
-     }
-    },
-    {
-     "ok": true,
-     "msg": "chest can only be opened once",
-     "data": {
-      "r0": 0,
-      "r1": 10,
-      "flag": true,
-      "state": "normal",
-      "r2": 10
-     }
-    },
-    {
-     "ok": true,
-     "msg": "chest stays open after re-entering",
-     "data": true
-    },
-    {
-     "ok": true,
-     "msg": "signs can be read",
-     "data": "dialog"
-    },
-    {
-     "ok": true,
-     "msg": "merchant talks",
-     "data": "dialog"
-    }
-   ],
-   "notes": [
-    "merchant purchase without a yes/no choice: {\"rupees\":30,\"bombs\":6}"
-   ],
-   "errors": [],
-   "ms": 3174
-  },
-  {
-   "name": "bomb_cave",
-   "ok": true,
-   "checks": [
-    {
-     "ok": true,
-     "msg": "item key places a bomb"
-    },
-    {
-     "ok": true,
-     "msg": "bomb next to the cracked rock opens the cave",
-     "data": {
-      "beforeMap": "overworld",
-      "bombObj": true,
-      "flag": true,
-      "hp": [
-       6,
-       4
-      ],
-      "map": "cave",
-      "maxHp": [
-       6,
-       8
-      ],
-      "carryBomb": "bomb",
-      "afterThrow": {
-       "map": "overworld",
-       "x": 344,
-       "y": 362.41,
-       "tx": 21,
-       "ty": 22,
-       "lvl": 0,
-       "z": 0,
-       "state": "hurt",
-       "dir": "down",
-       "hp": 7,
-       "maxHp": 8,
-       "keys": 0,
-       "bombs": 3,
-       "rupees": 0,
-       "carry": null,
-       "gstate": "play",
-       "ui": "hud"
-      }
-     }
-    },
-    {
-     "ok": true,
-     "msg": "walk into the opened cave",
-     "data": "cave"
-    },
-    {
-     "ok": true,
-     "msg": "cave chest gives a heart container",
-     "data": [
-      6,
-      8
-     ]
-    },
-    {
-     "ok": true,
-     "msg": "a placed bomb can be lifted",
-     "data": "bomb"
-    },
-    {
-     "ok": true,
-     "msg": "throwing a lifted bomb does not throw"
-    }
-   ],
-   "notes": [
-    "HP when standing next to own bomb (hp before/after): [6,4]"
-   ],
-   "errors": [],
-   "ms": 3624
-  },
-  {
-   "name": "bomb_throw_realloop",
-   "ok": true,
-   "checks": [
-    {
-     "ok": true,
-     "msg": "bomb can be lifted with E"
-    },
-    {
-     "ok": true,
-     "msg": "game loop keeps running after throwing a bomb",
-     "data": {
-      "f0": 215,
-      "f1": 248
-     }
-    },
-    {
-     "ok": true,
-     "msg": "an exploded bomb is not still held over the head",
-     "data": {
-      "carriedBefore": "bomb",
-      "carryAfter": null,
-      "carryDead": false,
-      "hp": 4
-     }
-    }
-   ],
-   "notes": [
-    "carried: \"bomb\"",
-    "bomb held for 3.3 s: {\"carriedBefore\":\"bomb\",\"carryAfter\":null,\"carryDead\":false,\"hp\":4}"
-   ],
-   "errors": [],
-   "ms": 6871
+   "ms": 3077
   }
  ]
 }

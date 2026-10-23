@@ -620,6 +620,46 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     return m;
   }
 
+  // ----- x-ray silhouettes (drawn only where something is in front: depthFunc = greater) -----
+  const xrayPool = []; let xrayUsed = 0;
+  const _toCam = new THREE.Vector3();
+  function xraySprite(src, t) {
+    let m = xrayPool[xrayUsed];
+    if (!m) {
+      const mat = new THREE.ShaderMaterial({
+        uniforms: { map: { value: null }, uColor: { value: new THREE.Color('#2c4a8c') }, uRim: { value: new THREE.Color('#bcd8ff') }, uTexel: { value: new THREE.Vector2() } },
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: `varying vec2 vUv; uniform sampler2D map; uniform vec3 uColor, uRim; uniform vec2 uTexel;
+          void main(){
+            float a = texture2D(map, vUv).a;
+            if (a < 0.5) discard;
+            // light rim where a neighbouring texel is empty -> readable outline
+            float e = texture2D(map, vUv + vec2(uTexel.x, 0.0)).a * texture2D(map, vUv - vec2(uTexel.x, 0.0)).a
+                    * texture2D(map, vUv + vec2(0.0, uTexel.y)).a * texture2D(map, vUv - vec2(0.0, uTexel.y)).a;
+            vec3 c = mix(uRim, uColor, step(0.5, e));
+            gl_FragColor = vec4(c, mix(0.9, 0.55, step(0.5, e)));
+          }`,
+        transparent: true, depthWrite: false, depthTest: true, depthFunc: THREE.GreaterDepth,
+      });
+      m = new THREE.Mesh(bbGeo, mat);
+      m.renderOrder = 20; m.frustumCulled = false;
+      scene.add(m); xrayPool.push(m);
+    }
+    xrayUsed++;
+    m.visible = true;
+    m.material.uniforms.map.value = t;
+    const img = t.image;
+    m.material.uniforms.uTexel.value.set(1 / img.width, 1 / img.height);
+    m.scale.copy(src.scale);
+    // pull towards the camera so nearby grass/props at the player's feet don't trigger the effect
+    _toCam.copy(camera.position).sub(src.position).normalize();
+    m.position.copy(src.position).addScaledVector(_toCam, 14);
+    // compensate the size change from moving closer (keeps the silhouette over the sprite)
+    const dist = camera.position.distanceTo(src.position), k = (dist - 14) / dist;
+    m.scale.multiplyScalar(k);
+    m.position.x = src.position.x + (m.position.x - src.position.x);
+  }
+
   // blob contact shadows
   const blobTex = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 32;
@@ -844,6 +884,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     three: { THREE, scene, camera, gl },
     assets, time: 0, is3D: true,
     models3d: true,
+    xray: true,
     tiltShift: true, vignette: true, grade: true, bloom: !mobile, dof: true, debug: false,
     resScale: mobile ? 0.75 : 1,
     stats: { tiles: 0, sprites: 0 },
@@ -880,6 +921,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
         m.scale.set(o.flip ? -w : w, h * sy, 1);
         m.position.set(o.flip ? x + ax : x - ax, yUp - (h - ws - ay) * sy, y + 0.6 + order * 0.004);
         if (d?.layer === 'top') { mat.depthTest = false; m.renderOrder = 10; } else { mat.depthTest = true; m.renderOrder = 0; }
+        // x-ray silhouette: the player stays visible as a shadow when trees, houses or walls hide them
+        if (d && d === R.player && R.xray) xraySprite(m, t);
       }
       order++;
       R.stats.sprites++;
@@ -1053,7 +1096,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     else { hemi.intensity = 0.8; hemi.color.set('#a8c4e0'); hemi.groundColor.set('#4a4030'); sun.intensity = 3.2; sun.color.set('#ffd8a0'); scene.fog.color.copy(HAZE); scene.background = SKY; }
 
     // collect billboards
-    used.solid = used.trans = used.floor = 0; blobUsed = 0; order = 0; torchSpots.length = 0;
+    used.solid = used.trans = used.floor = 0; blobUsed = 0; xrayUsed = 0; order = 0; torchSpots.length = 0;
     seenHouses.clear(); seenModels.clear(); matUsed = 0; R.player = cam.follow;
     R.stats.sprites = 0;
     const list = drawables.filter((d) => d && !d.hidden).sort((a, b) => a.y + (a.sortBias || 0) - (b.y + (b.sortBias || 0)));
@@ -1065,6 +1108,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     curDrawable = null;
     for (const k of Object.keys(pools)) for (let i = used[k]; i < pools[k].length; i++) pools[k][i].visible = false;
     for (let i = blobUsed; i < blobs.length; i++) blobs[i].visible = false;
+    for (let i = xrayUsed; i < xrayPool.length; i++) xrayPool[i].visible = false;
     houses.forEach((g, d) => { if (!seenHouses.has(d)) g.visible = false; });
     models.forEach((g, d) => { if (!seenModels.has(d)) g.visible = false; else if (g.userData.crown) g.userData.crown.rotation.z = Math.sin(time * 1.3 + g.userData.sway) * 0.025; });
     fadeOccluders(cam.follow);
