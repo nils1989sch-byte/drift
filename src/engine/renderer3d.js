@@ -623,7 +623,9 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   // ----- x-ray silhouettes (drawn only where something is in front: depthFunc = greater) -----
   const xrayPool = []; let xrayUsed = 0;
   const _toCam = new THREE.Vector3();
-  function xraySprite(src, t) {
+  const XRAY_PLAYER = [new THREE.Color('#2c4a8c'), new THREE.Color('#bcd8ff')];
+  const XRAY_ENEMY = [new THREE.Color('#7a2030'), new THREE.Color('#ffb0a0')];
+  function xraySprite(src, t, colors) {
     let m = xrayPool[xrayUsed];
     if (!m) {
       const mat = new THREE.ShaderMaterial({
@@ -648,6 +650,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     xrayUsed++;
     m.visible = true;
     m.material.uniforms.map.value = t;
+    m.material.uniforms.uColor.value.copy(colors[0]); m.material.uniforms.uRim.value.copy(colors[1]);
     const img = t.image;
     m.material.uniforms.uTexel.value.set(1 / img.width, 1 / img.height);
     m.scale.copy(src.scale);
@@ -922,7 +925,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
         m.position.set(o.flip ? x + ax : x - ax, yUp - (h - ws - ay) * sy, y + 0.6 + order * 0.004);
         if (d?.layer === 'top') { mat.depthTest = false; m.renderOrder = 10; } else { mat.depthTest = true; m.renderOrder = 0; }
         // x-ray silhouette: the player stays visible as a shadow when trees, houses or walls hide them
-        if (d && d === R.player && R.xray) xraySprite(m, t);
+        if (d && R.xray && (d === R.player || d.kind === 'enemy') && !(d.hp <= 0)) xraySprite(m, t, d === R.player ? XRAY_PLAYER : XRAY_ENEMY);
       }
       order++;
       R.stats.sprites++;
