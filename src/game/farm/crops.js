@@ -4,15 +4,16 @@
 import { TILE } from '../../engine/constants.js';
 
 // days: watered days until ripe; stages: number of sprite stages (incl. ripe);
-// regrow: days until the next harvest (multi-harvest); yield: [min,max] items per harvest;
-// seedPrice: shop price per seed (G); sell: sale value per harvested item (G); color: fallback fruit colour.
+// regrow: days until the next harvest (multi-harvest); yield: [min,max] items per harvest; bonus: chance of +1;
+// seedPrice: shop price per seed (Taler); sell: sale value per harvested item (Taler); color: fallback fruit colour.
 export const CROPS = {
-  ruebe:     { name: 'Rübe', days: 4, stages: 4, yield: [1, 1], seedPrice: 10, sell: 28, seasons: ['fruehling'], color: '#e8e0f0', leaf: '#58b040' },
-  kartoffel: { name: 'Kartoffel', days: 5, stages: 4, yield: [1, 2], seedPrice: 15, sell: 38, seasons: ['fruehling'], color: '#c89858', leaf: '#4a9838' },
-  erdbeere:  { name: 'Erdbeere', days: 6, stages: 5, regrow: 3, yield: [1, 2], seedPrice: 40, sell: 30, seasons: ['fruehling'], color: '#e03848', leaf: '#3c9040' },
-  kuerbis:   { name: 'Kürbis', days: 8, stages: 5, yield: [1, 1], seedPrice: 60, sell: 170, seasons: ['fruehling'], color: '#f08a20', leaf: '#4c8c30' },
-  blaubeere: { name: 'Blaubeere', days: 6, stages: 5, yield: [2, 3], seedPrice: 30, sell: 22, seasons: ['fruehling'], color: '#4060d0', leaf: '#3a8048' },
-  weizen:    { name: 'Weizen', days: 4, stages: 4, yield: [1, 1], seedPrice: 5, sell: 14, seasons: ['fruehling'], color: '#e8c050', leaf: '#a0b040', sickle: true },
+  // values from docs/reference/MONSTER_FARM_GUIDE.md §3 (currency "Taler")
+  weizen:    { name: 'Weizen', days: 4, stages: 4, yield: [1, 1], seedPrice: 10, sell: 25, seasons: ['fruehling'], color: '#e8c050', leaf: '#a0b040', sickle: true },
+  ruebe:     { name: 'Rübe', days: 4, stages: 4, yield: [1, 1], seedPrice: 15, sell: 35, seasons: ['fruehling'], color: '#e8e0f0', leaf: '#58b040' },
+  kartoffel: { name: 'Kartoffel', days: 5, stages: 4, yield: [1, 1], bonus: 0.2, seedPrice: 25, sell: 55, seasons: ['fruehling'], color: '#c89858', leaf: '#4a9838' },
+  blaubeere: { name: 'Blaubeere', days: 6, stages: 5, regrow: 2, yield: [3, 3], seedPrice: 40, sell: 20, seasons: ['fruehling'], color: '#4060d0', leaf: '#3a8048' },
+  erdbeere:  { name: 'Erdbeere', days: 6, stages: 5, regrow: 3, yield: [1, 1], seedPrice: 60, sell: 30, seasons: ['fruehling'], color: '#e03848', leaf: '#3c9040' },
+  kuerbis:   { name: 'Kürbis', days: 8, stages: 5, yield: [1, 1], seedPrice: 80, sell: 220, seasons: ['fruehling'], color: '#f08a20', leaf: '#4c8c30' },
 };
 export const CROP_IDS = Object.keys(CROPS);
 
@@ -48,7 +49,8 @@ export function harvestCrop(crop, rnd = Math.random) {
   const d = CROPS[crop?.id];
   if (!d || !isRipe(crop)) return null;
   const [a, b] = d.yield;
-  const n = a + Math.floor(rnd() * (b - a + 1));
+  let n = a + Math.floor(rnd() * (b - a + 1));
+  if (d.bonus && rnd() < d.bonus) n++;
   crop.harvests++;
   if (d.regrow) { crop.g = d.days - d.regrow; return { item: 'crop_' + crop.id, n, remove: false }; }
   return { item: 'crop_' + crop.id, n, remove: true };

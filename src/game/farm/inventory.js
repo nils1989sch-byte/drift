@@ -92,6 +92,6 @@ export function createInventory(opts = {}) {
 /** Starting kit for a new game. */
 export function giveStarterKit(inv) {
   inv.add('hoe'); inv.add('can'); inv.add('sickle');
-  inv.add('seeds_ruebe', 6); inv.add('orb', 5); inv.add('potion', 2);
+  inv.add('seeds_ruebe', 10); inv.add('orb', 5); inv.add('potion', 2);   // Bodo schenkt 10 Rübensaat (Guide §3)
   if (!inv.money) inv.money = 100;
 }
