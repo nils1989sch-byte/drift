@@ -20,7 +20,8 @@ export function dungeon1() {
       { t: 'door_locked', x: 12, y: 0, flag: 'd1_door' },
       { t: 'sign', x: 14, y: 6, text: ['Eine Steintafel:', '„Wer den Hüter wecken will, braucht Schlüssel und Mut.“'] },
     ],
-    enemies: [{ t: 'slime', x: 4, y: 7 }, { t: 'slime', x: 13, y: 8 }, { t: 'bat', x: 8, y: 4 }],
+    enemies: [],
+    wild: [{ t: 'kiesel', x: 4, y: 7, level: 9 }, { t: 'zappi', x: 13, y: 8, level: 10 }],
     npcs: [],
     warps: [
       { x: 8, y: 12.4, w: 1, h: 0.6, to: 'overworld', spawn: 'dungeon', dirReq: 'down' },
@@ -52,7 +53,8 @@ export function dungeon2() {
       { t: 'torch', x: 1, y: 2 }, { t: 'torch', x: 13, y: 2 },
       { t: 'sign', x: 3, y: 9, text: ['In den Stein geritzt:', '„Schweres Gewicht öffnet den Weg.“'] },
     ],
-    enemies: [{ t: 'bat', x: 11, y: 5 }, { t: 'bat', x: 3, y: 6 }],
+    enemies: [],
+    wild: [{ t: 'zappi', x: 11, y: 4, level: 10 }],
     npcs: [],
     warps: [{ x: 7, y: 11.4, w: 1, h: 0.6, to: 'dungeon_1', spawn: 'from_r2', dirReq: 'down' }],
     spawns: { entry: { x: 7 * 16 + 8, y: 10 * 16 + 8, dir: 'up' } },
@@ -73,11 +75,8 @@ export function dungeon3() {
       { t: 'pot', x: 1, y: 11 }, { t: 'pot', x: 13, y: 11 }, { t: 'pot', x: 13, y: 2 },
       { t: 'statue', x: 1, y: 7 }, { t: 'statue', x: 13, y: 7 },
     ],
-    enemies: [
-      { t: 'soldier', x: 4, y: 7, patrol: [[4, 7], [4, 10], [10, 10], [10, 7]] },
-      { t: 'soldier', x: 10, y: 3, patrol: [[10, 3], [4, 3]] },
-      { t: 'slime', x: 6, y: 10 }, { t: 'slime', x: 9, y: 5 }, { t: 'octorok', x: 12, y: 7 },
-    ],
+    enemies: [],
+    wild: [{ t: 'felspanzer', x: 5, y: 7, level: 12 }, { t: 'kiesel', x: 10, y: 8, level: 11 }, { t: 'zappi', x: 9, y: 4, level: 11 }],
     npcs: [],
     warps: [
       { x: 7, y: 12.4, w: 1, h: 0.6, to: 'dungeon_1', spawn: 'from_r3', dirReq: 'down' },
@@ -85,7 +84,7 @@ export function dungeon3() {
     ],
     spawns: { entry: { x: 7 * 16 + 8, y: 11 * 16 + 8, dir: 'up' }, from_r4: { x: 7 * 16 + 8, y: 2 * 16 + 9, dir: 'down' } },
     update(g) {
-      if (!g.flags.d3_clear && g.enemies.every((e) => e.dead) && g.mapTime > 0.5) {
+      if (!g.flags.d3_clear && g.wilds.every((e) => e.dead) && !g.battle?.active && g.mapTime > 0.5) {
         g.setFlag('d3_clear', true);
         g.toast('Ein Klicken hallt durch den Raum …');
       }
@@ -105,7 +104,8 @@ export function dungeon4() {
       { t: 'statue', x: 5, y: 2 }, { t: 'statue', x: 11, y: 2 },
       { t: 'shutter', x: 8, y: 13, closedWhile: (g) => g.flags.boss_fight && !g.flags.boss_golem },
     ],
-    enemies: [{ t: 'golem', x: 8, y: 5, once: 'boss_golem' }],
+    enemies: [],
+    wild: [{ t: 'steinwaechter', x: 8, y: 5, level: 18, boss: true, once: 'boss_golem' }],
     npcs: [],
     warps: [{ x: 8, y: 13.4, w: 1, h: 0.6, to: 'dungeon_3', spawn: 'from_r4', dirReq: 'down' }],
     spawns: { entry: { x: 8 * 16 + 8, y: 12 * 16 + 6, dir: 'up' } },

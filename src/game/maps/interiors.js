@@ -10,14 +10,14 @@ export function houseElder() {
     rows: P.rows(), heights: P.heights(),
     objects: [
       { t: 'chest', x: 8, y: 2, item: 'rupees', amount: 10, text: ['Du hast 10 Rupien gefunden!', 'Bodos Notgroschen … er wird es schon verschmerzen.'] },
-      { t: 'pot', x: 1, y: 2 }, { t: 'pot', x: 2, y: 2 }, { t: 'pot', x: 1, y: 7 },
+      { t: 'bed', x: 1, y: 4 }, { t: 'pot', x: 1, y: 2 }, { t: 'pot', x: 2, y: 2 }, { t: 'pot', x: 1, y: 7 },
       { t: 'torch', x: 3, y: 2 }, { t: 'torch', x: 7, y: 2 },
       { t: 'sign', x: 9, y: 7, text: ['Ein vergilbter Zettel:', '„Schwert schärfen. Kristall polieren. Milch kaufen.“'] },
     ],
     enemies: [],
     npcs: [{ t: 'elder', x: 5, y: 3, dir: 'down', dialog: 'elder' }],
     warps: [{ x: 5, y: 8.4, w: 1, h: 0.6, to: 'overworld', spawn: 'house', dirReq: 'down' }],
-    spawns: { start: { x: 5 * 16 + 8, y: 6 * 16 + 8, dir: 'up' }, door: { x: 5 * 16 + 8, y: 7 * 16 + 10, dir: 'up' } },
+    spawns: { bed: { x: 3 * 16 + 4, y: 5 * 16 + 10, dir: 'left' }, start: { x: 5 * 16 + 8, y: 6 * 16 + 8, dir: 'up' }, door: { x: 5 * 16 + 8, y: 7 * 16 + 10, dir: 'up' } },
   };
 }
 
@@ -34,7 +34,8 @@ export function cave() {
       { t: 'torch', x: 4, y: 2 }, { t: 'torch', x: 8, y: 2 },
       { t: 'rock', x: 10, y: 7 }, { t: 'mushroom', x: 2, y: 3 }, { t: 'mushroom', x: 11, y: 8 },
     ],
-    enemies: [{ t: 'bat', x: 3, y: 5 }, { t: 'bat', x: 9, y: 4 }],
+    enemies: [],
+    wild: [{ t: 'kiesel', x: 3, y: 5, level: 9 }, { t: 'glutar', x: 9, y: 4, level: 12 }],
     npcs: [],
     warps: [{ x: 6, y: 9.4, w: 1, h: 0.6, to: 'overworld', spawn: 'cave', dirReq: 'down' }],
     spawns: { entry: { x: 6 * 16 + 8, y: 8 * 16 + 10, dir: 'up' } },

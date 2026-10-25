@@ -97,7 +97,10 @@ function decoPebble(seed, W, H) {
 // clusters: [cx, cy, rx, ry]; ramp dark→light (5); light from top-left, deep shade low-right
 function leafy(p, clusters, ramp, seed, density = 0.42) {
   const r = rng(seed);
-  const inside = (x, y) => clusters.find(([cx, cy, rx, ry]) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1);
+  // precomputed membership: index of the first containing cluster per pixel (+1), 0 = outside
+  const M = new Uint8Array(p.w * p.h);
+  for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) for (let k = 0; k < clusters.length; k++) { const [cx, cy, rx, ry] = clusters[k]; const a = (x + 0.5 - cx) / rx, b = (y + 0.5 - cy) / ry; if (a * a + b * b <= 1) { M[y * p.w + x] = k + 1; break; } }
+  const inside = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y); if (xi < 0 || yi < 0 || xi >= p.w || yi >= p.h) return null; const k = M[yi * p.w + xi]; return k ? clusters[k - 1] : null; };
   let area = 0;
   const pts = [];
   for (let y = 0; y < p.h; y++) for (let x = 0; x < p.w; x++) if (inside(x + 0.5, y + 0.5)) { p.put(x, y, ramp[(x + y) % 3 === 0 ? 0 : 1]); area++; pts.push([x, y]); }

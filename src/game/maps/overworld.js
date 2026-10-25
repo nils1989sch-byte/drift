@@ -53,13 +53,14 @@ export default function build() {
   }
   P.rect(33, 23, 37, 24, '=').set(35, 22, '=').set(33, 25, '=');
   for (let y = 15; y <= 22; y++) { const off = y >= 18 && y <= 20 ? 1 : 0; P.rect(36 - off, y, 37 - off, y, '='); }
-  for (let y = 14; y <= 22; y++) { const off = y <= 17 ? 1 : 0; P.rect(12 + off, y, 13 + off, y, '='); }
-  P.set(12, 18, '=').set(14, 18, '=');
-  P.rect(9, 14, 12, 15, '=').set(9, 16, '=');   // to the cliffs' stairs
+  for (let y = 14; y <= 22; y++) { const off = y >= 17 && y <= 19 ? 1 : 0; P.rect(18 + off, y, 19 + off, y, '='); }
+  P.rect(9, 14, 19, 15, '=').set(9, 16, '=');   // to the cliffs' stairs
+  // farm (Hof) east of Bodo's house: light grass, 3×4 starter field
+  P.rect(10, 17, 16, 21, ';').rect(11, 18, 14, 20, 'f');
   P.blob(12.5, 26.5, 3.6, 2.4, 'c');             // village square: bright clearing
   P.rect(11, 25, 14, 27, 'o');                   // paved core around the well
   P.rect(8, 27, 9, 27, '=').rect(8, 28, 8, 30, '=');  // to the shop
-  P.rect(15, 22, 16, 22, '=').rect(7, 22, 8, 22, '=');  // house fronts
+  P.rect(22, 22, 23, 22, '=').rect(7, 22, 8, 22, '=');  // house fronts
   P.rect(37, 10, 40, 13, '=', null);             // heights path
   P.rect(40, 10, 40, 10, '=', null);
   P.blob(22, 14.6, 2.2, 0.9, 'c');               // fisher's clearing at the pond
@@ -96,14 +97,18 @@ export default function build() {
     { t: 'barrier', x: 0, y: 0, w: 2, h: H }, { t: 'barrier', x: 46, y: 0, w: 2, h: H });
 
   // --- village Driftwald -------------------------------------------------------------------------
-  const HOUSES = [{ id: 'elder', x: 8 * 16, y: 22 * 16 - 1 }, { id: 'mia', x: 16 * 16, y: 22 * 16 - 1 }, { id: 'shop', x: 6 * 16, y: 31 * 16 - 1 }];
+  const HOUSES = [{ id: 'elder', x: 8 * 16, y: 22 * 16 - 1 }, { id: 'mia', x: 23 * 16, y: 22 * 16 - 1 }, { id: 'shop', x: 6 * 16, y: 31 * 16 - 1 }];
   for (const h of HOUSES) O('house', 0, 0, { px: h.x, py: h.y, id: h.id });
   // props along the house fronts (clusters of 3–4, door kept free)
   const front = (h, list) => { for (const [t, dx] of list) objects.push({ t, px: h.x + dx, py: h.y + 7 }); };
   front(HOUSES[0], [['barrel', -26], ['crate', -14], ['flowerbox', 15], ['lantern', 27]]);
   front(HOUSES[1], [['tools', -26], ['sack', -16], ['flowerbox', 15], ['bench', 32]]);
   front(HOUSES[2], [['crate', -27], ['crate', -27 + 0.01], ['sack', -15], ['barrel', 15], ['barrel', 27]].filter((v, i) => i !== 1));
-  O('pot', 10, 21); O('pot', 11, 21);
+  // the farm
+  for (let x = 12; x <= 16; x++) O('fence_h', x, 16);
+  for (let y = 17; y <= 20; y++) O('fence_v', 17, y);
+  O('fence_h', 17, 16);
+  O('scarecrow', 15, 18); O('barrel', 16, 21); O('crate', 10, 21);
   O('sign', 9, 28, { text: ['Lutz’ Krämerladen', 'Bomben · Kram · Krempel'] });
   // square: well + cart with sacks/hay
   O('well', 12, 26);
@@ -124,15 +129,15 @@ export default function build() {
   O('lantern', 26, 30); O('tree_small', 28, 27);
   O('sign', 24, 26, { text: ['Friedhof von Driftwald', '„Hier ruhen die Gründer, die das Dorf einst an den Kristall banden.“'] });
   // trees frame the village (big ones at the sides, few in the south foreground)
-  for (const [x, y] of [[3, 20], [4, 26], [26, 25], [19, 20], [25, 21], [5, 19]]) O('tree', x, y);
+  for (const [x, y] of [[3, 20], [4, 26], [26, 25], [26, 21], [5, 19]]) O('tree', x, y);
   for (const [x, y] of [[13, 30]]) O('tree_small', x, y);
-  for (const [x, y] of [[2, 25], [2, 26], [17, 25], [18, 25], [24, 22], [11, 19], [10, 19], [3, 31], [3, 32], [12, 32], [15, 31]]) O('bush', x, y);
+  for (const [x, y] of [[2, 25], [2, 26], [17, 25], [18, 25], [3, 31], [3, 32], [12, 32], [15, 31]]) O('bush', x, y);
   O('stump', 22, 26); O('mushroom', 23, 26); O('mushroom', 4, 31);
 
   // --- meadow & pond ------------------------------------------------------------------------------
   for (const [x, y] of [[15, 9], [27, 6], [14, 13], [26, 12], [17, 16], [28, 14], [19, 2], [23, 2]]) O('tree', x, y);
   for (const [x, y] of [[18, 12], [16, 11], [25, 7], [19, 7], [28, 9], [27, 3]]) O('tree_small', x, y);
-  for (const [x, y] of [[14, 6], [14, 7], [20, 6], [21, 6], [17, 13], [18, 14], [26, 8], [27, 8], [15, 18], [16, 19], [19, 15], [18, 16]]) O('bush', x, y);
+  for (const [x, y] of [[14, 6], [14, 7], [20, 6], [21, 6], [17, 13], [26, 8], [27, 8], [21, 16], [22, 16]]) O('bush', x, y);
   for (const [x, y] of [[24, 14], [25, 14], [13, 4], [28, 18]]) O('rock', x, y);
   O('lilypad', 21, 10); O('lilypad', 23, 11); O('lilypad', 22, 9);
   for (const [x, y] of [[17, 8], [18, 8], [17, 9]]) O('flower', x, y);
@@ -175,24 +180,39 @@ export default function build() {
   O('rock', 39, 13); O('pot', 44, 6); O('pot', 36, 8);
 
   // --- enemies ---------------------------------------------------------------------------------------------
-  enemies.push(
-    { t: 'slime', x: 23, y: 17 }, { t: 'slime', x: 26, y: 16 },
-    { t: 'slime', x: 41, y: 29 }, { t: 'slime', x: 43, y: 27 },
-    { t: 'octorok', x: 28, y: 6 }, { t: 'octorok', x: 34, y: 20 }, { t: 'octorok', x: 35, y: 28 },
-    { t: 'octorok', x: 18, y: 3 },
-    { t: 'soldier', x: 36, y: 12, patrol: [[35, 12], [43, 12], [43, 10], [36, 10]] },
-    { t: 'soldier', x: 43, y: 8, patrol: [[37, 8], [43, 8]] },
-    { t: 'soldier', x: 37, y: 18, patrol: [[37, 17], [37, 21], [35, 21]] },
-    { t: 'bat', x: 6, y: 9 }, { t: 'bat', x: 44, y: 3 },
+  // --- wild monsters (habitats) and rangers -------------------------------------------------------------
+  const spawners = [
+    { area: [20, 15, 28, 19], tiles: ['grass_tall'], species: [['boeli', 5], ['zappi', 3], ['funkel', 1]], level: [2, 5], max: 3 },       // Flüsterwiese
+    { area: [39, 26, 44, 32], tiles: ['grass_tall'], species: [['zappi', 4], ['boeli', 3], ['tropfi', 1]], level: [3, 6], max: 3 },       // Ostufer-Wiese
+    { area: [14, 2, 19, 7], species: [['moosi', 4], ['sprossi', 1], ['pilzling', 4]], level: [5, 8], max: 3 },                             // Waldrand Nord
+    { area: [33, 15, 35, 33], species: [['kiesel', 5], ['tropfi', 2]], level: [6, 9], max: 2 },                                            // Flussufer
+    { area: [28, 3, 29, 20], species: [['kiesel', 3], ['tropfi', 1]], level: [5, 8], max: 1 },
+    { area: [2, 8, 11, 12], lvl: 1, species: [['boeli', 4], ['sturmfalk', 1]], level: [6, 9], max: 2 },                                     // Nordklippen
+    { area: [3, 16, 7, 18], tiles: ['grass_tall'], species: [['boeli', 3], ['pilzling', 2], ['moosi', 2]], level: [2, 4], max: 2 },        // Dorfwiese
+  ];
+  npcs.push(
+    { t: 'ranger', trainer: true, x: 36, y: 17, dir: 'left', flag: 'ranger_kai', name: 'Ranger Kai', sight: 72, reward: 60,
+      team: [['boeli', 5], ['kiesel', 6]],
+      intro: ['Ranger Kai: Halt! Wer zur Steinwacht will, muss erst an mir vorbei. Zeig her, was dein Monster kann!'],
+      lose: ['Ranger Kai: Respekt! Du darfst passieren.'], after: ['Ranger Kai: Oben auf den Höhen warten noch zwei Kollegen. Die sind härter als ich!'] },
+    { t: 'ranger', trainer: true, x: 41, y: 12, dir: 'left', flag: 'ranger_ilse', name: 'Rangerin Ilse', sight: 80, reward: 90,
+      team: [['zappi', 7], ['moosi', 8]],
+      intro: ['Rangerin Ilse: Die Höhen sind gefährlich. Ich prüfe jeden, der hier hoch will!'],
+      lose: ['Rangerin Ilse: Gut gekämpft! Deine Monster vertrauen dir.'], after: ['Rangerin Ilse: Monster unter halben KP lassen sich leichter fangen.'] },
+    { t: 'ranger', trainer: true, x: 43, y: 8, dir: 'left', flag: 'ranger_brom', name: 'Ranger Brom', sight: 80, reward: 140,
+      team: [['kiesel', 9], ['boeli', 9], ['sturmfalk', 11]],
+      intro: ['Ranger Brom: In der Ruine schläft der Steinwächter. Bist du stark genug für ihn? Beweis es!'],
+      lose: ['Ranger Brom: Unglaublich … Geh, aber unterschätze den Wächter nicht!'], after: ['Ranger Brom: Stein-Monster fürchten Pflanzen und Wasser.'] },
   );
 
   return {
     id: 'overworld', name: 'Driftwald', face: 'rock', plinth: 'earth', music: 'overworld', outdoor: true,
     rows: P.rows(), heights: P.heights(),
-    objects, enemies, npcs,
+    objects, enemies, npcs, spawners,
+    farm: { x0: 10, y0: 17, x1: 16, y1: 21 },
     warps: [
       { x: 7.6, y: 21.7, w: 0.8, h: 0.6, to: 'house_elder', spawn: 'door', dirReq: 'up' },
-      { x: 15.6, y: 21.7, w: 0.8, h: 0.6, dirReq: 'up', hint: 'Die Tür ist verschlossen. Mia ist draußen im Garten.' },
+      { x: 22.6, y: 21.7, w: 0.8, h: 0.6, dirReq: 'up', hint: 'Die Tür ist verschlossen. Mia ist draußen im Garten.' },
       { x: 5.6, y: 30.7, w: 0.8, h: 0.6, dirReq: 'up', hint: 'Geschlossen – Lutz verkauft heute draußen vor dem Laden.' },
       { x: 4, y: 14, w: 1, h: 0.5, to: 'cave', spawn: 'entry', dirReq: 'up', needFlag: 'cave_open' },
       { x: 40, y: 5, w: 1, h: 0.5, to: 'dungeon_1', spawn: 'entry', dirReq: 'up' },

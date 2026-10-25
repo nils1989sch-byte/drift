@@ -9,6 +9,15 @@ import { Pickup } from './entities/pickups.js';
 import { Bomb } from './entities/objects.js';
 import { damage, sameLayer } from './combat.js';
 import { safe, TILE, overlap, chance, choice, pointIn } from './util.js';
+import { createParty } from './monsters/party.js';
+import { createBattle } from './monsters/battle.js';
+import { WildMon, createSpawner, Companion } from './monsters/wild.js';
+import { Trainer } from './monsters/trainer.js';
+import { Monster } from './monsters/monster.js';
+import { STARTERS, SPECIES } from './monsters/species.js';
+import { MOVES } from './monsters/moves.js';
+import { createClock } from './farm/clock.js';
+import { createInventory, giveStarterKit } from './farm/inventory.js';
 import { saveGame, loadGame, hasSave, clearSave } from './save.js';
 
 // our sound names → audio module names (docs/ANIMATION.md)
@@ -40,6 +49,23 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     timers: [],
   };
   const player = (g.player = new Player(g));
+  // ---- monsters / farm core ----------------------------------------------------------------------------------
+  g.party = createParty();
+  Object.defineProperty(g, 'dex', { get: () => ({ seen: g.party.seen, caught: g.party.caught, species: SPECIES }) });
+  g.wilds = []; g.spawners = []; g.battleCooldown = 0;
+  g.clock = createClock();
+  g.inventory = createInventory({ size: 24, moneyAccessor: { get: () => player.rupees, set: (v) => { player.rupees = v; } } });
+  g.battle = createBattle(g);
+  g.companion = null;
+  g.species = SPECIES; g.moves = MOVES;
+  // Agent B's farm (src/game/farm/index.js → createFarm(game)) is optional; loaded when it exists.
+  g.farm = null;
+  import('./farm/index.js').then((m) => {
+    try {
+      const f = m.createFarm?.(g);
+      if (f) { g.farm = f; if (f.clock) g.clock = f.clock; if (f.inventory) g.inventory = f.inventory; f.onMapLoad?.(g.mapId, g.mapDef); }
+    } catch (e) { console.warn('[game] createFarm failed', e); }
+  }).catch(() => { /* farm module not there yet */ });
   let curMusic, lowHealth = false;
   const hints = {};
 
@@ -223,7 +249,12 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
       if (o && !o.dead) g.objects.push(o);
     }
     for (const s of def.enemies || []) { if (s.once && g.flags[s.once]) continue; const e = createEnemy(g, s); if (e) g.enemies.push(e); }
-    for (const s of def.npcs || []) g.npcs.push(createNPC(g, s));
+    for (const s of def.npcs || []) g.npcs.push(s.trainer ? new Trainer(g, s) : createNPC(g, s));
+    g.wilds = []; g.spawners = [];
+    for (const s of def.wild || []) {
+      if (s.once && g.flags[s.once]) continue;
+      g.wilds.push(new WildMon(g, s.t, s.level || 5, s.x * TILE + 8, s.y * TILE + 10, { boss: s.boss, roam: s.roam }));
+    }
     g.warps = (def.warps || []).map((w) => ({
       ...w,
       rect: { x: w.x * TILE, y: w.y * TILE, w: w.w * TILE, h: w.h * TILE },
@@ -236,6 +267,13 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     safe(camera, 'snap');
     safe(fx, 'clear', true);
     if (g.state !== 'title') g.music(def.music || 'overworld');
+    rebuild();
+    for (const sp of def.spawners || []) { const S = createSpawner(g, sp); S.fill(); g.spawners.push(S); }
+    if (!g.companion) g.companion = new Companion(g);
+    g.companion.reset();
+    if (g.battle.active) g.battle.active = false;
+    camera.battleFocus = null;
+    g.farm?.onMapLoad?.(id, def);
     def.onEnter?.(g);
     rebuild();
     updateArea();
@@ -299,8 +337,12 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     g.enemies = g.enemies.filter((e) => !e.dead);
     g.pickups = g.pickups.filter((e) => !e.dead);
     g.projectiles = g.projectiles.filter((e) => !e.dead);
+    g.wilds = g.wilds.filter((e) => !e.dead);
     g.solids = [...g.objects.filter((o) => o.solid), ...g.npcs];
-    g.entities = [player, ...g.objects, ...g.npcs, ...g.enemies, ...g.pickups, ...g.projectiles];
+    let farmD = [];
+    try { farmD = g.farm?.drawables?.() || []; } catch (e) { farmD = []; }
+    g.entities = [player, ...g.objects, ...g.npcs, ...g.enemies, ...g.pickups, ...g.projectiles, ...g.wilds, ...farmD,
+      ...(g.companion && !g.companion.hidden && g.party.lead ? [g.companion] : []), ...g.battle.drawables()];
   }
 
   // ---- game flow ------------------------------------------------------------------------------------------
@@ -312,6 +354,10 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     clearSave();
     g.flags = {};
     resetPlayer();
+    g.party.reset();
+    g.inventory.clear?.(); player.rupees = 0;
+    g.clock.deserialize?.({ day: 1, t: 2 });
+    g.farm?.reset?.();
     g.state = 'play';
     g.loadMap('house_elder', 'start');
     g.after(0.7, () => {
@@ -327,6 +373,10 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     Object.assign(player, s.player || {});
     player.hp = player.maxHp;
     player.syncInventory();
+    g.party.load(s.party);
+    if (s.inventory) g.inventory.deserialize?.(s.inventory);
+    if (s.clock) g.clock.deserialize?.(s.clock);
+    if (s.farm) g.farm?.deserialize?.(s.farm);
     g.state = 'play';
     if (!g.loadMap(s.entry?.map || 'overworld', s.entry?.spawn || 'start')) g.loadMap('overworld', 'start');
   };
@@ -365,6 +415,10 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
       flags: g.flags,
       player: { maxHp: p.maxHp, rupees: p.rupees, keys: p.keys, bombs: p.bombs, hasBombs: p.hasBombs, item: p.item },
       entry: g.entry,
+      party: g.party.toJSON(),
+      inventory: g.inventory.serialize?.(),
+      clock: g.clock.serialize?.(),
+      farm: g.farm?.serialize?.(),
     });
   };
 
@@ -387,6 +441,20 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     if (g.hitstop > 0) { g.hitstop -= dt; return; }
     if (g.trans) { updateTransition(dt); safe(fx, 'ambient', g.world, camera); rebuild(); return; }
     g.mapTime += dt;
+    if (!g.farm?.updatesClock && g.world?.outdoor !== false) g.clock.update?.(dt);
+    else if (!g.farm?.updatesClock) g.clock.update?.(dt);
+    try { g.farm?.update?.(dt); } catch (e) { console.warn('[game] farm.update', e); }
+    if (g.battleCooldown > 0) g.battleCooldown -= dt;
+    if (g.battle.active) {
+      for (const t of g.timers) { t.t -= dt; if (t.t <= 0 && !t.done) { t.done = true; t.fn(); } }
+      g.timers = g.timers.filter((t) => !t.done);
+      g.battle.update(dt);
+      player.anim?.update(dt);
+      for (const n of g.npcs) n.anim?.update(dt);
+      rebuild();
+      safe(fx, 'ambient', g.world, camera);
+      return;
+    }
     for (const t of g.timers) { t.t -= dt; if (t.t <= 0 && !t.done) { t.done = true; t.fn(); } }
     g.timers = g.timers.filter((t) => !t.done);
 
@@ -395,6 +463,9 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     for (const n of g.npcs) n.update(dt);
     for (const e of g.enemies) if (!e.dead) e.update(dt);
     for (const pr of g.projectiles) if (!pr.dead) pr.update(dt);
+    for (const w of g.wilds) if (!w.dead && !g.battle.active) w.update(dt);
+    for (const S of g.spawners) S.update(dt);
+    g.companion?.update(dt);
     for (const pk of g.pickups) {
       if (pk.dead) continue;
       pk.update(dt);

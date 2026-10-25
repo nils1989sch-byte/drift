@@ -23,12 +23,14 @@ const SOIL = ramp(['#1e120c', '#2a1810', '#362014', '#422818', '#4e301c', '#5a3a
 const SOILW = ramp(['#140c0a', '#1c120e', '#241812', '#2c1e16', '#36241a', '#402c20', '#4a3426', '#563e2e']);
 
 // ---------------------------------------------------------------- soil tiles (48×48, furrows period 8 → seamless)
+let SOILN = null;
 function soilTex(seed, R, wet) {
+  if (!SOILN) { SOILN = new Float32Array(48 * 48); for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) SOILN[y * 48 + x] = vnoise(x / 6, y / 6, 8, 77); }
   const W = 48, p = new Pix(W, W), r = rng(seed);
   for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
     const fy = ((y + Math.round(Math.sin((x / 48) * Math.PI * 2 * 2 + seed) * 1.2)) % 8 + 8) % 8;
     const ridge = fy < 2 ? 0.66 : fy < 4 ? 0.52 : fy < 6 ? 0.38 : 0.24;   // lit ridge top → dark trough
-    const n = vnoise(x / 6, y / 6, 8, seed) * 0.25 + vnoise(x / 2, y / 2, 24, seed + 1) * 0.15;
+    const n = SOILN[y * W + x] * 0.25 + hf(x >> 1, y >> 1, seed) * 0.15;
     let t = ridge + n - 0.15 + (r() - 0.5) * 0.16;
     p.d[y * W + x] = U(at(R, t));
   }
@@ -56,10 +58,10 @@ export function buildSoilEdges() {
   const src = new Pix(48, 48); src.d.set(new Uint32Array(tex.getContext('2d').getImageData(0, 0, 48, 48).data.buffer));
   for (const side of ['n', 's', 'w', 'e']) {
     const p = new Pix(48, 48);
+    const prof = []; for (let u = 0; u < 48; u++) prof.push(4 + (vnoise(u / 5, 0.5, 48 / 5 | 0, side.charCodeAt(0)) - 0.3) * 6 * Math.min(1, Math.min(u, 47 - u) / 6));
     for (let y = 0; y < 48; y++) for (let x = 0; x < 48; x++) {
       const [u, t] = side === 'n' ? [x, y] : side === 's' ? [x, 47 - y] : side === 'w' ? [y, x] : [y, 47 - x];
-      const pin = Math.min(1, Math.min(u, 47 - u) / 6);
-      const d = 4 + (vnoise(u / 5, 0.5, 48 / 5 | 0, side.charCodeAt(0)) - 0.3) * 6 * pin;
+      const d = prof[u];
       if (t < d) p.d[y * 48 + x] = t > d - 1.5 ? U(at(SOIL, 0.85)) : src.d[y * 48 + x];
     }
     out[`soil_${side}`] = p.canvas();
@@ -287,7 +289,7 @@ function produce(p, id, cx, cy, s = 1) {
   if (id === 'ruebe') { berry(p, cx, cy + 2 * s, 6 * s, hx('#a0284a'), hx('#e88aa0')); for (const a of [-2.2, -1.6, -1.0]) leaf(p, cx, cy - 3 * s, 8 * s, a, 2.2 * s, LEAFG, 0.05); p.put(cx, cy + 8 * s, U(hx('#6a1c34'))); }
   if (id === 'kartoffel') { berry(p, cx - 2 * s, cy + 1 * s, 6 * s, hx('#b8905a'), hx('#ecd2a0')); berry(p, cx + 5 * s, cy + 4 * s, 4 * s, hx('#a8804c'), hx('#e0c490')); p.put(cx - 4, cy, U(hx('#6a4a28'))); p.put(cx + 1, cy + 3, U(hx('#6a4a28'))); }
   if (id === 'erdbeere') { berry(p, cx, cy + 2 * s, 7 * s, hx('#d82838'), hx('#ffb0a0')); for (const a of [-2.4, -1.57, -0.7]) leaf(p, cx, cy - 4 * s, 5 * s, a, 1.8 * s, LEAFG, 0.1); for (let i = 0; i < 7; i++) p.put(cx - 4 + (i * 3) % 9, cy - 1 + (i * 5) % 8, U(hx('#f8e070'))); }
-  if (id === 'kuerbis') { const ry = Math.round(7 * s), rx = Math.round(10 * s); for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) { const nx = x / rx, ny = y / ry, d = nx * nx + ny * ny; if (d > 1) continue; p.put(cx + x, cy + 2 * s + y, U(sh(hx('#e07a20'), 0.66 + (-nx * 0.3 - ny * 0.4 + Math.sqrt(1 - d) * 0.3) + Math.cos(nx * Math.PI * 2.5) * 0.12))); } stem(p, cx, Math.round(cy + 2 * s - ry), cx + 2, Math.round(cy + 2 * s - ry - 4 * s), [hx('#4a5a20'), hx('#6a7a30')], 0.5); }
+  if (id === 'kuerbis') { const ry = Math.round(7 * s), rx = Math.round(10 * s); for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) { const nx = x / rx, ny = y / ry, d = nx * nx + ny * ny; if (d > 1) continue; p.put(cx + x, Math.round(cy + 2 * s) + y, U(sh(hx('#e07a20'), 0.66 + (-nx * 0.3 - ny * 0.4 + Math.sqrt(1 - d) * 0.3) + Math.cos(nx * Math.PI * 2.5) * 0.12))); } stem(p, cx, Math.round(cy + 2 * s - ry), cx + 2, Math.round(cy + 2 * s - ry - 4 * s), [hx('#4a5a20'), hx('#6a7a30')], 0.5); }
   if (id === 'blaubeere') { for (const [dx, dy] of [[-4, 2], [3, 3], [-1, -3], [5, -2], [0, 7]]) berry(p, cx + dx * s, cy + dy * s, 3.6 * s, hx('#4058b8'), hx('#c0d0f8')); leaf(p, cx + 2, cy - 7, 7, -0.6, 2.4, LEAFG, 0.1); }
   if (id === 'weizen') {
     const WR = ramp(['#8a6420', '#a87e2a', '#c49a38', '#d8b44c', '#e8ca68', '#f4dc88']);

@@ -44,6 +44,8 @@ export const OBJ = {
   tools:       { sprite: 'tools', box: [-6, -4, 12, 5], shadow: false },
   bench:       { sprite: 'bench', box: [-10, -4, 20, 5], foot: [16, 14], shadow: 8 },
   flowerbox:   { sprite: 'flowerbox', box: [-7, -5, 14, 6], shadow: false },
+  scarecrow:   { sprite: 'scarecrow', box: [-4, -4, 8, 5], shadow: 5 },
+  bed:         { sprite: 'bed', box: [-7, -26, 14, 26], foot: [8, 30], shadow: false },
 };
 
 export class Obj extends Entity {
@@ -250,8 +252,14 @@ export class Bomb extends Obj {
   }
 }
 
+// Bed: sleep → next morning (farm/clock), monsters healed.
+export class BedObj extends Obj {
+  interact(g) { g.askSleep?.(); }
+}
+
 export function createObject(g, spec) {
   switch (spec.t) {
+    case 'bed': return new BedObj(g, spec);
     case 'sign': return new Sign(g, spec);
     case 'chest': return new Chest(g, spec);
     case 'door_locked': return new LockedDoor(g, spec);

@@ -83,10 +83,26 @@ function rupee(col) {
   return C(8, 14, (g) => { g.fillStyle = '#101018'; g.fillRect(1, 1, 6, 12); g.fillStyle = col; g.fillRect(2, 2, 4, 10); g.fillStyle = '#fff'; g.fillRect(3, 3, 1, 3); });
 }
 
+import { SPECIES } from './monsters/species.js';
+const MON_COL = { normal: ['#d8d0c0', '#a89880'], fire: ['#e06030', '#ffb040'], water: ['#e8d8b0', '#4090e0'], plant: ['#8a6a40', '#70c040'], bolt: ['#403860', '#f8e040'], stone: ['#8a8090', '#c8b898'], wind: ['#b8c8d8', '#f0f8ff'] };
+function monsterBlob(id) {
+  const sp = SPECIES[id];
+  const h = Math.max(14, Math.min(64, Math.round((sp?.size || 24) * 0.8))), w = Math.round(h * 1.1);
+  const [body, acc] = MON_COL[sp?.types?.[0] || 'normal'];
+  return C(w + 2, h + 2, (g) => {
+    ell(g, (w >> 1) + 1, (h >> 1) + 2, w >> 1, (h >> 1) - 1, '#201828');
+    ell(g, (w >> 1) + 1, (h >> 1) + 2, (w >> 1) - 1, (h >> 1) - 2, body);
+    ell(g, (w >> 1) + 1, 3, Math.max(2, w >> 3), 2, acc);
+    g.fillStyle = '#fff'; g.fillRect((w >> 1) - 3, (h >> 1), 2, 3); g.fillRect((w >> 1) + 3, (h >> 1), 2, 3);
+    g.fillStyle = '#201828'; g.fillRect((w >> 1) - 2, (h >> 1) + 1, 1, 2); g.fillRect((w >> 1) + 4, (h >> 1) + 1, 1, 2);
+  });
+}
+
 export function fallbackSprite(key = '') {
   if (cache.has(key)) return cache.get(key);
   let c = null;
   try {
+    if (key.startsWith('mon_')) { c = monsterBlob(key.split('_')[1]); cache.set(key, c); return c; }
     let mk = MAKERS[key];
     if (!mk) {
       // strip action/dir suffixes: hero_walk_down → hero, npc_elder_idle_down → npc_elder
