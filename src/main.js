@@ -8,6 +8,8 @@ import { createFX } from './anim/index.js';
 import { createSFX } from './audio/index.js';
 import { createGame } from './game/index.js';
 import { createUI } from './ui/index.js';
+import { setSaveSlot } from './game/save.js';
+import { loadContentSource, installContent } from './content/runtime.js';
 
 const STEP = 1 / 60;
 
@@ -109,6 +111,31 @@ function boot() {
 
   // debug/QA hook
   window.__drift = { game, camera, renderer, input, ui, fx, sfx, assets };
+
+  // eigene Inhalte (Editor): ?content=local | ?content=<url> [&map=<id>&x=<tx>&y=<ty>] – Probe spielen startet direkt
+  const src = params.get('content');
+  if (src) startContent(game, ui, src, params);
+}
+
+async function startContent(game, ui, src, params) {
+  const direct = params.has('map') || params.has('play');
+  try {
+    const raw = await loadContentSource(src);
+    setSaveSlot(direct ? null : `content:${raw?.project?.id || raw?.project?.name || src}`);
+    const n = (k) => (params.has(k) ? Number(params.get(k)) : undefined);
+    const res = installContent(game, raw, { map: params.get('map') || undefined, x: n('x'), y: n('y') });
+    window.__drift.content = res;
+    if (!res.ok) {
+      console.error('[content]', res.errors);
+      ui.toast?.(`Projekt fehlerhaft: ${res.errors[0]?.path}: ${res.errors[0]?.message}`, { time: 8 });
+      return;
+    }
+    if (res.warnings.length) console.info('[content] Hinweise', res.warnings.map(String));
+    if (direct) game.newGame();
+  } catch (e) {
+    console.error('[content]', e);
+    ui.toast?.(`Eigene Inhalte nicht ladbar: ${e.message}`, { time: 8 });
+  }
 }
 
 boot();

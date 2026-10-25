@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#14172a" />
+  <title>DRIFT-Editor</title>
+  <link rel="stylesheet" href="./editor/editor.css" />
+</head>
+<body>
+  <header id="top">
+    <div class="brand">DRIFT <span>Editor</span></div>
+    <input id="projName" class="ghost" title="Projektname" />
+    <div class="grp">
+      <button data-cmd="undo" title="Rückgängig (Strg+Z)">↶</button>
+      <button data-cmd="redo" title="Wiederholen (Strg+Y)">↷</button>
+    </div>
+    <div class="grp">
+      <button data-cmd="new" title="Neues Projekt">Neu</button>
+      <button data-cmd="open" title="Projektdatei öffnen (.json)">Öffnen</button>
+      <button data-cmd="export" title="Projekt als Datei speichern">Exportieren</button>
+      <button data-cmd="check" title="Projekt prüfen">Prüfen</button>
+    </div>
+    <span id="saveState" class="muted"></span>
+    <div class="spacer"></div>
+    <button data-cmd="preview" id="btnPreview" title="Live-HD-2D-Vorschau ein/aus">HD-2D-Vorschau</button>
+    <button data-cmd="play" class="primary" title="Ab Startpunkt spielen (Shift: ab Mausposition)">▶ Probe spielen</button>
+  </header>
+  <nav id="tools"></nav>
+  <aside id="left">
+    <section>
+      <h3>Karten <button data-cmd="addMap" class="mini" title="Neue Karte">＋</button></h3>
+      <ul id="mapList"></ul>
+    </section>
+    <section id="paletteBox">
+      <h3 id="paletteTitle">Palette</h3>
+      <div id="brushOpts"></div>
+      <div id="palette"></div>
+    </section>
+  </aside>
+  <main id="stage">
+    <canvas id="view"></canvas>
+    <div id="hud"><span id="coords"></span></div>
+    <div id="previewPane" hidden>
+      <div class="bar"><b>HD-2D-Vorschau</b><label><input type="checkbox" id="autoPrev" checked /> automatisch</label>
+        <button data-cmd="refreshPreview" class="mini" title="Neu laden">⟳</button><button data-cmd="preview" class="mini" title="Schließen">✕</button></div>
+      <iframe id="previewFrame" title="HD-2D-Vorschau"></iframe>
+    </div>
+  </main>
+  <aside id="right"><div id="inspector"></div></aside>
+  <div id="toasts"></div>
+  <dialog id="modal"><form method="dialog"><div id="modalBody"></div><menu><button value="ok" class="primary">OK</button></menu></form></dialog>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden />
+  <script type="module" src="./editor/src/app.js"></script>
+</body>
+</html>

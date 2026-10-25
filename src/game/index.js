@@ -14,7 +14,7 @@ import { createBattle } from './monsters/battle.js';
 import { WildMon, createSpawner, Companion } from './monsters/wild.js';
 import { Trainer } from './monsters/trainer.js';
 import { Monster } from './monsters/monster.js';
-import { STARTERS, SPECIES } from './monsters/species.js';
+import { STARTERS as DEFAULT_STARTERS, SPECIES } from './monsters/species.js';
 import { MOVES } from './monsters/moves.js';
 import { createClock } from './farm/clock.js';
 import { createInventory, giveStarterKit } from './farm/inventory.js';
@@ -161,6 +161,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
       case 'bombs': p.hasBombs = true; p.item = 'bomb'; p.bombs = Math.min(p.maxBombs, p.bombs + (amount || 4)); g.flags.bombs_found = true; break;
       case 'heart_container': p.maxHp = Math.min(40, p.maxHp + 2); p.hp = p.maxHp; break;
       case 'crystal': g.flags.crystal = true; break;
+      default: g.inventory?.add?.(item, amount || 1);
     }
     p.syncInventory();
   };
@@ -350,7 +351,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     Object.assign(player, { hp: 6, maxHp: 6, rupees: 0, keys: 0, bombs: 0, hasBombs: false, item: null, hasSword: true, god: player.god });
     player.syncInventory();
   }
-  g.newGame = () => {
+  g.resetForNewGame = () => {
     clearSave();
     g.flags = {};
     resetPlayer();
@@ -358,6 +359,9 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     g.inventory.clear?.(); player.rupees = 0;
     g.clock.deserialize?.({ day: 1, t: 2 });
     g.farm?.reset?.();
+  };
+  g.newGame = () => {
+    g.resetForNewGame();
     g.state = 'play';
     g.loadMap('house_elder', 'start');
     g.after(0.7, () => {
@@ -430,8 +434,9 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
       // attract mode: drift the camera slowly over the village
       titleT += dt;
       const target = g._titleCam || (g._titleCam = { x: 0, y: 0, z: 0 });
-      target.x = 14 * TILE + Math.sin(titleT * 0.12) * 120;
-      target.y = 22 * TILE + Math.cos(titleT * 0.09) * 50;
+      const anchor = g._titleAnchor || { x: 14 * TILE, y: 22 * TILE };
+      target.x = anchor.x + Math.sin(titleT * 0.12) * 120;
+      target.y = anchor.y + Math.cos(titleT * 0.09) * 50;
       camera.follow = target;
       for (const n of g.npcs) n.update(dt);
       safe(fx, 'ambient', g.world, camera);
@@ -441,6 +446,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     if (g.hitstop > 0) { g.hitstop -= dt; return; }
     if (g.trans) { updateTransition(dt); safe(fx, 'ambient', g.world, camera); rebuild(); return; }
     g.mapTime += dt;
+    try { g.mapDef?.onUpdate?.(g, dt); } catch (e) { console.warn('[game] map.onUpdate', e); }
     if (!g.farm?.updatesClock) g.clock.update?.(dt);
     try { g.farm?.update?.(dt); } catch (e) { console.warn('[game] farm.update', e); }
     if (g.battleCooldown > 0) g.battleCooldown -= dt;
@@ -500,12 +506,13 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     });
   };
   g.healParty = () => { g.party.healAll(); };
-  g.chooseStarter = async () => {
+  g.chooseStarter = async (list) => {
+    const STARTERS = (list || g.starters || DEFAULT_STARTERS).filter((id) => SPECIES[id]);
     let idx = null;
     try { if (ui?.chooseStarter) idx = await ui.chooseStarter(STARTERS.map((id) => new Monster(id, 5))); } catch (e) { idx = null; }
     if (idx == null || idx < 0) {
       idx = await g.say({ text: 'Bodo: Welches Monster soll dich begleiten?', speaker: 'Bodo',
-        choices: STARTERS.map((id) => `${SPECIES[id].name} (${{ fire: 'Feuer', water: 'Wasser', plant: 'Pflanze' }[SPECIES[id].types[0]]})`) });
+        choices: STARTERS.map((id) => `${SPECIES[id].name} (${{ fire: 'Feuer', water: 'Wasser', plant: 'Pflanze' }[SPECIES[id].types[0]] ?? SPECIES[id].types[0]})`) });
     }
     if (typeof idx !== 'number' || idx < 0 || idx >= STARTERS.length) idx = 0;
     const mon = new Monster(STARTERS[idx], 5);
