@@ -575,7 +575,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       bladeTex = tex(c);
     }
     const pts = [];
-    const per = mobile ? 16 : 40;
+    const per = Math.round((mobile ? 16 : 40) * R.tune.blades);
+    if (per <= 0) return;
     for (let ty = 0; ty < world.h; ty++) for (let tx = 0; tx < world.w; tx++) {
       const id = world.tileAt(tx, ty);
       const grp = (assets.edgeGroup || {})[id] || id;
@@ -805,6 +806,9 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     return g;
   }
 
+  // ---------- Feinabstimmung (Experimente per URL: ?elev=-6&cd=0.8&blades=0.4&px=360&dof=bg) ----------
+  const TQ = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
+  const tune = { elev: +(TQ.get('elev') || 0), camDist: +(TQ.get('cd') || 1), blades: TQ.has('blades') ? +TQ.get('blades') : 1, pixelH: +(TQ.get('px') || 0), dof: TQ.get('dof') || null };
   // ---------- post-processing ----------
   let W = 1, H = 1;
   const rtScene = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthTexture: new THREE.DepthTexture(1, 1) });
@@ -904,7 +908,9 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   function resize(w, h) {
     W = w; H = h;
     gl.setSize(w, h, false);
-    const s = R.resScale;
+    const s = R.tune.pixelH > 0 ? Math.min(1, R.tune.pixelH / h) : R.resScale;
+    const nf = R.tune.pixelH > 0 ? THREE.NearestFilter : THREE.LinearFilter;
+    for (const t of [rtScene.texture, rtComp.texture]) { t.magFilter = nf; t.minFilter = nf; }
     const sw = Math.max(1, Math.round(w * s)), sh = Math.max(1, Math.round(h * s));
     rtScene.setSize(sw, sh);
     rtComp.setSize(sw, sh);
@@ -926,6 +932,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     xray: true,
     tiltShift: true, vignette: true, grade: true, bloom: !mobile, dof: true, debug: false, look: 'klar',
     resScale: mobile ? 0.75 : 1,
+    tune,
     stats: { tiles: 0, sprites: 0 },
     ctx: null,
     sprite(img, x, y, z = 0, o = {}) {
@@ -1113,11 +1120,11 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   function placeCamera(cam, world) {
     const base = cam.base || 3;
     const zf = cam.scale / base;                         // 1 = default zoom
-    const elev = THREE.MathUtils.clamp(32 - (zf - 1) * 8 + (zf < 1 ? (1 - zf) * 44 : 0), 24, 70) * DEG;
+    const elev = THREE.MathUtils.clamp(32 + R.tune.elev - (zf - 1) * 8 + (zf < 1 ? (1 - zf) * 44 : 0), 16, 70) * DEG;
     stretch = THREE.MathUtils.clamp(Math.tan(elev) * 1.25, 1, 1.5);
     const fov = 30;
     camera.fov = fov;
-    const dist = 120 / Math.tan((fov / 2) * DEG) / zf * 0.6 * (cam.battleFocus ? 0.88 : 1) * (W >= H ? (H / W < 0.7 ? 1 : 1.25) : Math.min(2.2, (H / W) * 0.9));
+    const dist = R.tune.camDist * 120 / Math.tan((fov / 2) * DEG) / zf * 0.6 * (cam.battleFocus ? 0.88 : 1) * (W >= H ? (H / W < 0.7 ? 1 : 1.25) : Math.min(2.2, (H / W) * 0.9));
     const f = cam.battleFocus || cam.follow;
     const fy = f ? ((f.z || 0) * LEVEL) : 0;
     if (!camY.init) { camY.v = fy; camY.init = true; }
@@ -1281,9 +1288,9 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     gl.render(scene, camera);
 
     const post = R.tiltShift || R.bloom || R.grade || R.vignette;
-    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.5, uTilt: R.tiltShift ? 0.45 : 0, uMaxCoc: 3.5 * (rtScene.height / 540) };
+    const u = { uNear: camera.near, uFar: camera.far, uFocus: dist, uRange: dist * 0.5, uTilt: R.tiltShift && R.tune.dof !== 'bg' ? 0.45 : 0, uMaxCoc: 3.5 * (rtScene.height / 540) };
     let src = rtScene;
-    if (R.tiltShift && R.dof) {
+    if ((R.tiltShift || R.tune.dof === 'bg') && R.dof) {
       Object.entries(u).forEach(([k, v]) => { blurMat.uniforms[k].value = v; compMat.uniforms[k].value = v; });
       blurMat.uniforms.tColor.value = rtScene.texture; blurMat.uniforms.tDepth.value = rtScene.depthTexture;
       blurMat.uniforms.uTexel.value.set(1 / rtScene.width, 1 / rtScene.height);
