@@ -463,7 +463,7 @@ function renderInspector() {
     box.append(field('Text', lines(d.lines, dd((x, v) => { x.lines = v; }))));
     const actions = { '': '– nichts –', heal: 'Team heilen', giveStarter: 'Starter-Monster wählen lassen', shop: 'Laden öffnen' };
     const curAct = (d.do || []).map((a) => Object.keys(a)[0]).find((a) => a in actions) || '';
-    box.append(field('Danach', sel(actions, curAct, dd((x, v) => { x.do = (x.do || []).filter((a) => !(Object.keys(a)[0] in actions)); if (v) x.do.unshift({ [v]: v === 'shop' ? { name: x.speaker || 'Laden' } : true }); if (!x.do.length) delete x.do; }))));
+    box.append(field('Danach', sel(actions, curAct, dd((x, v) => { x.do = (x.do || []).filter((a) => !(Object.keys(a)[0] in actions)); if (v) x.do.unshift({ [v]: v === 'shop' ? { name: x.speaker || 'Laden', stock: ['orb', 'potion', 'potion_big', 'revive'] } : true }); if (!x.do.length) delete x.do; }))));
     const flagAct = (d.do || []).find((a) => a.setFlag);
     box.append(field('Setzt Flag (optional)', inp(flagAct?.setFlag, dd((x, v) => { x.do = (x.do || []).filter((a) => !a.setFlag); if (v) x.do.push({ setFlag: v }); if (!x.do.length) delete x.do; }))));
   } else if (k === 'trainer') {
@@ -728,7 +728,7 @@ function bindInput() {
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   cv.addEventListener('pointerleave', () => { E.hover = null; E.view.redraw(); });
   window.addEventListener('keydown', (e) => {
-    if (e.target.closest('input, textarea, select') || $('#modal').open || !document.querySelector('#importer')?.hidden && document.querySelector('#importer')) return;
+    if (e.target.closest('input, textarea, select') || $('#modal').open || [...document.querySelectorAll('#importer, #generator')].some((x) => !x.hidden)) return;
     const k = e.key.toLowerCase();
     if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? E.redo() : E.undo(); return; }
     if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); E.redo(); return; }

@@ -47,7 +47,7 @@ export function createMenu(U) {
       { id: 'resume', label: 'Fortsetzen' },
       { id: 'zoom', label: 'Zoom', value: fmtZoom(U.camera?.target), lr: true },
       { id: 'sound', label: 'Ton', value: U.soundOn ? 'An' : 'Aus', lr: true },
-      { id: 'tilt', label: 'Tilt-Shift', value: r ? (r.tiltShift !== false ? 'An' : 'Aus') : '–', lr: true },
+      { id: 'look', label: 'Bildstil', value: r?.LOOKS ? r.LOOKS[r.look] : (r ? (r.tiltShift !== false ? 'An' : 'Aus') : '–'), lr: true },
       { id: 'help', label: 'Steuerung' },
     ];
     if (typeof U.game?.save === 'function') rows.splice(1, 0, { id: 'save', label: 'Speichern' });
@@ -60,7 +60,7 @@ export function createMenu(U) {
       case 'save': if (!dir) { try { U.game.save(); U.toast('Gespeichert.'); } catch { U.toast('Speichern fehlgeschlagen'); } } break;
       case 'zoom': U.camera?.zoom?.(dir || 1); break;
       case 'sound': U.setSound(!U.soundOn); break;
-      case 'tilt': { const r = U.renderer(); if (r) r.tiltShift = r.tiltShift === false; break; }
+      case 'look': { const r = U.renderer(); if (r?.setLook) { const k = Object.keys(r.LOOKS); r.setLook(k[(k.indexOf(r.look) + (dir || 1) + k.length) % k.length]); } else if (r) r.tiltShift = r.tiltShift === false; break; }
       case 'help': if (!dir) st.help = true; break;
     }
   }
@@ -336,7 +336,7 @@ export function createMenu(U) {
       selBox(ctx, x - 4, y - 1, w + 8, 14, sel, false);
       drawText(ctx, r.label, x + 4, y, { color: sel ? C.ivory : C.ivoryDim, shadow: C.ink });
       if (r.value != null) drawText(ctx, r.lr ? `◀ ${r.value} ▶` : r.value, x + w - 4, y, { align: 'right', color: sel ? C.hair : C.ivoryDim, shadow: C.ink });
-      const toggle = r.id === 'sound' || r.id === 'tilt';
+      const toggle = r.id === 'sound' || r.id === 'look';
       if (r.lr) {
         U.hit(x - 4, y - 1, Math.floor(w / 2) + 4, 14, () => { st.sel.opts = i; optAction(r.id, toggle ? 0 : -1); });
         U.hit(x + Math.floor(w / 2), y - 1, Math.ceil(w / 2) + 4, 14, () => { st.sel.opts = i; optAction(r.id, toggle ? 0 : 1); });

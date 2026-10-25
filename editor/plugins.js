@@ -4,7 +4,7 @@
 // Fehler in einem Plugin werden abgefangen und als Hinweis angezeigt – sie blockieren den Editor nicht.
 // API: docs/EDITOR.md
 export default [
-  // './tools/index.js',
+  './tools/index.js',
   // './inspectors/index.js',
   './importer/index.js',
 ];

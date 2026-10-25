@@ -116,3 +116,22 @@ details pre { white-space: pre-wrap; max-height: 160px; overflow: auto; font-siz
   .imp-body { grid-template-columns: 1fr; grid-auto-rows: auto; overflow-y: auto; }
   .imp-col { border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; }
 }
+
+/* Szenen-Generator */
+#generator { position: fixed; inset: 0; z-index: 20; background: var(--bg); display: flex; flex-direction: column; }
+#generator[hidden] { display: none; }
+.gen-body { flex: 1; display: grid; grid-template-columns: 360px 1fr; min-height: 0; }
+.gen-form { overflow-y: auto; padding: 12px; border-right: 1px solid var(--line); }
+.gen-tpl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+.gen-tpl button { text-align: left; }
+.gen-sl { display: grid; grid-template-columns: 90px 1fr 48px; gap: 8px; align-items: center; margin-bottom: 6px; font-size: 13px; }
+.gen-sl b { text-align: right; font-weight: 500; color: var(--muted); }
+.gen-info { margin-top: 10px; }
+.gen-prev { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; min-height: 0; overflow: auto; background: #0b0d18; }
+.gen-prev canvas { image-rendering: pixelated; border-radius: 6px; box-shadow: 0 6px 24px #0008; max-width: 100%; }
+.gen-legend { margin-top: 8px; }
+@media (max-width: 980px) {
+  .gen-body { grid-template-columns: 1fr; grid-template-rows: auto auto; overflow-y: auto; }
+  .gen-prev { order: -1; min-height: 300px; }
+  .gen-form { border-right: 0; overflow: visible; }
+}

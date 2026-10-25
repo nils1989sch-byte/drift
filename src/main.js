@@ -79,6 +79,7 @@ function boot() {
   const debug = new URLSearchParams(location.search).has('debug');
   renderer.debug = debug;
   if (new URLSearchParams(location.search).get('tilt') === '0') renderer.tiltShift = false;
+  if (params.get('look') && renderer.setLook) renderer.setLook(params.get('look'));
 
   function frame(now) {
     let dt = Math.min(0.1, (now - last) / 1000);

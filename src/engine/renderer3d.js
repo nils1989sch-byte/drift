@@ -840,8 +840,13 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       vec3 toSRGB(vec3 c){ return mix(c * 12.92, 1.055 * pow(c, vec3(1.0/2.4)) - 0.055, step(0.0031308, c)); }
       void main(){
         vec3 c = texture2D(tColor, vUv).rgb * uExposure;
-        c = aces(c);
-        if (uGrade > 0.5) {
+        if (uGrade > 1.5) {
+          // „Klar“: Pixel-Farben unverfälscht – nur eine weiche Schulter gegen Ausbrennen, kein Farbstich, kein Schleier
+          c *= 0.95;
+          vec3 k = max(c - 0.82, 0.0);
+          c = min(c, 0.82) + 0.18 * (1.0 - exp(-k / 0.18));
+        } else c = aces(c);
+        if (uGrade > 0.5 && uGrade < 1.5) {
           float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
           c.g *= 0.96;                                                 // remove green cast
           c = clamp((c - 0.45) * 1.08 + 0.45, 0.0, 1.0);             // contrast
@@ -859,8 +864,10 @@ export function createRenderer3D(canvas, assets, opts = {}) {
           o *= mix(vec3(0.82, 0.84, 0.86), vec3(1.0), v);
         }
         // fine film grain keeps gradients from banding
-        float n = fract(sin(dot(vUv * (uTime + 1.0), vec2(12.9898, 78.233))) * 43758.5453);
-        o += (n - 0.5) / 255.0 * 2.0;
+        if (uGrade < 1.5) {
+          float n = fract(sin(dot(vUv * (uTime + 1.0), vec2(12.9898, 78.233))) * 43758.5453);
+          o += (n - 0.5) / 255.0 * 2.0;
+        }
         gl_FragColor = vec4(o, 1.0);
       }`,
     depthTest: false, depthWrite: false,
@@ -888,7 +895,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     assets, time: 0, is3D: true,
     models3d: true,
     xray: true,
-    tiltShift: true, vignette: true, grade: true, bloom: !mobile, dof: true, debug: false,
+    tiltShift: true, vignette: true, grade: true, bloom: !mobile, dof: true, debug: false, look: 'klar',
     resScale: mobile ? 0.75 : 1,
     stats: { tiles: 0, sprites: 0 },
     ctx: null,
@@ -1090,7 +1097,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     camera.lookAt(look);
     camera.near = Math.max(4, dist * 0.2); camera.far = dist * 6 + 1500;
     camera.updateProjectionMatrix();
-    scene.fog.near = dist * 1.2; scene.fog.far = dist * 4.2;
+    const clear = R.look === 'klar';
+    scene.fog.near = dist * (clear ? 2.2 : 1.2); scene.fog.far = dist * (clear ? 7 : 4.2);
     // sun follows the view so the shadow map stays sharp where we look
     const span = Math.min(1100, dist * 1.4 + 120);
     sun.position.copy(look).addScaledVector(sunDir, 900);
@@ -1187,7 +1195,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     }
     gradeMat.uniforms.tColor.value = src.texture;
     gradeMat.uniforms.uVignette.value = R.vignette ? 1 : 0;
-    gradeMat.uniforms.uGrade.value = R.grade ? 1 : 0;
+    gradeMat.uniforms.uGrade.value = R.look === 'klar' ? 2 : R.grade ? 1 : 0;
     gradeMat.uniforms.uTime.value = time % 10;
     gradeMat.uniforms.uAspect.value = W / H;
     gradeMat.uniforms.uExposure.value = cur.dark ? 1.15 : 1.23;
@@ -1200,6 +1208,19 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     if (overlay) overlay(octx, R);
   };
   R.resize = resize;
+  // Bildstil: 'klar' (Standard: scharf, unverfälschte Farben, nur ferner Hintergrund weich),
+  // 'diorama' (HD-2D-Kino: Tilt-Shift, Farbgrading, Vignette, Dunst), 'pur' (keine Nachbearbeitung)
+  R.LOOKS = { klar: 'Klar', diorama: 'Diorama', pur: 'Pur' };
+  R.setLook = (look) => {
+    if (!R.LOOKS[look]) look = 'klar';
+    R.look = look;
+    const L = { klar: [false, false, false], diorama: [true, true, true], pur: [false, false, false] }[look];
+    [R.tiltShift, R.vignette, R.grade] = L;
+    R.bloom = look !== 'pur' && !mobile && (R.quality ?? 5) > 2;
+    try { localStorage.setItem('drift.look', look); } catch { /* egal */ }
+    return look;
+  };
+  { let saved = null; try { saved = localStorage.getItem('drift.look'); } catch { /* egal */ } R.setLook(saved || 'klar'); }
   // step effects down when the device can't keep up (called by main.js)
   R.quality = 5;
   R.degrade = function () {

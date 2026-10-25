@@ -235,7 +235,7 @@ export function createScreens(U) {
       ...(usable.length ? [{ id: 'item', label: 'Item', value: ITEM_NAMES[p?.item] || p?.item || '–', lr: true }] : []),
       { id: 'zoom', label: 'Zoom', value: fmtZoom(U.camera?.target), lr: true },
       { id: 'sound', label: 'Ton', value: U.soundOn ? 'An' : 'Aus', lr: true },
-      { id: 'tilt', label: 'Tilt-Shift', value: r ? (r.tiltShift !== false ? 'An' : 'Aus') : '–', lr: true },
+      { id: 'look', label: 'Bildstil', value: r?.LOOKS ? r.LOOKS[r.look] : (r ? (r.tiltShift !== false ? 'An' : 'Aus') : '–'), lr: true },
       { id: 'help', label: 'Steuerung' },
     ];
   }
@@ -273,7 +273,7 @@ export function createScreens(U) {
       case 'item': cycleItem(dir || 1); break;
       case 'zoom': U.camera?.zoom?.(dir || 1); break;
       case 'sound': U.setSound(!U.soundOn); break;
-      case 'tilt': { const r = U.renderer(); if (r) r.tiltShift = r.tiltShift === false; break; }
+      case 'look': { const r = U.renderer(); if (r?.setLook) { const k = Object.keys(r.LOOKS); r.setLook(k[(k.indexOf(r.look) + (dir || 1) + k.length) % k.length]); } else if (r) r.tiltShift = r.tiltShift === false; break; }
       case 'help': if (!dir) pause.help = true; break;
     }
   }
@@ -340,8 +340,8 @@ export function createScreens(U) {
         void vw;
       }
       if (r.lr) {
-        U.hit(x - 2, yy - 1, Math.floor(w / 2) + 2, 13, () => { pause.sel = i; rowAction(r.id, r.id === 'sound' || r.id === 'tilt' ? 0 : -1); });
-        U.hit(x + Math.floor(w / 2), yy - 1, Math.ceil(w / 2) + 2, 13, () => { pause.sel = i; rowAction(r.id, r.id === 'sound' || r.id === 'tilt' ? 0 : 1); });
+        U.hit(x - 2, yy - 1, Math.floor(w / 2) + 2, 13, () => { pause.sel = i; rowAction(r.id, r.id === 'sound' || r.id === 'look' ? 0 : -1); });
+        U.hit(x + Math.floor(w / 2), yy - 1, Math.ceil(w / 2) + 2, 13, () => { pause.sel = i; rowAction(r.id, r.id === 'sound' || r.id === 'look' ? 0 : 1); });
       } else U.hit(x - 2, yy - 1, w + 4, 13, () => { pause.sel = i; rowAction(r.id, 0); });
     });
     return rows.length * 14;

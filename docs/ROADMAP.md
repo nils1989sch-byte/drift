@@ -21,6 +21,9 @@ Prüfen, **▶ Probe spielen** und **Live-HD-2D-Vorschau**. Das Spiel lädt Proj
 (eigener Spielstand pro Projekt). **Eigene Grafik-Sets** (🎨 im Editor): ZIP/PNGs laden → automatische Erkennung von Raster, Boden-Tiles (mit Bodenart),
 Objekten und Figuren-Sheets (Stehen/Laufen je Richtung, Spiegeln) → im Importer korrigieren → sofort in Paletten, Vorschau
 und Spiel. Bilder bleiben lokal (IndexedDB), ins Projekt kommt nur die Zuordnung. Tiles können eingebaute Böden ersetzen.
+**Szenen-Generator** (✨ im Editor): 6 Vorlagen (Wiesen-Route, Waldweg, Flusstal, Küste, Dorf, Höhle), Seed + Regler
+(Wasser, Wald, Hügel, hohes Gras, Monster-Level, Truhen, Ausgänge), Live-Minikarte, als neue Karte oder Ersatz, Ausgänge mit
+vorhandenen Karten verbinden. **Bildstil** im Pausenmenü: Klar (Standard) / Diorama / Pur.
 Offen: HD-Aufwertung importierter Grafik (Detail/Licht), Autotile-Übergänge aus Sets, Smart-Brushes/Generatoren, Figuren-Baukasten, Monster-Werkstatt.
 
 1. **Inhalte als Daten:** Karten, Objekte, NPCs, Dialoge, Truhen, Warps und Gegner-Spawns als JSON in `content/`
