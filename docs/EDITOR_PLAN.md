@@ -20,3 +20,9 @@ Ziel: Ein innovativer Welt-Editor im Browser, mit dem man ohne Programmieren ein
 4. **Spieldesign-Hilfen** – Encounter-Vorschau, Level-Kurve der Route, Prüfer für unerreichbare Stellen, Welt-Graph der Karten.
 5. **Monster-Werkstatt & Figuren-Baukasten** – eigene Monster (Werte, Typen, Attacken, Entwicklung) und NPCs zusammenklicken.
 6. **Sofort spielen** – ein Klick startet das Spiel genau an der Stelle, an der man gerade baut.
+
+## Eigene Assets & automatische Umwandlung (Asset-Import-Agent, `src/assetpack/`, `editor/importer/`)
+- Import fertiger 2D-Sets (ZIP oder PNGs): Raster-/Autotile-Erkennung, Sprite-Sheets → Animationen, automatische Zuordnung zu Tiles/Objekten/Figuren/Monstern mit manueller Korrektur.
+- **2D → HD-2D**: kantenscharfe Hochskalierung auf 48 px/Tile bzw. doppelte Sprite-Dichte, Detail- und Farbrampen-Anreicherung, Licht-Ausgleich, automatische Übergänge, Klippen-Faces, Bäume als 3D-Laubkronen, Grasbüschel aus Gras-Tiles.
+- Pixel-Editor zum Selbermalen (Frames, Onion-Skin, Palette).
+- **Lizenzen**: Pakete bleiben lokal beim Nutzer (IndexedDB) und werden nie ins Repo oder in veröffentlichte Versionen übernommen (z. B. „Cute Fantasy Free“: nicht-kommerziell, keine Weitergabe).
