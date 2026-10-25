@@ -60,7 +60,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
   g.species = SPECIES; g.moves = MOVES;
   // Agent B's farm (src/game/farm/index.js → createFarm(game)) is optional; loaded when it exists.
   g.farm = null;
-  import('./farm/index.js').then((m) => {
+  g.farmReady = import('./farm/index.js').then((m) => {
     try {
       const f = m.createFarm?.(g);
       if (f) { g.farm = f; if (f.clock) g.clock = f.clock; if (f.inventory) g.inventory = f.inventory; f.onMapLoad?.(g.mapId, g.mapDef); }

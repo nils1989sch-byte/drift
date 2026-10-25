@@ -173,8 +173,10 @@ function rectTool(id, icon, label, key, make) {
     move(e) { if (!this.drag) return; const t = tileOf(e); this.drag.x1 = t.x; this.drag.y1 = t.y; E.view.redraw(); },
     up() {
       const d = this.drag; this.drag = null; if (!d) return;
-      const rect = [Math.min(d.x0, d.x1), Math.min(d.y0, d.y1), Math.abs(d.x1 - d.x0) + 1, Math.abs(d.y1 - d.y0) + 1];
       const m = E.map();
+      const cl = (v, n) => Math.max(0, Math.min(n - 1, v));
+      d.x0 = cl(d.x0, m.w); d.x1 = cl(d.x1, m.w); d.y0 = cl(d.y0, m.h); d.y1 = cl(d.y1, m.h);
+      const rect = [Math.min(d.x0, d.x1), Math.min(d.y0, d.y1), Math.abs(d.x1 - d.x0) + 1, Math.abs(d.y1 - d.y0) + 1];
       const kind = make.kind;
       const index = E.change(`${label} anlegen`, () => { const o = make(m, rect); m[COLL[kind]].push(o); return m[COLL[kind]].length - 1; });
       E.select({ kind, index }); setTool('select');
@@ -411,8 +413,7 @@ function sel(options, value, onchange) {
   return s;
 }
 function lines(value, onchange) { return el('textarea', { value: [].concat(value || []).join('\n'), placeholder: 'Eine Zeile pro Textfenster', onchange: (e) => onchange(e.target.value.split('\n').map((s) => s.trimEnd()).filter(Boolean)) }); }
-function check(value, onchange, label) { return el('label', { class: 'row', style: 'gap:6px;flex:0' }, el('input', { type: 'checkbox', checked: !!value, onchange: (e) => onchange(e.target.checked) }), label); }
-const upd = (label, fn) => () => {};
+function check(value, onchange, label) { return el('label', { class: 'chk' }, el('input', { type: 'checkbox', checked: !!value, onchange: (e) => onchange(e.target.checked) }), label); }
 function edit(label, fn) { return (v) => E.change(label, () => fn(v)); }
 function rectFields(r, label) {
   return el('div', { class: 'row' }, ...['x', 'y', 'b', 'h'].map((k, i) => num(r[i], edit(label, (v) => { r[i] = Math.max(i > 1 ? 1 : 0, Math.round(v)); }), { title: k, min: i > 1 ? 1 : 0 })));
@@ -488,14 +489,14 @@ function renderInspector() {
     box.append(field('Max. Monster gleichzeitig', num(r.density ?? 3, edit('Dichte', (v) => { r.density = Math.max(1, Math.min(8, v | 0)); }), { min: 1, max: 8 })));
     box.append(el('h3', {}, 'Monster', el('button', { class: 'mini', onclick: () => E.change('Monster', () => r.table.push({ species: 'zappi', levels: [2, 5], weight: 1 })) }, '＋')));
     const tb = el('div', { class: 'table' });
-    tb.append(el('div', { class: 'row muted' }, el('span', { textContent: 'Art' }), el('span', { textContent: 'Lv von–bis · Gewicht · Zeit', style: 'flex:2' })));
+    tb.append(el('div', { class: 'muted' }, 'Je Monster: Level von / bis · Häufigkeit · Tageszeit'));
     const total = r.table.reduce((s, x) => s + (x.weight || 1), 0) || 1;
     r.table.forEach((row, i) => tb.append(el('div', { class: 'row' }, sel(speciesOptions(), row.species, edit('Monster', (v) => { row.species = v; })),
+      el('button', { class: 'mini', onclick: () => E.change('Monster', () => r.table.splice(i, 1)) }, '✕')), el('div', { class: 'row', style: 'margin-bottom:6px' },
       num(row.levels[0], edit('Level', (v) => { row.levels[0] = Math.max(1, v | 0); row.levels[1] = Math.max(row.levels[0], row.levels[1]); }), { style: 'max-width:46px' }),
       num(row.levels[1], edit('Level', (v) => { row.levels[1] = Math.max(row.levels[0], v | 0); }), { style: 'max-width:46px' }),
       num(row.weight ?? 1, edit('Gewicht', (v) => { row.weight = Math.max(1, v | 0); }), { style: 'max-width:46px', title: `${Math.round(((row.weight || 1) / total) * 100)} %` }),
-      sel({ any: '☀🌙', day: '☀', night: '🌙' }, row.time || 'any', edit('Zeit', (v) => { if (v === 'any') delete row.time; else row.time = v; })),
-      el('button', { class: 'mini', onclick: () => E.change('Monster', () => r.table.splice(i, 1)) }, '✕'))));
+      sel({ any: 'immer', day: '☀ Tag', night: '🌙 Nacht' }, row.time || 'any', edit('Zeit', (v) => { if (v === 'any') delete row.time; else row.time = v; })))));
     box.append(tb);
   } else if (k === 'event') {
     head(r.id, 'Ereignis');
@@ -547,7 +548,7 @@ function mapInspector(box, m, head) {
   const farm = !!m.farm?.rect;
   box.append(check(farm, edit('Hof', (v) => { if (v) m.farm = { rect: [Math.floor(m.w / 2) - 3, Math.floor(m.h / 2) - 2, 6, 4] }; else delete m.farm; }), 'hat ein Hof-Feld (Anbau)'));
   if (farm) box.append(field('Hof-Bereich', rectFields(m.farm.rect, 'Hof')));
-  box.append(el('div', { class: 'row', style: 'margin:10px 0' },
+  box.append(el('div', { class: 'row wrap', style: 'margin:10px 0' },
     el('button', { onclick: () => E.change('Startkarte', () => { E.doc.project.start = { map: m.id, spawn: Object.keys(m.spawns)[0] || 'start' }; }) }, '★ Startkarte'),
     el('button', { onclick: () => duplicateMap(m) }, 'Duplizieren'),
     el('button', { class: 'danger', onclick: () => deleteMap(m) }, 'Löschen')));

@@ -121,6 +121,7 @@ async function startContent(game, ui, src, params) {
   const direct = params.has('map') || params.has('play');
   try {
     const raw = await loadContentSource(src);
+    await game.farmReady?.catch(() => {});
     setSaveSlot(direct ? null : `content:${raw?.project?.id || raw?.project?.name || src}`);
     const n = (k) => (params.has(k) ? Number(params.get(k)) : undefined);
     const res = installContent(game, raw, { map: params.get('map') || undefined, x: n('x'), y: n('y') });

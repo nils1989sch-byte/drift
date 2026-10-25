@@ -13,7 +13,13 @@
 - Performance auf echten Handys messen und abstimmen
 - Ladebildschirm, Einstellungen (Grafikqualität manuell)
 
-## Danach (Version 0.3 – Baukasten zum Umgestalten)
+## In Arbeit (Version 0.3 – Baukasten zum Umgestalten)
+**Stand:** `editor.html` läuft – Boden malen/füllen, Höhen formen, Objekte, Personen (mit Dialog), Trainer (Team, Texte),
+Truhen, Übergänge zwischen Karten, Begegnungs-Zonen (Monster, Level, Tag/Nacht), Ereignisse (Text, Flag, Monster schenken,
+Starter wählen, Reise), Startpunkte, mehrere Karten, Rückgängig/Wiederholen, Autosave im Browser, Export/Import,
+Prüfen, **▶ Probe spielen** und **Live-HD-2D-Vorschau**. Das Spiel lädt Projekte mit `index.html?content=local`
+(eigener Spielstand pro Projekt). Offen: Smart-Brushes/Generatoren (`editor/tools/`), Figuren-Baukasten, Monster-Werkstatt, Asset-Import.
+
 1. **Inhalte als Daten:** Karten, Objekte, NPCs, Dialoge, Truhen, Warps und Gegner-Spawns als JSON in `content/`
    (statt im Code). Das Spiel lädt sie beim Start; Code nur noch für Verhalten.
 2. **Level-Editor im Browser** (`editor.html`): Kacheln malen, Höhen setzen, Objekte/NPCs/Gegner per Klick platzieren,

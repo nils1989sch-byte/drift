@@ -130,7 +130,9 @@ export function installContent(g, raw, opts = {}) {
   g.newGame = () => {
     g.resetForNewGame();
     Object.assign(g.flags, p.flags || {});
+    g.inventory.clear?.();                                  // eigenes Projekt: kein Bodo-Starterpaket
     g.player.rupees = p.player?.money ?? 0;
+    if ('money' in g.inventory) g.inventory.money = p.player?.money ?? 0;
     for (const it of p.player?.items || []) g.inventory.add?.(it.item ?? it, it.count ?? 1);
     for (const mon of p.player?.monsters || []) g.debug.giveMonster(mon.species ?? mon, mon.level ?? 5);
     g.state = 'play';
