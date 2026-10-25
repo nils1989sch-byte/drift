@@ -128,8 +128,7 @@ export class Player extends Entity {
         // a little forward glide keeps it snappy
         if (mag > 0.2) move(g, this, ax * SPEED * 0.25 * dt, ay * SPEED * 0.25 * dt, { slide: true });
         if (this.t >= ATTACK_T) {
-          if (inp.down('attack')) { this.state = 'charge'; this.t = 0; this.charge = 0; this.charged = false; }
-          else this.state = 'normal';
+          this.state = 'normal';   // no sword any more → no charge/spin (the sickle just swings)
         }
         break;
       }
@@ -200,13 +199,13 @@ export class Player extends Entity {
     // actions first
     if (inp.pressed('attack')) {
       if (this.carry) { this.throwCarry(); return; }
-      if (this.hasSword) { this.startAttack(); return; }
+      if (g.useTool ? g.useTool(this) : (this.startAttack(), true)) return;
     }
     if (inp.pressed('action')) {
       if (this.carry) { this.throwCarry(); return; }
       if (this.interact()) return;
     }
-    if (inp.pressed('item') && !this.carry) this.useItem();
+    if (inp.pressed('item') && !this.carry) { if (g.inventory?.next) g.inventory.next(); else this.useItem(); }
 
     let speed = SPEED;
     if (cell.shallow) speed *= 0.55;

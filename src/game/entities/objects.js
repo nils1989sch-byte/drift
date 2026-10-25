@@ -165,6 +165,11 @@ export class Bombable extends Obj {
     this.flag = spec.flag;
     if (this.flag && g.flags[this.flag]) this.dead = true;
   }
+  // B button on a cracked wall/cliff: place a bomb (if the player has some)
+  interact(g, p) {
+    if (p.bombs > 0) { p.bombs--; g.addObject({ t: 'bomb', px: p.x, py: p.y + (p.dir === 'up' ? -3 : 3), lvl: p.lvl }); g.play('bomb_place'); g.toast('Du legst eine Bombe – schnell weg!'); }
+    else g.hint('cracked', 'Die Wand hat Risse. Mit etwas Sprengkraft …', 3);
+  }
   blast(g) {
     if (this.dead) return;
     this.dead = true;

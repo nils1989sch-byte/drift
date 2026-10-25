@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hof-Prüfstand</title>
+<style>
+  body { margin: 0; background: #181020; color: #e8e0d0; font: 13px/1.4 monospace; }
+  canvas { image-rendering: pixelated; display: block; margin: 8px auto; border: 1px solid #3a2e2a; max-width: calc(100vw - 32px); }
+  #info { white-space: pre; max-width: 720px; margin: 0 auto; padding: 0 16px; }
+</style>
+</head>
+<body>
+<canvas id="c" width="384" height="256"></canvas>
+<div id="info"></div>
+<script type="module">
+// Isolated test stand for src/game/farm (no game/index.js). Keys: WASD move, J/Space = tool, K/E = interact,
+// Q = next hotbar slot, 1–8 select slot, N = skip to next day, T = +1 hour. ?auto=1 runs a scripted check.
+import { createWorld } from '../../engine/world.js';
+import { createFarm } from './index.js';
+
+const TILE = 16, W = 24, H = 16;
+let assets = { sprites: {}, tiles: {} };
+try { const A = await import('../../art/index.js'); assets = A.buildAssets(); } catch (e) { console.warn('art unavailable, using fallbacks', e); }
+
+const ground = new Array(W * H).fill('grass');
+for (let x = 0; x < W; x++) { ground[3 * W + x] = 'path'; }
+for (let y = 10; y < 14; y++) for (let x = 18; x < 22; x++) ground[y * W + x] = 'water';
+for (let x = 2; x < 6; x++) ground[12 * W + x] = 'grass_tall';
+const world = createWorld({ id: 'overworld', w: W, h: H, ground, height: new Array(W * H).fill(0) });
+const log = [];
+const player = { x: 5 * TILE + 8, y: 7 * TILE + 10, dir: 'right', lvl: 0, z: 0, state: 'normal', rupees: 0, hp: 6, maxHp: 6, lock: 0 };
+const answers = [];
+const game = {
+  state: 'play', world, mapId: 'overworld', player, objects: [], npcs: [],
+  toast: (t) => { log.unshift(t); log.length = Math.min(log.length, 8); },
+  play: () => {},
+  say: (l) => { const o = typeof l === 'object' && !Array.isArray(l) ? l : { text: [].concat(l).join(' ') }; log.unshift('» ' + o.text + (o.choices ? ' [' + o.choices.join(' | ') + ']' : '')); return Promise.resolve(o.choices ? (answers.length ? answers.shift() : 0) : true); },
+};
+const farm = createFarm(game, { area: { map: 'overworld', x: 6, y: 5, w: 6, h: 4 }, bin: { x: 13, y: 5 } });
+window.__farm = farm; window.__game = game;
+
+const ctx = document.getElementById('c').getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const TILE_COL = { grass: '#5aa040', path: '#c8a870', water: '#3870c0', grass_tall: '#3a7a30', soil: '#7a5030', soil_wet: '#4a3020' };
+let time = 0;
+const r = {
+  assets, get time() { return time; }, ctx,
+  sprite(img, x, y, z = 0, o = {}) {
+    if (!img) return;
+    const ws = img.ws ?? 1, w = img.width * ws, h = img.height * ws;
+    const ax = (img.ax ?? img.width >> 1) * ws, ay = (img.ay ?? img.height - 1) * ws;
+    ctx.globalAlpha = o.alpha ?? 1;
+    ctx.drawImage(img, Math.round(x - ax), Math.round(y - ay - (o.hop || 0)), w, h);
+    ctx.globalAlpha = 1;
+  },
+};
+const keys = new Set(), pressed = new Set();
+addEventListener('keydown', (e) => { if (!keys.has(e.key)) pressed.add(e.key.toLowerCase()); keys.add(e.key); });
+addEventListener('keyup', (e) => keys.delete(e.key));
+const down = (...k) => k.some((x) => keys.has(x));
+
+function step(dt) {
+  time += dt;
+  if (player.lock > 0) player.lock -= dt;
+  let ax = (down('d', 'ArrowRight') ? 1 : 0) - (down('a', 'ArrowLeft') ? 1 : 0);
+  let ay = (down('s', 'ArrowDown') ? 1 : 0) - (down('w', 'ArrowUp') ? 1 : 0);
+  if (player.lock > 0 || player.state !== 'normal') ax = ay = 0;
+  if (ax || ay) { player.dir = Math.abs(ax) >= Math.abs(ay) && ax ? (ax < 0 ? 'left' : 'right') : ay < 0 ? 'up' : 'down'; player.x += ax * 82 * dt; player.y += ay * 82 * dt; }
+  if (pressed.has('j') || pressed.has(' ')) farm.useTool();
+  if (pressed.has('k') || pressed.has('e')) { if (!farm.interact()) { const t = farm.targetCell(); const o = game.objects.find((o) => Math.abs(o.x - (t.tx * 16 + 8)) < 14 && Math.abs(o.y - (t.ty * 16 + 12)) < 20); o?.interact?.(); } }
+  if (pressed.has('q')) farm.cycleHotbar();
+  for (let i = 1; i <= 8; i++) if (pressed.has(String(i))) farm.select(i - 1);
+  if (pressed.has('n')) farm.sleep('bed');
+  if (pressed.has('t')) farm.clock.setTime(farm.clock.abs + 1);
+  pressed.clear();
+  farm.update(dt);
+}
+function draw() {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const id = world.tileAt(x, y), t = assets.tiles?.[id];
+    if (t && t[0]) ctx.drawImage(t[0], x * TILE, y * TILE); else { ctx.fillStyle = TILE_COL[id] || '#f0f'; ctx.fillRect(x * TILE, y * TILE, TILE, TILE); }
+  }
+  const a = farm.area; ctx.strokeStyle = 'rgba(255,240,180,.5)'; ctx.strokeRect(a.x * TILE + 0.5, a.y * TILE + 0.5, a.w * TILE - 1, a.h * TILE - 1);
+  const list = [...game.objects, ...farm.drawables(), { x: player.x, y: player.y, draw() { ctx.fillStyle = '#f0c8a0'; ctx.fillRect(player.x - 5, player.y - 20, 10, 20); ctx.fillStyle = '#201828'; const v = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[player.dir]; ctx.fillRect(player.x + v[0] * 4 - 1, player.y - 14 + v[1] * 3, 2, 2); } }];
+  list.filter((d) => d.layer === 'floor').forEach((d) => d.draw(ctx, r));
+  list.filter((d) => d.layer !== 'floor').sort((p, q) => p.y - q.y).forEach((d) => d.draw(ctx, r));
+  const dk = farm.clock.darkness; if (dk > 0) { ctx.fillStyle = `rgba(20,24,60,${dk * 0.55})`; ctx.fillRect(0, 0, 384, 256); }
+  farm.drawOverlay(ctx);
+  const hb = farm.inventory.hotbar().map((s, i) => `${s.active ? '[' : ' '}${i + 1}:${s.id ? s.name + (s.n > 1 ? '×' + s.n : '') : '-'}${s.active ? ']' : ' '}`).join(' ');
+  document.getElementById('info').textContent =
+    `${farm.clock.dateText}  ${farm.clock.timeText}  Tag ${farm.clock.day}  ${farm.inventory.money} Taler  Kanne ${farm.can.water}/${farm.can.max}\n${hb}\n\n` + log.join('\n');
+}
+let last = performance.now();
+function frame(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; step(dt); draw(); requestAnimationFrame(frame); }
+requestAnimationFrame(frame);
+
+// scripted check (?auto=1): till, sow, water a 3×2 patch, sleep 4 days, harvest one, report in window.__result
+if (new URLSearchParams(location.search).get('auto')) {
+  const errs = [];
+  const at = (tx, ty, dir) => { player.x = tx * 16 + 8; player.y = ty * 16 + 10; player.dir = dir; };
+  const act = (slot) => { farm.select(slot); farm.update(0.3); return farm.useTool(); };
+  for (let x = 7; x < 10; x++) for (const y of [6, 7]) { at(x - 1, y, 'right'); for (const s of [0, 3, 1]) { const res = act(s); if (!res.ok) errs.push(x + ',' + y + ' ' + JSON.stringify(res)); } }
+  for (let d = 0; d < 4; d++) { farm.skipDay(); farm.debug.waterAll(); }
+  at(6, 6, 'right'); farm.update(0.3); const h = farm.interact();
+  window.__result = { errs, harvested: h, crops: farm.inventory.count('crop_ruebe'), day: farm.clock.day, tiles: [world.tileAt(7, 6), world.tileAt(8, 6)] };
+}
+</script>
+</body>
+</html>

@@ -1,25 +1,26 @@
 // All monster species (ids are binding, see docs/DESIGN.md) + the drift orb.
-// Sizes (canvas, ws 0.5): small 64×64 (≈ 24–28 world px tall), evolved 96×96 (≈ 36–40), boss 176×176 (≈ 76).
+// Sizes (ws 0.5): small ≈ 24–28 world px tall, evolved ≈ 36–42, boss ≈ 76. Canvas = square fitted to the
+// species' widest pose (see buildMonster), anchor = foot point.
 import { buildMonster } from './kit.js';
 import { funkel, glutar, tropfi, strudelott, sprossi, dornigel, kiesel, felspanzer } from './ground.js';
 import { zappi, boeli, sturmfalk, moosi, pilzling, steinwaechter } from './others.js';
 import { buildOrb } from './orb.js';
 
 export const SPECIES_ART = [
-  { id: 'funkel', size: 64, draw: funkel },
-  { id: 'glutar', size: 96, draw: glutar, iconScale: 0.42, iconY: 30 },
-  { id: 'tropfi', size: 64, draw: tropfi },
-  { id: 'strudelott', size: 96, draw: strudelott, iconScale: 0.44, iconY: 30 },
-  { id: 'sprossi', size: 64, draw: sprossi },
-  { id: 'dornigel', size: 96, draw: dornigel, iconScale: 0.56, iconY: 29 },
-  { id: 'kiesel', size: 64, draw: kiesel, iconScale: 0.8, iconY: 26 },
-  { id: 'felspanzer', size: 96, draw: felspanzer, iconScale: 0.5, iconY: 27 },
-  { id: 'zappi', size: 64, draw: zappi, fly: true, iconScale: 0.72, iconY: 38 },
-  { id: 'boeli', size: 64, draw: boeli, fly: true, iconScale: 0.82, iconY: 33 },
-  { id: 'sturmfalk', size: 96, draw: sturmfalk, fly: true, iconScale: 0.4, iconY: 39 },
-  { id: 'moosi', size: 64, draw: moosi, iconScale: 0.85, iconY: 29 },
-  { id: 'pilzling', size: 64, draw: pilzling, iconScale: 0.78, iconY: 30 },
-  { id: 'steinwaechter', size: 176, draw: steinwaechter, iconScale: 0.38, iconY: 30 },
+  { id: 'funkel', scale: 1.75, draw: funkel },
+  { id: 'glutar', scale: 1.08, draw: glutar },
+  { id: 'tropfi', scale: 1.8, draw: tropfi },
+  { id: 'strudelott', scale: 1.32, draw: strudelott },
+  { id: 'sprossi', scale: 1.8, draw: sprossi },
+  { id: 'dornigel', scale: 1.4, draw: dornigel },
+  { id: 'kiesel', scale: 2.1, draw: kiesel, faint: 'back' },
+  { id: 'felspanzer', scale: 1.5, draw: felspanzer, faint: 'back' },
+  { id: 'zappi', scale: 1.55, draw: zappi, fly: true },
+  { id: 'boeli', scale: 1.7, draw: boeli, fly: true },
+  { id: 'sturmfalk', scale: 1.15, draw: sturmfalk, fly: true },
+  { id: 'moosi', scale: 1.8, draw: moosi },
+  { id: 'pilzling', scale: 1.75, draw: pilzling },
+  { id: 'steinwaechter', scale: 2.3, draw: steinwaechter },
 ];
 
 export function buildMonsters() {

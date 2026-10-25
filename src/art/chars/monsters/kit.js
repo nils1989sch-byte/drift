@@ -45,13 +45,26 @@ const DIRS = ['down', 'up', 'left', 'right'];
 const viewOf = (d) => (d === 'left' || d === 'right' ? 'side' : d);
 
 export function buildMonster(spec) {
-  const S = {}, N = spec.size, AX = N >> 1, AY = N - (spec.ay ?? 4);
+  const S = {}, sc = spec.scale ?? 1;
+  // 1) measure: union bbox (relative to the foot anchor) over the widest poses of every view
+  const B = 220, BA = 110, BY = 200;
+  let L = 0, R = 0, T = 0, D = 0;
+  for (const view of ['down', 'up', 'side']) for (const P of [{ bob: 0, step: 1, flap: 1 }, { bob: 0, atk: 1, mouth: true, flap: 0 }, { bob: 0, atk: 0, flap: 1 }]) {
+    const f = new Fig(B, B);
+    spec.draw(pen(f, BA + 0.5, BY + 0.5, sc), view, { ph: 0, ...P });
+    const bb = f.bbox(); f.release();
+    if (bb.x1 < 0) continue;
+    L = Math.max(L, BA - bb.x0); R = Math.max(R, bb.x1 - BA); T = Math.max(T, BY - bb.y0); D = Math.max(D, bb.y1 - BY);
+  }
+  const half = Math.ceil(Math.max(L, R)) + 2;
+  const N = Math.max(2 * half, Math.ceil(T + D) + 4);
+  const AX = N >> 1, AY = N - 2 - Math.ceil(D);
   const memo = new Map();
-  const render = (dir, P, o = {}) => {
+  const render = (dir, P) => {
     const key = JSON.stringify(P);
     if (dir === 'right' && memo.has(key)) { const f = memo.get(key); memo.delete(key); f.flip(); return f.canvas(N - 1 - AX, AY); }
     const f = new Fig(N, N);
-    spec.draw(pen(f, AX + 0.5, AY + 0.5, 1), viewOf(dir), P);
+    spec.draw(pen(f, AX + 0.5, AY + 0.5, sc), viewOf(dir), P);
     if (dir === 'right') { f.flip(); return f.canvas(N - 1 - AX, AY); }
     if (dir === 'left') { const c = f.canvas(AX, AY, { release: false }); memo.set(key, f); return c; }
     return f.canvas(AX, AY);
@@ -63,38 +76,43 @@ export function buildMonster(spec) {
     const i1 = render(dir, { ...base, bob: 1, flap: fly ? 1 : 0, ph: 1.6 });
     S[`mon_${spec.id}_idle_${dir}`] = frames([i0, i1], { fps: fly ? 6 : 2.5 });
     const wA = render(dir, { ...base, step: 1, bob: fly ? 0 : -1, flap: fly ? 1 : 0, ph: 0.8 });
-    const wB = render(dir, { ...base, step: -1, bob: fly ? 1 : -1, flap: fly ? 0 : 0, ph: 2.4 });
+    const wB = render(dir, { ...base, step: -1, bob: fly ? 1 : -1, flap: 0, ph: 2.4 });
     S[`mon_${spec.id}_walk_${dir}`] = frames([wA, i0, wB, i0], { fps: 8 });
     S[`mon_${spec.id}_attack_${dir}`] = frames([
       render(dir, { ...base, atk: 0, bob: 1, flap: fly ? 1 : 0, ph: 0.4 }),
-      render(dir, { ...base, atk: 1, mouth: true, flap: fly ? 0 : 0, ph: 1.2 }),
+      render(dir, { ...base, atk: 1, mouth: true, flap: 0, ph: 1.2 }),
       render(dir, { ...base, atk: 2, mouth: true, flap: fly ? 0.5 : 0, ph: 2 }),
     ], { fps: 10 });
     S[`mon_${spec.id}_hurt_${dir}`] = frames([flashCanvas(render(dir, { ...base, hurt: 1, eyes: 'wince', bob: 1, ph: 0.2 })), i0], { fps: 14 });
   }
-  // faint (no direction): wince → sink → lying on the side, eyes closed
+  // faint (no direction): wince → sink → lying (tipped over onto its side, or on its back for crabs)
   {
     const f0 = render('down', { bob: 1, step: 0, flap: 0, eyes: 'wince', ph: 0, faint: 1 });
-    const f1 = render('down', { bob: 2, step: 0, flap: 0, eyes: 'closed', ph: 0, faint: 2, sq: 1 });
+    const f1 = render('down', { bob: 2, step: 0, flap: 0, eyes: 'closed', ph: 0, faint: 2, mouth: true });
     const f = new Fig(N, N);
-    spec.draw(pen(f, AX + 0.5, AY + 0.5, 1), 'side', { bob: 0, step: 0, flap: 0, eyes: 'closed', ph: 0, faint: 3 });
-    const r = f.rot90(); f.release();
-    // lying body: rotated so the back rests on the ground; shift down so it touches the ground line
+    spec.draw(pen(f, AX + 0.5, AY + 0.5, sc), 'down', { bob: 0, step: 0, flap: 0, eyes: 'closed', ph: 0, faint: 3 });
+    const r = spec.faint === 'back' ? f.flipV() : f.rot90();
+    const bb = r.bbox();
     const lie = new Fig(N, N);
-    let maxY = 0, minX = N, maxX = 0;
-    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (r.m[y * N + x]) { maxY = Math.max(maxY, y); minX = Math.min(minX, x); maxX = Math.max(maxX, x); }
-    const dy = AY - 1 - maxY, dx = Math.round(AX - (minX + maxX) / 2);
-    lie.stamp(r, dx, dy);
+    lie.stamp(r, Math.round(AX - (bb.x0 + bb.x1) / 2), AY - bb.y1);
+    if (r !== f) f.release();
     S[`mon_${spec.id}_faint`] = frames([f0, f1, lie.canvas(AX, AY)], { fps: 6 });
+    r.release && r.m && r.release();
   }
-  // icon: 32×32 portrait, front view, drawn (not scaled) at a smaller pen scale
+  // icon: 32×32 portrait, front view, re-painted at a pen scale that fits the box (not a scaled bitmap)
   {
+    const m = new Fig(B, B);
+    spec.draw(pen(m, BA + 0.5, BY + 0.5, 1), 'down', { bob: 0, step: 0, flap: fly ? 0.5 : 0, ph: 0, icon: 1 });
+    const bb = m.bbox(); m.release();
+    const w = bb.x1 - bb.x0 + 1, h = bb.y1 - bb.y0 + 1;
+    const k = Math.min(27 / w, 27 / h, 1.6);
+    const cx = (bb.x0 + bb.x1 + 1) / 2 - BA, by = bb.y1 + 1 - BY;
     const f = new Fig(32, 32);
-    const sc = spec.iconScale ?? 32 / N * 1.25;
-    spec.draw(pen(f, 16.5, (spec.iconY ?? 29) + 0.5, sc), 'down', { bob: 0, step: 0, flap: fly ? 0.5 : 0, ph: 0, icon: 1 });
-    const c = f.canvas(16, 31, { ws: 1 });
-    S[`mon_${spec.id}_icon`] = [c];
+    const oy = 16 + (h * k) / 2 - by * k;
+    spec.draw(pen(f, 16 - cx * k, oy, k), 'down', { bob: 0, step: 0, flap: fly ? 0.5 : 0, ph: 0, icon: 1 });
+    S[`mon_${spec.id}_icon`] = [f.canvas(16, 31, { ws: 1 })];
   }
+  S[`mon_${spec.id}_idle_down`].size = N;
   return S;
 }
 export { M };

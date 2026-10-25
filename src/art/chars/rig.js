@@ -219,6 +219,22 @@ export class Fig {
     }
     return r;
   }
+  // mirror vertically (upside down, e.g. a crab on its back); normals follow
+  flipV() {
+    const w = this.w, h = this.h;
+    for (const k of ['m', 'nx', 'ny', 'nz', 'b', 't', 'g', 'o']) {
+      const a = this[k];
+      for (let y = 0; y < h >> 1; y++) for (let x = 0; x < w; x++) { const i = y * w + x, j = (h - 1 - y) * w + x; const v = a[i]; a[i] = a[j]; a[j] = v; }
+    }
+    for (let i = 0; i < this.ny.length; i++) this.ny[i] = -this.ny[i];
+    return this;
+  }
+  // bounding box of painted pixels
+  bbox() {
+    let x0 = this.w, x1 = -1, y0 = this.h, y1 = -1;
+    for (let y = 0; y < this.h; y++) for (let x = 0; x < this.w; x++) if (this.m[y * this.w + x]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; y1 = y; }
+    return { x0, x1, y0, y1 };
+  }
   // resolve to a canvas. ax/ay = foot anchor in sprite pixels; ws = 0.5 (HD density)
   canvas(ax, ay, o = {}) {
     const w = this.w, h = this.h, n = w * h, M = this.m;

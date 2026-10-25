@@ -121,17 +121,27 @@ export function createBattle(g) {
     const ex = foe ? foe.x : o.x ?? p.x, ey = foe ? foe.y : o.y ?? p.y - 40;
     let dx = ex - p.x, dy = ey - p.y; let l = Math.hypot(dx, dy) || 1; dx /= l; dy /= l;
     if (l < 2) { dx = 0; dy = -1; }
-    const cx = (p.x + ex) / 2 + dx * 12, cy = (p.y + ey) / 2 + dy * 12;
+    // arena: near the encounter, nudged towards open, walkable ground
+    const bx = (p.x + ex) / 2 + dx * 12, by = (p.y + ey) / 2 + dy * 12;
+    let best = null;
+    for (const [ox, oy] of [[0, 0], [16, 0], [-16, 0], [0, 16], [0, -16], [24, 24], [-24, 24], [24, -24], [-24, -24], [36, 0], [-36, 0], [0, 36], [0, -36]]) {
+      const c = { x: bx + ox, y: by + oy };
+      const sc = openness(c.x, c.y, p.lvl) - Math.hypot(ox, oy) * 0.05;
+      if (!best || sc > best.sc) best = { ...c, sc };
+    }
+    const cx = best.x, cy = best.y;
     Object.assign(B, {
       active: true, phase: 'intro', t: 0, arena: { x: cx, y: cy, r: ARENA_R }, telegraphs: [], shots: [], orb: null, result: null,
       wild: !o.trainer, trainer: o.trainer || null, wildEntity: foe || null, boss: !!o.boss, canCapture: false, orbCd: 0,
       enemyTeam: o.team ? [...o.team] : [], onEnd: o.onEnd || null, noFlee: !!(o.trainer || o.boss), participants: new Set(),
     });
     const lvl = p.lvl;
-    B.ally = new Fighter(g, lead, cx - dx * 30, cy - dy * 22, 'ally', lvl);
+    const spot = (x, y) => freeSpot(x, y, lvl, cx, cy);
+    const sa = spot(cx - dx * 30, cy - dy * 22), se = spot(cx + dx * 30, cy + dy * 22);
+    B.ally = new Fighter(g, lead, sa.x, sa.y, 'ally', lvl);
     B.participants.add(lead);
     const emon = foe ? foe.mon : B.enemyTeam.shift();
-    B.enemy = new Fighter(g, emon, cx + dx * 30, cy + dy * 22, 'enemy', lvl);
+    B.enemy = new Fighter(g, emon, se.x, se.y, 'enemy', lvl);
     if (foe) foe.hidden = true;
     B.ally.hidden = true; B.ally.hop = 18;
     B.enemy.dir = dirFromVec(-dx, -dy);
@@ -148,6 +158,32 @@ export function createBattle(g) {
     g.after?.(0.0, () => {});
     return true;
   };
+
+  // how much of a ring at (x,y) is walkable on level lvl and free of solid objects (0..1)
+  function openness(x, y, lvl) {
+    const w = g.world; let ok = 0, n = 0;
+    for (let k = 0; k < 16; k++) {
+      const rr = k < 8 ? ARENA_R * 0.45 : ARENA_R * 0.85, a = (k % 8) / 8 * Math.PI * 2 + (k < 8 ? 0 : 0.4);
+      const px = x + Math.cos(a) * rr, py = y + Math.sin(a) * rr * 0.8;
+      n++;
+      if (pointFree(px, py, lvl)) ok++;
+    }
+    return ok / n + (pointFree(x, y, lvl) ? 0.3 : 0);
+  }
+  function pointFree(px, py, lvl) {
+    const w = g.world, tx = cellOf(px), ty = cellOf(py);
+    if (!w.inside(tx, ty) || w.def(tx, ty).solid || w.def(tx, ty).pit || w.heightAt(tx, ty) !== lvl) return false;
+    for (const s of g.solids) { if (!s.solid || s.dead || s.type === 'barrier') continue; const b = s.solidBox(); if (px > b.x - 4 && px < b.x + b.w + 4 && py > b.y - 4 && py < b.y + b.h + 4) return false; }
+    return true;
+  }
+  function freeSpot(x, y, lvl, cx, cy) {
+    if (pointFree(x, y, lvl)) return { x, y };
+    for (let r = 4; r < 60; r += 4) for (let k = 0; k < 12; k++) {
+      const a = (k / 12) * Math.PI * 2, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      if (Math.hypot(px - cx, py - cy) < ARENA_R - 8 && pointFree(px, py, lvl)) return { x: px, y: py };
+    }
+    return { x: cx, y: cy };
+  }
 
   B.flee = () => {
     if (!B.active || B.phase !== 'fight' || B.noFlee) { if (B.noFlee) g.hint('noflee', 'Aus diesem Kampf gibt es kein Entkommen!'); return false; }

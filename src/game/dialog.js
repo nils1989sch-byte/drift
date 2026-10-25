@@ -9,17 +9,21 @@ export const DIALOG = {
     ];
     if (!f.intro) {
       g.setFlag('intro', true);
-      return [
-        'Bodo: Ah, endlich bist du wach!',
-        'Letzte Nacht ist etwas Schreckliches passiert: Der Drift-Kristall wurde aus dem Schrein gestohlen!',
-        'Ohne den Kristall verliert Driftwald seinen Halt. Unser kleines Dorf treibt langsam davon …',
-        'Die Spuren führen nach Osten, über die Brücke und hinauf zur alten Steinwacht-Ruine.',
-        'Dort haust ein Golem aus lebendigem Fels. Nimm dein Schwert und hol den Kristall zurück!',
-        'Schwert: Leertaste/J – gedrückt halten für die Wirbelattacke. Heben, Lesen, Reden: E/K.',
-      ];
+      return (async () => {
+        await g.say([
+          'Bodo: Ah, endlich bist du wach! Willkommen auf deinem neuen Hof.',
+          'Letzte Nacht ist etwas Schreckliches passiert: Der Drift-Kristall wurde aus dem Schrein gestohlen!',
+          'Ohne den Kristall verliert Driftwald seinen Halt. Unser kleines Dorf treibt langsam davon …',
+          'Die Spuren führen nach Osten, über die Brücke und hinauf zur alten Steinwacht-Ruine. Dort schläft der Steinwächter.',
+          'Allein schaffst du das nicht. Aber ein Monster an deiner Seite – das ist etwas anderes!',
+        ], { speaker: 'Bodo' });
+        await g.chooseStarter();
+      })();
     }
+    if (!g.party?.lead && !g.party?.team.length) return (async () => { await g.say(['Bodo: Ohne Monster lasse ich dich nicht gehen!']); await g.chooseStarter(); })();
     const lines = [];
-    if (p.hp < p.maxHp) { p.hp = p.maxHp; g.play('heal'); lines.push('Bodo: Du bist verletzt. Komm her, ich versorge deine Wunden.', '(Deine Herzen sind wieder voll.)'); }
+    const tired = g.party?.team.some((m) => m.hp < m.maxHp);
+    if (tired) { g.healParty(); g.play('heal'); lines.push('Bodo: Deine Monster sehen erschöpft aus. Komm, ich versorge sie.', '(Dein Team ist wieder fit.)'); }
     if (f.bombs_found) lines.push('Bodo: Bomben? Damit kannst du rissige Wände sprengen. An den Nordklippen soll es so eine geben.');
     else lines.push('Bodo: Die Steinwacht-Ruine liegt im Nordosten, hoch oben auf den Klippen. Folge dem Weg über die Brücke.');
     return lines;

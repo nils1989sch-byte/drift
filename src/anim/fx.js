@@ -435,7 +435,7 @@ export function createFX(assets) {
     },
     drawables() {
       out.length = 0;
-      for (const p of active) if (!p.hidden && p.t >= 0) out.push(p);
+      for (const p of active) if (!p.hidden && p.t >= 0 && p.type !== 'timer' && p.type !== 'sparkle_crop') out.push(p);
       return out;
     },
     ambient,

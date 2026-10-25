@@ -2,6 +2,8 @@
 // Reads game.player every frame; hp counts half hearts (2 hp = 1 heart).
 import { drawText, measure, ASC } from './font.js';
 import { C, rgba, clamp, plaque } from './theme.js';
+import { leadMon, monName, monLevel, monHp, monMaxHp, money, fmtMoney, clockInfo, countOf, inventory } from './data.js';
+import { hpBar, animHp, drawPortrait, drawItemIcon } from './monui.js';
 
 const AREA_T = 3.0;
 const IVORY_ROWS = ['#fffaf0', '#fffaf0', C.ivory, C.ivory, '#e8dcc0', '#dccca8', '#d0bc94'];
@@ -25,6 +27,7 @@ export function createHUD(U) {
       if (st.lastHp != null && hp > st.lastHp) st.healT = 0.4;
       st.lastHp = hp;
       st.low = maxHp > 2 && hp > 0 && (hp <= 2 || hp <= maxHp / 4);
+      if (monsterMode(g)) st.low = false; // hero hearts are gone in DESIGN 2.0
       for (const k of ['rupees', 'bombs', 'keys']) {
         const target = num(p[k]);
         if (st[k] == null) st[k] = target;
@@ -78,7 +81,9 @@ export function createHUD(U) {
   function draw(ctx) {
     const g = U.game, p = g?.player;
     const { W, H } = U; const L = U.safe.l, T = U.safe.t, R = U.safe.r;
-    if (!st.visible || !p || U.hideHud) { drawOverlays(ctx); return; }
+    if (!st.visible || U.hideHud) { drawOverlays(ctx); return; }
+    if (monsterMode(g)) { if (!g.battle?.active) drawMonsterHud(ctx); drawOverlays(ctx); return; }
+    if (!p) { drawOverlays(ctx); return; }
     const top = T + 4;
 
     // item box
@@ -181,6 +186,73 @@ export function createHUD(U) {
     }
     drawText(ctx, name, Math.floor(W / 2), y, { align: 'center', scale: sc, color: IVORY_ROWS, outline: C.ink });
     ctx.globalAlpha = pa;
+  }
+
+  // ---- monster/farm mode (DESIGN 2.0): lead monster, money, clock – no hearts ---------------------------------
+  function monsterMode(g) { return !!(g && (g.party || g.clock || inventory(g))); }
+  function sunMoon(ctx, x, y, night) {
+    if (night) {
+      ctx.fillStyle = C.ink; ctx.fillRect(x + 1, y, 5, 1); ctx.fillRect(x, y + 1, 1, 5); ctx.fillRect(x + 1, y + 6, 5, 1);
+      ctx.fillStyle = '#e8e4f8'; ctx.fillRect(x + 1, y + 1, 3, 5); ctx.fillRect(x + 4, y + 1, 1, 1); ctx.fillRect(x + 4, y + 5, 1, 1);
+      ctx.fillStyle = '#b8b0d8'; ctx.fillRect(x + 1, y + 4, 1, 2);
+    } else {
+      ctx.fillStyle = '#f8c838';
+      ctx.fillRect(x + 3, y - 1, 1, 1); ctx.fillRect(x + 3, y + 7, 1, 1); ctx.fillRect(x - 1, y + 3, 1, 1); ctx.fillRect(x + 7, y + 3, 1, 1);
+      ctx.fillStyle = C.ink; ctx.fillRect(x + 1, y + 1, 5, 5);
+      ctx.fillStyle = '#f8d048'; ctx.fillRect(x + 2, y + 1, 3, 5); ctx.fillRect(x + 1, y + 2, 5, 3);
+      ctx.fillStyle = '#fff0a0'; ctx.fillRect(x + 2, y + 2, 2, 1);
+    }
+  }
+  function drawMonsterHud(ctx) {
+    const g = U.game;
+    const { W } = U; const L = U.safe.l, T = U.safe.t, R = U.safe.r;
+    const top = T + 4;
+    let bottom = top;
+    // lead monster (top-left)
+    const m = leadMon(g);
+    if (m) {
+      const w = W < 300 ? 92 : 108, h = 26;
+      plaque(ctx, L + 4, top, w, h, 0.42);
+      drawPortrait(U, ctx, m, L + 4 + 13, top + 13, 22);
+      const nx = L + 4 + 27;
+      drawText(ctx, monName(g, m), nx, top + 1, { color: C.ivory, shadow: C.ink });
+      drawText(ctx, `Lv.${monLevel(m)}`, L + 4 + w - 4, top + 1, { align: 'right', color: C.hair, shadow: C.ink });
+      const an = animHp(m, monHp(m), monMaxHp(m), 1 / 60);
+      hpBar(ctx, nx, top + 14, w - 31, 4, an.f, an.trail);
+      drawText(ctx, `${Math.ceil(monHp(m))}/${monMaxHp(m)}`, L + 4 + w - 4, top + 16, { align: 'right', color: C.ivoryDim, shadow: C.ink, alpha: 0.9 });
+      bottom = top + h;
+    }
+    // clock (top-right)
+    const ci = clockInfo(g);
+    let clockW = 0;
+    if (ci) {
+      clockW = measure(ci.text) + 22;
+      const x = W - R - 4 - clockW;
+      plaque(ctx, x, top, clockW, 14, 0.42);
+      sunMoon(ctx, x + 5, top + 3, ci.night);
+      drawText(ctx, ci.text, x + 16, top + 1, { color: C.ivory, shadow: C.ink });
+      bottom = Math.max(bottom, top + 14);
+    }
+    // money + orbs: under the clock on narrow screens, otherwise top-centre
+    const mv = money(g);
+    const orbs = countOf(g, 'orb') + countOf(g, 'orb_good') + countOf(g, 'orb_master');
+    if (mv != null || orbs) {
+      const items = [];
+      if (mv != null) items.push(['coin', fmtMoney(mv)]);
+      if (inventory(g)) items.push(['orb', String(orbs)]);
+      const iw = items.reduce((a, [, t]) => a + measure(t) + 16, 0) + 4;
+      const narrow = W < 330;
+      const x = narrow ? W - R - 4 - iw : Math.floor(W / 2 - iw / 2);
+      const y = narrow && ci ? top + 17 : top;
+      plaque(ctx, x, y, iw, 14, 0.42);
+      let cx = x + 4;
+      for (const [k, t] of items) {
+        drawItemIcon(U, ctx, k, cx + 5, y + 7, 10);
+        cx += 12 + drawText(ctx, t, cx + 12, y + 1, { color: C.ivory, shadow: C.ink }) + 4;
+      }
+      bottom = Math.max(bottom, y + 14);
+    }
+    U.hudHeight = Math.max(28, bottom - T + 4);
   }
 
   // low-health vignette, area banner, toasts
