@@ -238,9 +238,9 @@ export function buildEdges() {
   return { edges, ...edgeMeta() };
 }
 export function edgeMeta() {
-  const edgeGroup = { grass_flowers: 'grass', grass_tall: 'grass', water_edge_n: 'water', grass_light: 'grass_light', clearing: 'clearing' };
+  const edgeGroup = { grass_flowers: 'grass', grass_tall: 'grass', water_edge_n: 'water', grass_light: 'grass_light', clearing: 'clearing', soil: 'soil', soil_wet: 'soil' };
   const edgePriority = {
-    grass_dark: 8, grass: 7, grass_light: 6.5, stone_floor: 6, clearing: 4.5, sand: 5, path: 4, dirt: 3, shallow: 2, water: 1,
+    grass_dark: 8, grass: 7, grass_light: 6.5, stone_floor: 6, clearing: 4.5, soil: 3.5, sand: 5, path: 4, dirt: 3, shallow: 2, water: 1,
     bridge: 99, stairs: 99, dungeon_floor: 99, dungeon_wall: 99, wood_floor: 99, void: 99,
   };
   return { edgeGroup, edgePriority };

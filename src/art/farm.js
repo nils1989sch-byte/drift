@@ -26,10 +26,10 @@ const SOILW = ramp(['#140c0a', '#1c120e', '#241812', '#2c1e16', '#36241a', '#402
 function soilTex(seed, R, wet) {
   const W = 48, p = new Pix(W, W), r = rng(seed);
   for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
-    const fy = y % 8;
-    const ridge = fy < 2 ? 0.75 : fy < 4 ? 0.55 : fy < 6 ? 0.32 : 0.15;   // lit ridge top → dark trough
+    const fy = ((y + Math.round(Math.sin((x / 48) * Math.PI * 2 * 2 + seed) * 1.2)) % 8 + 8) % 8;
+    const ridge = fy < 2 ? 0.66 : fy < 4 ? 0.52 : fy < 6 ? 0.38 : 0.24;   // lit ridge top → dark trough
     const n = vnoise(x / 6, y / 6, 8, seed) * 0.25 + vnoise(x / 2, y / 2, 24, seed + 1) * 0.15;
-    let t = ridge + n - 0.15 + (r() - 0.5) * 0.12;
+    let t = ridge + n - 0.15 + (r() - 0.5) * 0.16;
     p.d[y * W + x] = U(at(R, t));
   }
   // clods & pebbles
@@ -242,13 +242,14 @@ function fenceFarm(vertical) {
   return p.canvas();
 }
 function orb(kind, f = 0) {
-  const p = new Pix(12, 12);
-  const top = [P.red_dk, P.red_md, P.red_lt, P.heart_hi], bot = [P.stone_md, P.stone_lt, P.stone_hi, P.white];
-  const off = kind === 'open' ? -2 : 0, tilt = kind === 'shake' ? [-1, 0, 1][f] : 0;
-  p.ellipse(6 + tilt * 0.5, 7, 5, 5, (x, y, nx, ny) => { const L = -nx * 0.5 - ny * 0.6 + 0.5; const R2 = ny < -0.05 ? top : bot; return R2[Math.max(0, Math.min(3, Math.floor(L * 3 + 1)))]; });
-  if (kind === 'open') { for (let x = 0; x < 12; x++) for (let y = 0; y < 7; y++) { const v = p.get(x, y); if (v) { p.clear(x, y); p.put(x + tilt, y + off, v); } } p.put(4, 6, P.fx_cyan); p.put(7, 6, P.white); }
-  p.hline(1 + tilt, 10 + tilt, 7, P.ink);
-  p.rect(5 + tilt, 6, 2, 2, P.white); p.put(5 + tilt, 6, P.metal_lt);
+  // Drift-Kugel: teal glass sphere with a glowing core, held by a brass cage (meridian + equator band)
+  const p = new Pix(12, 12), tilt = kind === 'shake' ? [-1, 0, 1][f] : 0;
+  const glass = [P.water_dk, P.water_md, P.water_lt, P.water_hi];
+  p.ellipse(6 + tilt * 0.5, 6.5, 5, 5, (x, y, nx, ny) => glass[Math.max(0, Math.min(3, Math.floor((-nx * 0.5 - ny * 0.6 + 0.6) * 3)))]);
+  p.vline(6 + tilt, 2, 11, P.gold_md); p.hline(1, 10, 7, P.gold_md); p.hline(2, 9, 6, P.gold_lt);
+  p.put(6 + tilt, 7, kind === 'open' ? P.white : P.fx_cyan);
+  if (kind === 'open') { for (let x = 0; x < 12; x++) for (let y = 0; y < 6; y++) { const v = p.get(x, y); if (v) { p.clear(x, y); if (y - 2 >= 0) p.put(x, y - 2, v); } } p.put(5, 5, P.fx_cyan); p.put(7, 4, P.white); }
+  p.put(4, 4, P.white);
   p.outline(P.ink);
   return p.canvas(6, 11);
 }
@@ -286,9 +287,16 @@ function produce(p, id, cx, cy, s = 1) {
   if (id === 'ruebe') { berry(p, cx, cy + 2 * s, 6 * s, hx('#a0284a'), hx('#e88aa0')); for (const a of [-2.2, -1.6, -1.0]) leaf(p, cx, cy - 3 * s, 8 * s, a, 2.2 * s, LEAFG, 0.05); p.put(cx, cy + 8 * s, U(hx('#6a1c34'))); }
   if (id === 'kartoffel') { berry(p, cx - 2 * s, cy + 1 * s, 6 * s, hx('#b8905a'), hx('#ecd2a0')); berry(p, cx + 5 * s, cy + 4 * s, 4 * s, hx('#a8804c'), hx('#e0c490')); p.put(cx - 4, cy, U(hx('#6a4a28'))); p.put(cx + 1, cy + 3, U(hx('#6a4a28'))); }
   if (id === 'erdbeere') { berry(p, cx, cy + 2 * s, 7 * s, hx('#d82838'), hx('#ffb0a0')); for (const a of [-2.4, -1.57, -0.7]) leaf(p, cx, cy - 4 * s, 5 * s, a, 1.8 * s, LEAFG, 0.1); for (let i = 0; i < 7; i++) p.put(cx - 4 + (i * 3) % 9, cy - 1 + (i * 5) % 8, U(hx('#f8e070'))); }
-  if (id === 'kuerbis') { for (let y = -7; y <= 7; y++) for (let x = -10; x <= 10; x++) { const nx = x / 10, ny = y / 7, d = nx * nx + ny * ny; if (d > 1) continue; p.put(cx + x, cy + 2 * s + y, U(sh(hx('#e07a20'), 0.66 + (-nx * 0.3 - ny * 0.4 + Math.sqrt(1 - d) * 0.3) + Math.cos(nx * Math.PI * 2.5) * 0.12))); } stem(p, cx, cy - 5, cx + 2, cy - 9, [hx('#4a5a20'), hx('#6a7a30')], 0.5); }
+  if (id === 'kuerbis') { const ry = Math.round(7 * s), rx = Math.round(10 * s); for (let y = -ry; y <= ry; y++) for (let x = -rx; x <= rx; x++) { const nx = x / rx, ny = y / ry, d = nx * nx + ny * ny; if (d > 1) continue; p.put(cx + x, cy + 2 * s + y, U(sh(hx('#e07a20'), 0.66 + (-nx * 0.3 - ny * 0.4 + Math.sqrt(1 - d) * 0.3) + Math.cos(nx * Math.PI * 2.5) * 0.12))); } stem(p, cx, Math.round(cy + 2 * s - ry), cx + 2, Math.round(cy + 2 * s - ry - 4 * s), [hx('#4a5a20'), hx('#6a7a30')], 0.5); }
   if (id === 'blaubeere') { for (const [dx, dy] of [[-4, 2], [3, 3], [-1, -3], [5, -2], [0, 7]]) berry(p, cx + dx * s, cy + dy * s, 3.6 * s, hx('#4058b8'), hx('#c0d0f8')); leaf(p, cx + 2, cy - 7, 7, -0.6, 2.4, LEAFG, 0.1); }
-  if (id === 'weizen') { for (let i = 0; i < 5; i++) { const x = cx - 4 + i * 2; for (let k = 0; k < 20; k++) p.put(Math.round(x + (i - 2) * (k / 20) * 2), cy + 10 - k, U(at(ramp(['#8a6420', '#a87e2a', '#c49a38', '#d8b44c', '#e8ca68', '#f4dc88']), 0.3 + (k > 12 ? 0.5 : 0) + (k % 2) * 0.1))); } p.hline(cx - 5, cx + 5, cy + 4, U(hx('#7a3c1c'))); }
+  if (id === 'weizen') {
+    const WR = ramp(['#8a6420', '#a87e2a', '#c49a38', '#d8b44c', '#e8ca68', '#f4dc88']);
+    for (let i = 0; i < 5; i++) {
+      const lean = (i - 2) * 1.6, L = Math.round(22 * s);
+      for (let k = 0; k < L; k++) { const x = Math.round(cx + (i - 2) * 2 * s + lean * (k / L)), y = Math.round(cy + 11 * s - k); p.put(x, y, U(at(WR, 0.35 + (k / L) * 0.3))); if (k > L * 0.6) { p.put(x - 1, y, U(at(WR, 0.75 + (k % 2) * 0.2))); p.put(x + 1, y, U(at(WR, 0.6))); } }
+    }
+    p.hline(Math.round(cx - 5 * s), Math.round(cx + 5 * s), Math.round(cy + 5 * s), U(hx('#9a4a20'))); p.hline(Math.round(cx - 5 * s), Math.round(cx + 5 * s), Math.round(cy + 6 * s), U(hx('#6a3018')));
+  }
 }
 function icon(fn) { const p = new Pix(32, 32); fn(p); p.outline(P.ink); return p.canvas(); }
 function seedPack(id) {
@@ -323,7 +331,15 @@ export function buildFarmIcons() {
   I.icon_hoe = icon((p) => { p.line(8, 27, 22, 8, P.wood_md); p.line(9, 27, 23, 8, P.wood_dk); p.line(7, 26, 21, 7, P.wood_lt); p.rect(19, 4, 9, 4, P.metal_md); p.hline(19, 27, 4, P.metal_lt); p.rect(25, 4, 3, 8, P.metal_md); p.vline(27, 5, 11, P.metal_dk); });
   I.icon_can = icon((p) => { p.ellipse(14, 19, 9, 8, (x, y, nx, ny) => (ny < -0.4 ? P.blue_lt : nx > 0.4 ? P.blue_dk : P.blue_md)); p.line(22, 18, 29, 10, P.blue_md); p.line(22, 19, 29, 11, P.blue_dk); p.rect(28, 8, 3, 3, P.metal_lt); p.line(8, 12, 12, 7, P.blue_dk); p.line(12, 7, 17, 7, P.blue_dk); p.line(17, 7, 20, 12, P.blue_dk); p.put(10, 16, P.white); p.put(11, 15, P.white); });
   I.icon_sickle = icon((p) => { for (let a = 0; a < 2.6; a += 0.05) { const x = 15 + Math.cos(a + 3.6) * 10, y = 13 + Math.sin(a + 3.6) * 9; p.put(Math.round(x), Math.round(y), P.metal_lt); p.put(Math.round(x), Math.round(y) + 1, P.metal_md); } p.rect(14, 20, 3, 9, P.wood_md); p.vline(14, 20, 28, P.wood_lt); p.vline(16, 20, 28, P.wood_dk); });
-  I.icon_orb = icon((p) => { p.ellipse(16, 16, 11, 11, (x, y, nx, ny) => { const L = -nx * 0.5 - ny * 0.6 + 0.5; const R2 = ny < 0 ? [P.red_dk, P.red_md, P.red_lt, P.heart_hi] : [P.stone_md, P.stone_lt, P.stone_hi, P.white]; return R2[Math.max(0, Math.min(3, Math.floor(L * 3 + 1)))]; }); p.hline(5, 27, 16, P.ink); p.hline(5, 27, 17, P.ink); p.ellipse(16, 16.5, 3.5, 3.5, P.ink); p.ellipse(16, 16.5, 2.2, 2.2, P.white); p.put(9, 9, P.white); p.put(10, 8, P.white); });
+  I.icon_orb = icon((p) => {
+    const glass = [P.water_ink, P.water_dk, P.water_md, P.water_lt, P.water_hi];
+    p.ellipse(16, 16, 11, 11, (x, y, nx, ny) => glass[Math.max(0, Math.min(4, Math.floor((-nx * 0.5 - ny * 0.6 + 0.6) * 4)))]);
+    p.ellipse(16, 17, 3.5, 3.5, P.fx_cyan); p.ellipse(16, 17, 1.6, 1.6, P.white);
+    for (let y = 5; y <= 27; y++) { p.put(16, y, P.gold_md); p.put(17, y, P.gold_dk); }
+    for (let x = 5; x <= 27; x++) { p.put(x, 16, P.gold_lt); p.put(x, 17, P.gold_md); }
+    p.rect(14, 3, 5, 3, P.gold_md); p.hline(14, 18, 3, P.gold_lt);
+    p.put(10, 9, P.white); p.put(11, 8, P.white); p.put(9, 10, P.foam);
+  });
   I.icon_potion = icon((p) => { p.rect(13, 3, 6, 3, P.wood_md); p.rect(14, 6, 4, 4, P.water_hi); p.ellipse(16, 20, 9, 9, (x, y, nx, ny) => (ny < -0.3 ? P.water_hi : nx > 0.4 ? P.magic : P.rupee_green)); p.put(11, 16, P.white); p.put(12, 15, P.white); });
   I.icon_coin = icon((p) => { p.ellipse(16, 16, 10, 10, P.gold_dk); p.ellipse(15, 15, 9, 9, P.gold_md); p.ellipse(14, 14, 6, 6, P.gold_lt); p.ellipse(15, 15, 5, 5, P.gold_md); p.vline(15, 11, 19, P.gold_dk); p.put(11, 10, P.white); });
   for (const id of CROP_IDS) { I[`icon_seeds_${id}`] = seedPack(id); I[`icon_crop_${id}`] = cropIcon(id); }

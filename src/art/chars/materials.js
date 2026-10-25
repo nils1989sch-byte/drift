@@ -128,3 +128,8 @@ def('bronze', '#b8743a', { dk: 0.09, lt: 0.08, hsD: 8, shadowHue: 340, lightHue:
 def('petrol', '#2a7682', { dk: 0.08, lt: 0.08, hsD: 9, shadowHue: 240, lightHue: 170, line: '#0e2034', lineLit: '#16364a', spec: 0.9, amb: 0.32, k: 0.74 });
 def('ranger', '#4e7a3e', { dk: 0.075, lt: 0.075, hsD: 8, shadowHue: 220, lightHue: 70, line: '#142614', lineLit: '#203a1e' });
 def('tool_wood', '#b07c48', { dk: 0.08, lt: 0.07, hsD: 8, shadowHue: 340, line: '#3a1e14', lineLit: '#5a3020' });
+def('salamander', '#8e3a2e', { dk: 0.07, lt: 0.075, hsD: 9, shadowHue: 300, lightHue: 30, line: '#2a0e16', lineLit: '#4a1a1e', amb: 0.38, k: 0.64 });
+def('sandfur', '#dcbc8a', { dk: 0.08, lt: 0.06, hsD: 10, shadowHue: 330, lightHue: 50, line: '#4e3022', lineLit: '#7a5238', amb: 0.4, k: 0.6 });
+def('earthfur', '#7e5638', { dk: 0.07, lt: 0.075, hsD: 8, shadowHue: 320, lightHue: 40, line: '#26140e', lineLit: '#3e2418', amb: 0.38, k: 0.62 });
+def('bud', '#f0c050', { dk: 0.09, lt: 0.06, hsD: 10, shadowHue: 10, lightHue: 55, line: '#4a2a14', noLine: true });
+def('lid', '#2a1e2a', { colors: ['#1a121c', '#2a1e2a'], noLine: true });

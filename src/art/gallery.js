@@ -157,7 +157,7 @@ const groups = [
 ];
 for (const [t, f] of groups) section(t, A.sprites, 15, f);
 section('HD-Texturen (Haus, Leaf-Cards, Rinde)', A.sprites, Infinity, (k) => k.startsWith('tex_'));
-section('Icons', A.icons, 15);
+section('Icons', A.icons, Infinity);
 
 document.getElementById('info').innerHTML = `buildAssets ${ms} ms · tiles ${Object.keys(A.tiles).length} · sprites ${Object.keys(A.sprites).length} · icons ${Object.keys(A.icons).length} · ` +
   (issues.length ? `<span class="bad">${issues.length} Style-Issues (console)</span>` : 'Style-Checks OK');

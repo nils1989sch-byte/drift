@@ -4,7 +4,11 @@ import { MOVES } from './moves.js';
 
 let uidSeq = 1;
 export const MAX_LEVEL = 50;
-export const xpForLevel = (l) => Math.floor(6 * l * l + 10 * l);           // total EP needed to REACH level l (from 1)
+// EP for the next level (MONSTER_FARM_GUIDE §4): xpNext(L) = round(10 × L^1.6); xpForLevel = total to reach L.
+export const xpNext = (l) => Math.round(10 * Math.pow(l, 1.6));
+const XP_TOTAL = [0, 0];
+for (let l = 2; l <= 60; l++) XP_TOTAL[l] = XP_TOTAL[l - 1] + xpNext(l - 1);
+export const xpForLevel = (l) => XP_TOTAL[Math.max(1, Math.min(60, l))];
 
 export class Monster {
   constructor(id, level = 5, o = {}) {
@@ -26,8 +30,8 @@ export class Monster {
   get types() { return this.sp.types; }
   stat(k) {
     const b = this.sp.base[k], L = this.level;
-    if (k === 'hp') return Math.floor((b * L) / 20 + L + 12);
-    return Math.floor((b * L) / 25 + 5);
+    if (k === 'hp') return Math.floor((b * L) / 15) + L + 10;
+    return Math.floor((b * L) / 20) + 5;
   }
   get maxHp() { return this.stat('hp'); }
   get atk() { return this.stat('atk'); }

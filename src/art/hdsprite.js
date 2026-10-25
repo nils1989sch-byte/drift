@@ -47,14 +47,20 @@ export function hdify(c, seed = 1) {
     if (INK.has(v)) {
       const m = materialAt(s, x >> 1, y >> 1) || v;
       // outer ring: dark material, inner half of the old outline: mid-dark → soft edge, no black line
-      v = scaleC(m, edge ? 0.5 : 0.68, -0.5);
+      v = scaleC(m, edge ? 0.62 : 0.8, -0.4);
     }
     // warm key light top-left, cooler shade bottom-right, fine painterly grain
     const lx = (x - x0) / bw - 0.5, ly = (y - y0) / bh - 0.5;
     const light = -(lx * 0.6 + ly * 0.8);                         // -0.7 .. 0.7
     const grain = (hf(x, y, seed) - 0.5) * 0.09 + (hf(x >> 2, y >> 2, seed + 7) - 0.5) * 0.07;
-    const k = 1 + light * 0.16 + grain;
-    v = scaleC(v, k, light > 0 ? light * 1.2 : light * 0.6);
+    // fine wood grain on warm, saturated (wood-like) pixels: streaks along x
+    const r0 = R(v), g0 = G(v), b0 = B(v);
+    const woody = r0 > g0 && g0 > b0 && r0 - b0 > 40;
+    const wg = woody ? (hf(x >> 3, y, seed + 3) - 0.5) * 0.12 + (hf(x, y >> 2, seed + 5) - 0.5) * 0.04 : 0;
+    const k = 1 + light * 0.14 + grain + wg;
+    v = scaleC(v, k, light > 0 ? light * 1.0 : light * 0.5);
+    // mute saturation ~18 % towards luminance (gedecktere Farben)
+    { const rr = R(v), gg = G(v), bb = B(v), l = rr * 0.3 + gg * 0.59 + bb * 0.11; v = pack(rr + (l - rr) * 0.18, gg + (l - gg) * 0.18, bb + (l - bb) * 0.18); }
     if (edge && light > 0.25 && !INK.has(o.d[y * W + x])) v = scaleC(v, 1.08, 0.6); // sun rim on lit edges
     out[y * W + x] = v;
   }

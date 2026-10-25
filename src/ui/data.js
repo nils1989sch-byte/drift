@@ -6,14 +6,14 @@ export const TYPES = {
   fire: { name: 'Feuer', short: 'FEU', color: '#e06030', dark: '#802818', light: '#f8a868' },
   water: { name: 'Wasser', short: 'WAS', color: '#3888d8', dark: '#183870', light: '#98c8f8' },
   plant: { name: 'Pflanze', short: 'PFL', color: '#48a840', dark: '#1c5020', light: '#a8e078' },
-  rock: { name: 'Stein', short: 'STE', color: '#a08860', dark: '#4a3c2a', light: '#d8c8a0' },
-  spark: { name: 'Blitz', short: 'BLI', color: '#e8c020', dark: '#806010', light: '#f8f088' },
+  stone: { name: 'Stein', short: 'STE', color: '#a08860', dark: '#4a3c2a', light: '#d8c8a0' },
+  bolt: { name: 'Blitz', short: 'BLI', color: '#e8c020', dark: '#806010', light: '#f8f088' },
   wind: { name: 'Wind', short: 'WIN', color: '#70c0c8', dark: '#28606a', light: '#c8f0f0' },
   normal: { name: 'Normal', short: 'NOR', color: '#a8a098', dark: '#4c4844', light: '#e0dcd4' },
 };
 const TYPE_ALIAS = {
   feuer: 'fire', fire: 'fire', wasser: 'water', water: 'water', pflanze: 'plant', plant: 'plant', grass: 'plant', leaf: 'plant',
-  stein: 'rock', rock: 'rock', stone: 'rock', blitz: 'spark', spark: 'spark', electric: 'spark', thunder: 'spark', lightning: 'spark',
+  stein: 'stone', rock: 'stone', stone: 'stone', blitz: 'bolt', bolt: 'bolt', spark: 'bolt', electric: 'bolt', thunder: 'bolt', lightning: 'bolt',
   wind: 'wind', air: 'wind', flying: 'wind', normal: 'normal',
 };
 export function typeKey(t) { return TYPE_ALIAS[String(t ?? 'normal').toLowerCase()] || 'normal'; }
@@ -26,39 +26,64 @@ export const SPECIES = {
   tropfi: { no: 3, name: 'Tropfi', types: ['water'], habitat: 'Driftwald (Starter)', desc: 'Verspieltes Otterjunges mit Muschelkappe.' },
   strudelott: { no: 4, name: 'Strudelott', types: ['water'], habitat: 'Entwicklung', desc: 'Großer Otter, der Wasserwirbel um sich zieht.' },
   sprossi: { no: 5, name: 'Sprossi', types: ['plant'], habitat: 'Driftwald (Starter)', desc: 'Igel, dessen Stacheln junge Blätter sind.' },
-  dornigel: { no: 6, name: 'Dornigel', types: ['plant', 'rock'], habitat: 'Entwicklung', desc: 'Igel mit dornigem Steinpanzer.' },
-  kiesel: { no: 7, name: 'Kieselkrabbe', types: ['rock'], habitat: 'Ufer, Höhle', desc: 'Krabbe, die ihre Schale aus Kieseln baut.' },
-  felspanzer: { no: 8, name: 'Felspanzer', types: ['rock'], habitat: 'Höhle', desc: 'Massiger Felskrebs, kaum zu erschüttern.' },
-  zappi: { no: 9, name: 'Zappfalter', types: ['spark'], habitat: 'Wiese', desc: 'Schmetterling, dessen Flügel Funken sprühen.' },
+  dornigel: { no: 6, name: 'Dornigel', types: ['plant', 'stone'], habitat: 'Entwicklung', desc: 'Igel mit dornigem Steinpanzer.' },
+  kiesel: { no: 7, name: 'Kieselkrabbe', types: ['stone'], habitat: 'Ufer, Höhle', desc: 'Krabbe, die ihre Schale aus Kieseln baut.' },
+  felspanzer: { no: 8, name: 'Felspanzer', types: ['stone'], habitat: 'Höhle', desc: 'Massiger Felskrebs, kaum zu erschüttern.' },
+  zappi: { no: 9, name: 'Zappfalter', types: ['bolt'], habitat: 'Wiese', desc: 'Schmetterling, dessen Flügel Funken sprühen.' },
   boeli: { no: 10, name: 'Böenspatz', types: ['wind'], habitat: 'Wiese, Klippen', desc: 'Rundlicher Spatz, der mit jedem Windstoß tanzt.' },
   sturmfalk: { no: 11, name: 'Sturmfalk', types: ['wind'], habitat: 'Klippen', desc: 'Falke mit einem Schweif aus Sturmböen.' },
   moosi: { no: 12, name: 'Moosschneck', types: ['plant'], habitat: 'Wald', desc: 'Schnecke, die einen kleinen Moosgarten trägt.' },
   pilzling: { no: 13, name: 'Pilzling', types: ['plant'], habitat: 'Wald (nachts)', desc: 'Wandernder Pilz, meist schläfrig.' },
-  steinwaechter: { no: 14, name: 'Steinwächter', types: ['rock'], habitat: 'Monster-Höhle', desc: 'Uralter Golem, Hüter der Höhle.' },
+  steinwaechter: { no: 14, name: 'Steinwächter', types: ['stone'], habitat: 'Monster-Höhle', desc: 'Uralter Golem, Hüter der Höhle.' },
 };
+
+// ---- live game data (read-only imports from src/game; optional) ------------------------------------
+export const GD = { species: null, moves: null, items: null, starters: null, xpForLevel: (l) => Math.floor(6 * l * l + 10 * l), habitats: null };
+export async function loadGameData() {
+  const tryImport = async (p) => { try { return await import(p); } catch { return null; } };
+  const [sp, mv, mo, it] = await Promise.all([
+    tryImport('../game/monsters/species.js'), tryImport('../game/monsters/moves.js'),
+    tryImport('../game/monsters/monster.js'), tryImport('../game/farm/items.js')]);
+  if (sp?.SPECIES) GD.species = sp.SPECIES;
+  if (sp?.STARTERS) GD.starters = sp.STARTERS;
+  if (mv?.MOVES) GD.moves = mv.MOVES;
+  if (mo?.xpForLevel) GD.xpForLevel = mo.xpForLevel;
+  if (it?.ITEMS) GD.items = it.ITEMS;
+}
+export const HABITATS = { grass: 'Hohes Gras', forest: 'Wald', shore: 'Ufer', cave: 'Höhle', cliff: 'Klippen', meadow: 'Wiese' };
+export const TIMES = { day: 'tagsüber', night: 'nachts', any: '' };
 
 const num = (v, d = 0) => (Number.isFinite(+v) && v !== null && v !== '' ? +v : d);
 
 export function speciesTable(game) {
-  const src = game?.species || game?.dex?.species || null;
+  const src = game?.species || game?.dex?.species || GD.species || null;
   if (!src) return SPECIES;
   const out = { ...SPECIES };
   const list = Array.isArray(src) ? src : Object.entries(src).map(([id, s]) => ({ id, ...s }));
-  for (const s of list) if (s && (s.id || s.key)) out[s.id || s.key] = { ...(SPECIES[s.id || s.key] || {}), ...s };
+  let no = 0;
+  for (const s of list) {
+    if (!s || !(s.id || s.key)) continue;
+    const id = s.id || s.key; no++;
+    const merged = { ...(SPECIES[id] || {}), ...s, no: s.no ?? SPECIES[id]?.no ?? no };
+    if (s.dex && !s.desc) merged.desc = s.dex;
+    if (s.habitat && HABITATS[s.habitat]) merged.habitat = HABITATS[s.habitat] + (TIMES[s.time] ? ` (${TIMES[s.time]})` : '');
+    merged.types = (merged.types || ['normal']).map(typeKey);
+    out[id] = merged;
+  }
   return out;
 }
 
 export function speciesId(m) {
   if (!m) return null;
   if (typeof m === 'string') return m;
-  return m.speciesId || m.species?.id || (typeof m.species === 'string' ? m.species : null) || m.id || null;
+  return m.speciesId || m.species?.id || (typeof m.species === 'string' ? m.species : null) || m.id || null; // Monster.id = species id
 }
 export function speciesOf(game, m) { const id = speciesId(m); return (id && speciesTable(game)[id]) || null; }
 
 // ---- monster instance ----------------------------------------------------------------------------
 export function monName(game, m) {
   if (!m) return '';
-  return m.nickname || m.name || speciesOf(game, m)?.name || speciesId(m) || '???';
+  return m.nickname || m.nick || m.name || speciesOf(game, m)?.name || speciesId(m) || '???';
 }
 export function monTypes(game, m) {
   const t = m?.types || (m?.type ? [m.type] : null) || m?.species?.types || speciesOf(game, m)?.types || ['normal'];
@@ -79,12 +104,20 @@ export function monXpFrac(m) {
   if (Number.isFinite(m.xpFrac)) return Math.max(0, Math.min(1, m.xpFrac));
   const xp = num(m.xp ?? m.exp, 0);
   if (Number.isFinite(m.xpMin) && Number.isFinite(m.xpMax)) return clamp01((xp - m.xpMin) / Math.max(1, m.xpMax - m.xpMin));
-  const next = m.xpNext ?? m.xpToNext ?? m.nextXp;
-  if (Number.isFinite(next)) return m.xpToNext != null && m.xpNext == null ? clamp01(1 - next / Math.max(1, next + xp)) : clamp01(xp / Math.max(1, next));
-  return 0;
+  if (Number.isFinite(m.xpNext)) return clamp01(xp / Math.max(1, m.xpNext));
+  // Monster (src/game/monsters/monster.js): xp is the running total; xpForLevel(l) = total needed to reach l
+  const L = monLevel(m), a = GD.xpForLevel(L), b = GD.xpForLevel(L + 1);
+  return b > a ? clamp01((xp - a) / (b - a)) : 0;
 }
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
-export function monMoves(m) { return (m?.moves || []).slice(0, 4).map((mv) => (typeof mv === 'string' ? { id: mv, name: mv } : mv)).filter(Boolean); }
+/** Move info for an id or object (merges src/game/monsters/moves.js). */
+export function moveData(mv) {
+  if (!mv) return null;
+  const id = typeof mv === 'string' ? mv : mv.id;
+  const base = (id && GD.moves?.[id]) || {};
+  return typeof mv === 'string' ? { id, ...base } : { ...base, ...mv, id };
+}
+export function monMoves(m) { return (m?.moves || []).slice(0, 4).map(moveData).filter(Boolean); }
 export function moveName(mv) { return mv?.name || mv?.id || '–'; }
 export function moveType(mv) { return typeKey(mv?.type); }
 /** Remaining cooldown fraction 0 (ready) .. 1 (just used). */
@@ -101,7 +134,7 @@ export function partyList(game) {
   const p = game?.party;
   if (!p) return [];
   if (Array.isArray(p)) return p;
-  return p.members || p.list || p.team || p.monsters || [];
+  return p.team || p.members || p.list || p.monsters || [];
 }
 export function boxList(game) {
   const p = game?.party;
@@ -109,7 +142,7 @@ export function boxList(game) {
 }
 export function leadMon(game) {
   const p = game?.party;
-  if (p && !Array.isArray(p) && p.lead && typeof p.lead === 'object') return p.lead;
+  if (p && !Array.isArray(p) && p.lead && typeof p.lead === 'object') return p.lead; // party.lead = first non-fainted
   const l = partyList(game);
   return l.find((m) => m && monHp(m) > 0) || l[0] || null;
 }
@@ -123,7 +156,6 @@ export function partySwap(game, i, j) {
     const l = partyList(game);
     if (l[i] === undefined || l[j] === undefined) return;
     [l[i], l[j]] = [l[j], l[i]];
-    if (!Array.isArray(p) && 'lead' in p && typeof p.lead === 'object') p.lead = l[0];
     p.onChange?.();
   } catch (e) { console.warn('[ui] party swap failed', e); }
 }
@@ -135,7 +167,7 @@ function asSet(v) {
   return new Set();
 }
 export function dexState(game) {
-  const d = game?.dex || {};
+  const d = game?.dex || (game?.party && !Array.isArray(game.party) ? game.party : null) || {};
   const seen = asSet(d.seen), caught = asSet(d.caught);
   for (const c of caught) seen.add(c);
   return { seen, caught };
@@ -148,10 +180,12 @@ export const ITEM_NAMES = {
   ruebe: 'Rübe', kartoffel: 'Kartoffel', erdbeere: 'Erdbeere', kuerbis: 'Kürbis', blaubeere: 'Blaubeere', weizen: 'Weizen',
 };
 export function itemId(it) { return typeof it === 'string' ? it : it?.id || it?.item || it?.key || null; }
+export function itemDef(it) { const id = itemId(it); return (id && GD.items?.[id]) || null; }
 export function itemName(it) {
   if (!it) return '';
   if (typeof it === 'object' && it.name) return it.name;
   const id = itemId(it) || '';
+  if (GD.items?.[id]?.name) return GD.items[id].name;
   if (ITEM_NAMES[id]) return ITEM_NAMES[id];
   let m = /^seeds?_(.+)$/.exec(id);
   if (m) return (ITEM_NAMES[m[1]] || cap(m[1])) + '-Saat';
@@ -160,14 +194,15 @@ export function itemName(it) {
   return cap(id.replace(/_/g, ' '));
 }
 const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s);
-export function itemCount(it) { return typeof it === 'object' && it ? num(it.count ?? it.qty ?? it.n ?? it.amount, 1) : 1; }
+export function itemCount(it) { return typeof it === 'object' && it ? num(it.count ?? it.n ?? it.qty ?? it.amount, 1) : 1; }
 
 export function inventory(game) { return game?.inventory || game?.inv || game?.player?.inventoryObj || null; }
 export function hotbar(game) {
   const inv = inventory(game);
   if (!inv) return { slots: [], active: -1, inv: null };
-  const slots = inv.hotbar || (Array.isArray(inv.slots) ? inv.slots.slice(0, 8) : []) || [];
-  const active = num(inv.active ?? inv.selected ?? inv.slot ?? inv.activeSlot, 0);
+  let slots = typeof inv.hotbar === 'function' ? inv.hotbar() : inv.hotbar || (Array.isArray(inv.slots) ? inv.slots.slice(0, 8) : []);
+  slots = (slots || []).map((s) => (s && itemId(s) ? s : null));
+  const active = num(inv.activeSlot ?? (typeof inv.active === 'number' ? inv.active : null) ?? inv.selected ?? inv.slot, 0);
   return { slots: Array.from({ length: 8 }, (_, i) => slots[i] || null), active, inv };
 }
 export function hotbarSelect(game, i) {
@@ -183,6 +218,11 @@ export function hotbarSelect(game, i) {
 export function allItems(game) {
   const inv = inventory(game);
   if (!inv) return [];
+  if (typeof inv.list === 'function') {
+    const m = new Map();
+    for (const it of inv.list()) { const id = itemId(it); if (!id) continue; const p = m.get(id); m.set(id, { ...it, id, count: (p?.count || 0) + itemCount(it) }); }
+    return [...m.values()];
+  }
   let src = inv.items || inv.bag || inv.slots || [];
   if (!Array.isArray(src)) src = Object.entries(src).map(([id, v]) => (typeof v === 'object' ? { id, ...v } : { id, count: v }));
   const map = new Map();
@@ -200,13 +240,13 @@ export function countOf(game, id) {
   return allItems(game).filter((i) => i.id === id).reduce((a, i) => a + i.count, 0);
 }
 export function money(game) {
-  const v = game?.money ?? game?.player?.money ?? game?.player?.coins ?? inventory(game)?.money ?? game?.farm?.money;
+  const v = inventory(game)?.money ?? game?.money ?? game?.player?.money ?? game?.player?.coins ?? game?.farm?.money;
   return Number.isFinite(+v) ? +v : null;
 }
 export function fmtMoney(v) { return String(Math.floor(Math.max(0, v))).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 
 const WD = ['Mo.', 'Di.', 'Mi.', 'Do.', 'Fr.', 'Sa.', 'So.'];
-const SEASONS = { spring: 'Frühling', summer: 'Sommer', autumn: 'Herbst', fall: 'Herbst', winter: 'Winter' };
+const SEASONS = { spring: 'Frühling', summer: 'Sommer', autumn: 'Herbst', fall: 'Herbst', winter: 'Winter', fruehling: 'Frühling', sommer: 'Sommer', herbst: 'Herbst' };
 export function clockInfo(game) {
   const c = game?.clock;
   if (!c) return null;
@@ -217,6 +257,9 @@ export function clockInfo(game) {
   const day = Math.max(1, Math.floor(num(c.day, 1)));
   const hh = ((h % 24) + 24) % 24;
   const night = hh < 6 || hh >= 19;
-  const season = c.season != null ? SEASONS[String(c.season).toLowerCase()] || String(c.season) : null;
-  return { text: `${WD[(day - 1) % 7]} ${day} · ${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}`, night, hours: hh, day, season };
+  const season = c.seasonName || (c.season != null ? SEASONS[String(c.season).toLowerCase()] || String(c.season) : null);
+  const wd = c.weekdayShort ? c.weekdayShort.replace(/\.$/, '') + '.' : WD[(day - 1) % 7];
+  const time = c.timeText || `${String(hh).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+  const isNight = c.isNight ?? night;
+  return { text: `${wd} ${day} · ${time}`, night: isNight || hh < 6, hours: hh, day, season, darkness: c.darkness ?? (night ? 1 : 0) };
 }
