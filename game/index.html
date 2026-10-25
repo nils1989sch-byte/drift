@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Möbel-Chaos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #2b2d42;
+    --panel: rgba(255, 252, 245, 0.92);
+    --p1: #5fbf3a;
+    --p2: #f26b2a;
+    --gold: #ffc93c;
+    --bad: #ff4d4d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #7cc35a; color: var(--ink);
+    font-family: Fredoka, "Trebuchet MS", system-ui, sans-serif; user-select: none; }
+  #app canvas { display: block; }
+  .hidden { display: none !important; }
+
+  /* HUD */
+  #hud { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
+  .chip { background: var(--panel); border-radius: 16px; padding: 6px 16px; box-shadow: 0 4px 0 rgba(0,0,0,.18), 0 8px 20px rgba(0,0,0,.12);
+    display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 22px; min-width: 96px; justify-content: center; }
+  .chip small { font-size: 13px; font-weight: 600; opacity: .6; text-transform: uppercase; letter-spacing: .06em; }
+  #timer.urgent { color: var(--bad); animation: shake .35s infinite; }
+  @keyframes shake { 0%,100% { transform: translate(0,0) rotate(0) } 25% { transform: translate(-2px,1px) rotate(-3deg) } 75% { transform: translate(2px,-1px) rotate(3deg) } }
+
+  .player { position: fixed; bottom: 14px; z-index: 5; background: var(--panel); border-radius: 18px; padding: 8px 14px 8px 10px;
+    box-shadow: 0 4px 0 rgba(0,0,0,.18), 0 8px 20px rgba(0,0,0,.12); display: flex; align-items: center; gap: 10px; min-width: 260px;
+    border: 3px solid transparent; transition: border-color .2s, transform .2s; }
+  #p1 { left: 14px; } #p2 { right: 14px; flex-direction: row-reverse; text-align: right; }
+  .player .avatar { width: 42px; height: 36px; border-radius: 10px; position: relative; flex: none; box-shadow: inset 0 -4px 0 rgba(0,0,0,.2); }
+  .player .avatar::after { content: ''; position: absolute; inset: 6px 7px; border-radius: 6px; background: #111827;
+    box-shadow: inset 0 0 6px rgba(120,255,160,.5); }
+  #p1 .avatar { background: var(--p1); } #p2 .avatar { background: var(--p2); }
+  .player .name { font-weight: 700; font-size: 17px; }
+  .player .keys { font-size: 12px; opacity: .55; font-weight: 600; }
+  .player .status { font-size: 14px; font-weight: 600; min-height: 18px; }
+  .player[data-mood="hint"] { border-color: #8ecae6; }
+  .player[data-mood="busy"] { border-color: var(--gold); }
+  .player[data-mood="warn"] { border-color: #ff9f1c; transform: translateY(-3px); }
+  .player[data-mood="bad"] { border-color: var(--bad); animation: shake .3s 2; }
+
+  #mute-btn { position: fixed; top: 12px; right: 14px; z-index: 6; border: 0; background: var(--panel); border-radius: 12px;
+    font-size: 20px; padding: 6px 10px; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+
+  /* Meldungen */
+  #msg { position: fixed; top: 22%; left: 50%; transform: translate(-50%, -50%) scale(.6); z-index: 6; pointer-events: none;
+    font-size: 34px; font-weight: 700; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.35), 0 0 30px rgba(0,0,0,.25);
+    opacity: 0; transition: opacity .15s, transform .25s cubic-bezier(.3,1.6,.5,1); white-space: nowrap; }
+  #msg.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  #msg.bad { color: #ffd6d6; }
+  #msg.count { top: 42%; }
+  #msg .big { font-size: 120px; display: block; line-height: 1; }
+  #msg.go .big { color: var(--gold); }
+
+  #labels { position: fixed; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
+  .ilabel { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .ilabel .name { font-size: 13px; font-weight: 700; background: rgba(43,45,66,.85); color: #fff; padding: 2px 8px; border-radius: 8px; white-space: nowrap; }
+  .ilabel .name:empty { display: none; }
+  .ilabel.hl .name { box-shadow: 0 0 0 2px var(--hl); }
+  .ilabel .bar { width: 54px; height: 7px; border-radius: 4px; background: rgba(0,0,0,.35); overflow: hidden; border: 1px solid rgba(255,255,255,.6); }
+  .ilabel .bar i { display: block; height: 100%; transition: width .15s; }
+  .popup { position: absolute; transform: translate(-50%, -50%); font-weight: 700; font-size: 22px; color: #fff; white-space: nowrap;
+    text-shadow: 0 3px 0 rgba(0,0,0,.35); animation: rise 1.6s ease-out forwards; }
+  .popup.gain { color: #b8ff9f; font-size: 30px; }
+  .popup.dmg { color: #ffb0a0; font-size: 18px; }
+  .popup.broken { color: #ff5a5a; font-size: 30px; }
+  .popup.need { color: #ffe08a; font-size: 18px; }
+  @keyframes rise { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.6) } 12% { opacity: 1; transform: translate(-50%, -60%) scale(1.15) }
+    25% { transform: translate(-50%, -70%) scale(1) } 100% { opacity: 0; transform: translate(-50%, -220%) } }
+
+  /* Overlays */
+  .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px;
+    background: radial-gradient(ellipse at center, rgba(30,25,60,.35), rgba(20,15,40,.75)); }
+  .card { background: #fffaf0; border-radius: 28px; padding: 28px 34px; max-width: 760px; width: 100%;
+    box-shadow: 0 10px 0 rgba(0,0,0,.2), 0 30px 60px rgba(0,0,0,.35); text-align: center; animation: pop .45s cubic-bezier(.3,1.6,.5,1); }
+  @keyframes pop { from { transform: scale(.7) rotate(-2deg); opacity: 0 } to { transform: none; opacity: 1 } }
+  h1 { margin: 0; font-size: 64px; line-height: 1; letter-spacing: -.01em; }
+  h1 .m { color: var(--p2); } h1 .c { color: var(--p1); }
+  h1 span { display: inline-block; animation: wob 2.4s ease-in-out infinite; }
+  @keyframes wob { 0%,100% { transform: rotate(-3deg) } 50% { transform: rotate(3deg) translateY(-4px) } }
+  .tag { font-size: 18px; opacity: .7; margin: 8px 0 18px; font-weight: 600; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .ctrl { border-radius: 18px; padding: 12px 14px; text-align: left; border: 3px solid; }
+  .ctrl.p1 { border-color: var(--p1); background: #eefbe8; } .ctrl.p2 { border-color: var(--p2); background: #fff0e8; }
+  .ctrl b { font-size: 18px; }
+  kbd { display: inline-block; min-width: 26px; padding: 2px 7px; margin: 2px; border-radius: 7px; background: #fff; border: 2px solid #2b2d42;
+    border-bottom-width: 4px; font-family: inherit; font-weight: 700; font-size: 14px; text-align: center; }
+  .rules { text-align: left; font-size: 15px; line-height: 1.5; background: #f3eee2; border-radius: 16px; padding: 10px 16px; margin: 0 0 18px; }
+  .rules li { margin: 2px 0; }
+  .btn { font-family: inherit; font-size: 24px; font-weight: 700; border: 0; border-radius: 18px; padding: 12px 34px; cursor: pointer; color: #fff;
+    background: linear-gradient(#ff8a3d, #f26b2a); box-shadow: 0 6px 0 #b8481a; transition: transform .1s; }
+  .btn:hover { transform: translateY(-2px); } .btn:active { transform: translateY(3px); box-shadow: 0 3px 0 #b8481a; }
+  .hint { font-size: 13px; opacity: .55; margin-top: 10px; }
+
+  #r-stars { font-size: 70px; margin: 6px 0; }
+  .star { color: #d9d2c0; display: inline-block; }
+  .star.on { color: var(--gold); text-shadow: 0 4px 0 #c99400; animation: starpop .6s cubic-bezier(.3,1.8,.5,1) both; animation-delay: var(--d); }
+  @keyframes starpop { from { transform: scale(0) rotate(-90deg) } to { transform: none } }
+  #r-rank { font-size: 24px; font-weight: 700; margin-bottom: 14px; }
+  .stats { display: grid; grid-template-columns: 1fr auto; gap: 6px 24px; max-width: 360px; margin: 0 auto 20px; font-size: 18px; text-align: left; }
+  .stats .v { font-weight: 700; text-align: right; }
+  .stats .total { font-size: 24px; border-top: 2px dashed #ccc; padding-top: 6px; }
+
+  @media (max-width: 720px) {
+    .controls { grid-template-columns: 1fr; } h1 { font-size: 44px; } .player { min-width: 0; max-width: 46vw; }
+    .player .keys { display: none; } .chip { font-size: 17px; min-width: 0; padding: 5px 10px; }
+  }
+</style>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js", "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div id="hud">
+  <div class="chip"><small>Zeit</small><span id="timer">3:00</span></div>
+  <div class="chip"><small>Wert</small><span id="score">0 €</span></div>
+  <div class="chip"><small>Geladen</small><span id="count">0 / 0</span></div>
+</div>
+<button id="mute-btn" title="Ton an/aus (M)">🔊</button>
+
+<div class="player" id="p1">
+  <div class="avatar"></div>
+  <div><div class="name">Grüni <span class="keys">WASD · Leertaste</span></div><div class="status">bereit</div></div>
+</div>
+<div class="player" id="p2">
+  <div class="avatar"></div>
+  <div><div class="name"><span class="keys">Pfeile · Enter</span> Orangi</div><div class="status">bereit</div></div>
+</div>
+
+<div id="labels"></div>
+<div id="msg"></div>
+
+<div class="overlay" id="title">
+  <div class="card">
+    <h1><span class="m">Möbel</span>-<span class="c">Chaos</span></h1>
+    <div class="tag">Zwei Aufzieh-Fernsehköpfe. Ein Haus voller Möbel. Ein Umzugswagen. 3 Minuten.</div>
+    <div class="controls">
+      <div class="ctrl p1"><b>Spieler 1 · Grüni</b><br><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> laufen<br><kbd>Leertaste</kbd> greifen / abstellen</div>
+      <div class="ctrl p2"><b>Spieler 2 · Orangi</b><br><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> laufen<br><kbd>Enter</kbd> greifen / abstellen</div>
+    </div>
+    <ul class="rules">
+      <li>Bringt die Möbel auf die <b>grün leuchtende Ladefläche</b> des Umzugswagens und stellt sie dort ab.</li>
+      <li>Schwere Möbel (👥) gehen nur <b>zu zweit</b> – packt an beiden Enden an und lauft gemeinsam. Nicht auseinanderziehen!</li>
+      <li>Jeder Rempler kostet Zustand. <b>Kaputte Möbel bringen nichts.</b> ⚠ = besonders zerbrechlich.</li>
+      <li>Vorsicht vor <b>Saugi</b>, dem Saugroboter 🤖. Wertung: Wert × Zustand aller Möbel im Wagen.</li>
+    </ul>
+    <button class="btn" id="start-btn">Los geht's!</button>
+    <div class="hint">Leertaste/Enter zum Starten · P = Pause · M = Ton · Gamepads werden unterstützt</div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="pause">
+  <div class="card"><h1>Pause</h1><div class="tag">P oder Esc zum Weiterspielen</div></div>
+</div>
+
+<div class="overlay hidden" id="results">
+  <div class="card">
+    <h1 id="r-title">Feierabend!</h1>
+    <div id="r-stars"></div>
+    <div id="r-rank"></div>
+    <div class="stats">
+      <span>Geladen</span><span class="v" id="r-delivered"></span>
+      <span>Kaputt</span><span class="v" id="r-broken"></span>
+      <span>Möbelwert</span><span class="v" id="r-score"></span>
+      <span>Zeitbonus</span><span class="v" id="r-bonus"></span>
+      <span class="total">Gesamt</span><span class="v total" id="r-total"></span>
+    </div>
+    <button class="btn" id="again-btn">Nochmal!</button>
+    <div class="hint">R oder Enter für eine neue Runde</div>
+  </div>
+</div>
+
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
