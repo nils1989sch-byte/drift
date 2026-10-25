@@ -1,8 +1,9 @@
 // Hotbar (8 slots) at the bottom: icons icon_*, active slot, stack counts.
-// PC: digits 1–8 select (outside battle), Q/L ('item') cycles; touch: tap a slot (DOM hit area over the bar).
+// PC: digits 1–8 select (outside battle), Q/L cycles via the game (farm.cycleHotbar); touch: tap a slot.
 import { drawText, measure } from './font.js';
 import { C, plaque, rgba, pxRect } from './theme.js';
 import { hotbar, hotbarSelect, itemId, itemName, itemCount, inventory } from './data.js';
+
 import { drawItemIcon } from './monui.js';
 
 export function createHotbar(U, root) {
@@ -37,11 +38,7 @@ export function createHotbar(U, root) {
 
   function update() {
     const g = U.game;
-    // Q/L cycles the hotbar outside battle (DESIGN.md: "Item: Hotbar wechseln")
-    const inv = inventory(g);
-    if (inv && !g?.battle?.active && !U.blocking() && !inv.handlesInput && U.input?.pressed?.('item')) {
-      if (typeof inv.next === 'function') inv.next(); else hotbarSelect(g, (hotbar(g).active + 1) % 8);
-    }
+    // Q/L cycling belongs to the game (farm.cycleHotbar); the UI only selects directly (digits / taps)
     const hb = hotbar(g);
     if (hb.active !== st.lastActive) { if (st.lastActive >= 0) st.nameT = 1.6; st.lastActive = hb.active; }
     st.nameT = Math.max(0, st.nameT - 1 / 60);

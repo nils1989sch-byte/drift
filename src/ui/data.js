@@ -209,7 +209,8 @@ export function hotbarSelect(game, i) {
   const inv = inventory(game);
   if (!inv) return;
   try {
-    if (typeof inv.select === 'function') inv.select(i);
+    if (typeof game?.farm?.select === 'function') game.farm.select(i); // keeps player.item in sync
+    else if (typeof inv.select === 'function') inv.select(i);
     else if ('active' in inv) inv.active = i;
     else inv.selected = i;
   } catch (e) { console.warn('[ui] hotbar select failed', e); }

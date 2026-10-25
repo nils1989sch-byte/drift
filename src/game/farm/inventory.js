@@ -75,13 +75,13 @@ export function createInventory(opts = {}) {
     onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
     clear() { slots.fill(null); activeSlot = 0; changed('clear'); },
 
-    serialize() { return { slots: slots.map((s) => (s ? [s.id, s.n] : 0)), active: activeSlot, money: ext ? undefined : money }; },
+    serialize() { return { slots: slots.map((s) => (s ? [s.id, s.n] : 0)), active: activeSlot, money: inv.money }; },
     deserialize(d) {
       if (!d || !Array.isArray(d.slots)) return false;
       slots.fill(null);
       d.slots.forEach((s, i) => { if (i < size && Array.isArray(s) && ITEMS[s[0]] && s[1] > 0) slots[i] = { id: s[0], n: Math.min(stackOf(s[0]), s[1] | 0) }; });
       activeSlot = Math.max(0, Math.min(HOTBAR - 1, d.active | 0));
-      if (!ext && typeof d.money === 'number') money = d.money;
+      if (typeof d.money === 'number') { if (ext) ext.set(d.money); else money = d.money; }
       changed('load');
       return true;
     },

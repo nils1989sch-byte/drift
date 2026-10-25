@@ -441,8 +441,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     if (g.hitstop > 0) { g.hitstop -= dt; return; }
     if (g.trans) { updateTransition(dt); safe(fx, 'ambient', g.world, camera); rebuild(); return; }
     g.mapTime += dt;
-    if (!g.farm?.updatesClock && g.world?.outdoor !== false) g.clock.update?.(dt);
-    else if (!g.farm?.updatesClock) g.clock.update?.(dt);
+    if (!g.farm?.updatesClock) g.clock.update?.(dt);
     try { g.farm?.update?.(dt); } catch (e) { console.warn('[game] farm.update', e); }
     if (g.battleCooldown > 0) g.battleCooldown -= dt;
     if (g.battle.active) {
@@ -479,6 +478,89 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     safe(fx, 'ambient', g.world, camera);
     const low = player.hp > 0 && player.hp <= 2;
     if (low !== lowHealth) { lowHealth = low; safe(sfx, 'setLowHealth', low); }
+  };
+
+  // ---- monsters: encounters, starter, sleep, blackout, evolution, tools ----------------------------------------------
+  g.engageWild = (w) => {
+    if (g.battle.active || !g.party.lead) return false;
+    const boss = !!w.boss;
+    return g.battle.start({
+      wildEntity: w, boss,
+      onEnd: boss ? async (res) => {
+        if (res === 'won' || res === 'caught') {
+          g.flags.boss_golem = true;
+          g.setFlag('boss_fight', false, false);
+          await g.say(res === 'caught'
+            ? ['Der Steinwächter ist in deiner Driftkugel zur Ruhe gekommen.', 'Hinter ihm schimmert etwas …']
+            : ['Der Steinwächter sinkt zu Boden und zerfällt zu Geröll.', 'Hinter ihm schimmert etwas …']);
+          g.spawnCrystal();
+          g.save();
+        }
+      } : null,
+    });
+  };
+  g.healParty = () => { g.party.healAll(); };
+  g.chooseStarter = async () => {
+    let idx = null;
+    try { if (ui?.chooseStarter) idx = await ui.chooseStarter(STARTERS.map((id) => new Monster(id, 5))); } catch (e) { idx = null; }
+    if (idx == null || idx < 0) {
+      idx = await g.say({ text: 'Bodo: Welches Monster soll dich begleiten?', speaker: 'Bodo',
+        choices: STARTERS.map((id) => `${SPECIES[id].name} (${{ fire: 'Feuer', water: 'Wasser', plant: 'Pflanze' }[SPECIES[id].types[0]]})`) });
+    }
+    if (typeof idx !== 'number' || idx < 0 || idx >= STARTERS.length) idx = 0;
+    const mon = new Monster(STARTERS[idx], 5);
+    mon.caughtAt = 'start';
+    g.party.add(mon);
+    g.setFlag('starter', STARTERS[idx]);
+    giveStarterKit(g.inventory);
+    g.spawnFX('monster_summon', player.x, player.y + 10, { z: player.z });
+    g.play('item_get');
+    await g.say([`Du hast ${mon.name} bekommen!`, `Bodo: Pass gut auf ${mon.name} auf. Dazu schenke ich dir Werkzeug, Rübensaat und ein paar Driftkugeln.`,
+      'Bodo: Im hohen Gras leben wilde Monster. Schwäche sie im Kampf und wirf dann eine Driftkugel (Q/L)!',
+      'Kampf: Laufen steuert dein Monster. Leertaste/J und E/K sind Attacken, 1 und 2 weitere, Shift weicht aus.']);
+    g.save();
+  };
+  g.askSleep = async () => {
+    if (g.farm?.askSleep) return g.farm.askSleep();
+    const c = await g.say({ text: 'Schlafen gehen und den Tag beenden?', choices: ['Ja', 'Nein'] });
+    if (c === 0) g.sleep();
+  };
+  g.sleep = async () => {
+    if (g.farm?.sleep) { await g.farm.sleep(); g.healParty(); g.save(); return; }
+    g.trans = { phase: 'out', t: 0, to: g.mapId, spawn: 'bed' };
+    player.state = 'frozen';
+    const info = g.clock.sleep?.('bed');
+    g.healParty();
+    g.after(0.4, () => g.toast(`Tag ${info?.day ?? ''} – ${g.clock.weekday ?? ''}. Deine Monster sind ausgeruht.`));
+  };
+  g.onBlackout = async () => {
+    const inv = g.inventory, lost = Math.floor((inv?.money || 0) * 0.1);
+    if (inv && lost) inv.money = inv.money - lost;
+    g.healParty();
+    await g.say(['Alle deine Monster sind erschöpft …', `Du wirst ohnmächtig.${lost ? ` (${lost} Taler verloren)` : ''}`]);
+    g.warpTo('house_elder', 'bed');
+    g.after(1.0, () => g.say(['Bodo: Da bist du ja wieder! Ich habe dich und deine Monster nach Hause getragen.', 'Bodo: Ruh dich aus, dann versuch es noch einmal.']));
+  };
+  g.evolveMonster = async (m) => {
+    if (!m.canEvolve) return;
+    const from = m.name;
+    try { await ui?.showEvolution?.(m); } catch { /* optional */ }
+    await g.say([`Was? ${from} entwickelt sich!`]);
+    const r = m.evolve();
+    if (!r) return;
+    g.spawnFX('evolve', player.x, player.y, { z: player.z });
+    g.play('evolve');
+    await g.say([`${from} hat sich zu ${m.sp.name} entwickelt!`]);
+    g.party.see(m.id); g.party.caught[m.id] = (g.party.caught[m.id] || 0) + 1;
+  };
+  // A button outside battle: use the active hotbar tool (farm agent) – the sickle (default) cuts grass/bushes.
+  g.useTool = (p) => {
+    const inv = g.inventory;
+    const id = inv?.activeId ?? inv?.active?.id ?? null;
+    try { if (g.farm?.useTool && g.farm.useTool(id, p)) return true; } catch (e) { console.warn('[game] farm.useTool', e); }
+    if (!id || id === 'sickle' || !g.farm) { p.startAttack(); return true; }
+    g.hint('tool_' + id, 'Das kannst du hier nicht benutzen.', 2);
+    return true;
   };
 
   // ---- QA / debug API -------------------------------------------------------------------------------------------
@@ -532,6 +614,13 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     player() { const p = player; return { x: p.x, y: p.y, tx: Math.floor(p.x / TILE), ty: Math.floor((p.y - 2) / TILE), lvl: p.lvl, z: p.z, dir: p.dir, state: p.state, hp: p.hp, maxHp: p.maxHp, map: g.mapId }; },
     resetSave() { clearSave(); },
     maps: Object.keys(MAPS),
+    giveMonster(id = 'funkel', level = 5) { const m = new Monster(id, level); g.party.add(m); if (!g.flags.starter) g.flags.starter = id; return m.toJSON(); },
+    battle(id = 'boeli', level = 3) { if (!g.party.lead) g.debug.giveMonster('funkel', 5); const w = new WildMon(g, id, level, player.x, player.y - 40); g.wilds.push(w); rebuild(); return g.engageWild(w); },
+    winBattle() { g.battle.debugWin(); },
+    weaken(frac = 0.2) { g.battle.debugWeaken(frac); },
+    party() { return g.party.team.map((m) => ({ id: m.id, name: m.name, level: m.level, hp: m.hp, maxHp: m.maxHp, xp: m.xp, moves: m.moves })); },
+    setTime(h) { g.clock.setTime?.(h); return g.clock.hours; },
+    wilds() { return g.wilds.map((w) => ({ id: w.mon.id, level: w.mon.level, tx: Math.floor(w.x / TILE), ty: Math.floor((w.y - 2) / TILE), state: w.state })); },
   };
 
   // backdrop for the title screen

@@ -1,7 +1,6 @@
 // Farm state: tilled fields + crops on the farm map, shipping bin, bed, monster helpers, end-of-day processing.
 // Pure logic + two world objects (ShippingBin, Bed) that plug into game.objects (solid, interact via player B button).
 import { TILE } from '../../engine/constants.js';
-import { Obj } from '../entities/objects.js';
 import { CROPS, newCrop, growCrop, isRipe, CropDrawable } from './crops.js';
 import { itemDef, itemName } from './items.js';
 
@@ -86,7 +85,7 @@ export function processMorning({ fields, helpers, inventory, bin, rnd = Math.ran
   for (const m of helpers.filter((x) => monsterTypes(x).includes('water'))) {
     const todo = fields.all().filter((f) => f.crop && !f.wet && !isRipe(f.crop)).slice(0, 6);
     for (const f of todo) { f.wet = true; wetted.push(f); }
-    if (todo.length) lines.push(`${monName(m)} hat ${todo.length} Felder gegossen.`);
+    if (todo.length) lines.push(`${monName(m)} hat ${todo.length} ${todo.length === 1 ? 'Feld' : 'Felder'} gegossen.`);
   }
   // stone helpers: find ore
   for (const m of helpers.filter((x) => monsterTypes(x).includes('stone'))) {
@@ -153,7 +152,20 @@ export function propSprite(assets, k, t = 0) {
   return propFallback(k);
 }
 
-class FarmProp extends Obj {
+// Same interface as entities/objects.js Obj (kind/type/solid/lvl/solidBox/update/draw/interact), but without
+// importing it, so the farm module graph stays independent of entities → anim (which change in parallel).
+class FarmProp {
+  constructor(g, spec) {
+    this.g = g; this.kind = 'object'; this.type = spec.t; this.spec = spec;
+    this.x = spec.px ?? spec.x * TILE + 8; this.y = spec.py ?? spec.y * TILE + 14;
+    this.lvl = spec.lvl ?? 0; this.z = this.lvl; this.hop = 0;
+    this.sprite = spec.sprite; this.box = spec.box; this.solid = true;
+    this.dead = false; this.hidden = false; this.flash = 0; this.shadow = false; this.sortBias = 0; this.def = {};
+  }
+  solidBox() { const [ox, oy, w, h] = this.box; return { x: this.x + ox, y: this.y + oy, w, h }; }
+  hurtbox() { return this.solidBox(); }
+  update() {}
+  destroy() {}               // props are not cuttable
   draw(ctx, r) {
     const img = propSprite(r.assets, this.sprite, r.time);
     if (img) r.sprite(img, this.x, this.y, this.z, { flash: this.flash > 0 });
