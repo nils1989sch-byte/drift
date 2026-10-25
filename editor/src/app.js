@@ -7,6 +7,7 @@ import { SPECIES } from '../../src/game/monsters/species.js';
 import { ITEMS } from '../../src/game/farm/items.js';
 import { TILE, MAX_H, clone, docFromBundle, bundleFromDoc, newMap, starterProject, charFor, resizeMap, normalizeMap } from './format.js';
 import { createView } from './view.js';
+import { installPacks } from '../../src/assetpack/install.js';
 import { makeApi } from '../tools/api.js';
 import plugins from '../plugins.js';
 
@@ -51,7 +52,7 @@ const E = {
   doc: null, mapId: null, sel: null, tool: null, toolId: 'paint', assets: null, view: null, ghost: null,
   brush: { tile: 'grass', size: 1, height: 1, object: 'tree', character: 'elder', heightMode: 'set' },
   layersVisible: { objects: true, zones: true }, overlays: [], tools: {}, listeners: {}, hover: null,
-  history: [], future: [],
+  history: [], future: [], packs: { tiles: [], objects: [], characters: [], missing: [] },
 };
 window.__editor = E;
 E.map = (id = E.mapId) => E.doc?.maps[id];
@@ -366,6 +367,7 @@ function renderPalette() {
     title.textContent = 'Boden';
     if (t.id === 'paint') opts.append(sizeCtl());
     for (const id of TILE_IDS) pal.append(el('div', { class: 'it' + (E.brush.tile === id ? ' on' : ''), title: id, onclick: () => { E.brush.tile = id; renderPalette(); } }, thumb(first(E.assets.tiles[id])), TILE_NAMES[id]));
+    packSection(pal, E.packs.tiles, (x) => E.brush.tile === x.id, (x) => { E.brush.tile = x.id; });
   } else if (t.id === 'height') {
     title.textContent = 'Höhe';
     opts.append(sizeCtl());
@@ -375,11 +377,18 @@ function renderPalette() {
   } else if (t.id === 'object') {
     title.textContent = 'Objekte';
     for (const [id, name] of Object.entries(OBJECTS)) pal.append(el('div', { class: 'it' + (E.brush.object === id ? ' on' : ''), title: id, onclick: () => { E.brush.object = id; renderPalette(); } }, thumb(first(E.assets.sprites[id])), name));
+    packSection(pal, E.packs.objects, (x) => E.brush.object === x.id, (x) => { E.brush.object = x.id; });
   } else if (t.id === 'npc') {
     title.textContent = 'Personen';
     for (const [id, name] of Object.entries(CHARACTERS)) pal.append(el('div', { class: 'it' + (E.brush.character === id ? ' on' : ''), onclick: () => { E.brush.character = id; renderPalette(); } }, thumb(first(E.assets.sprites[`npc_${id}_idle_down`])), name));
+    packSection(pal, E.packs.characters, (x) => E.brush.character === x.id, (x) => { E.brush.character = x.id; });
   } else title.textContent = t.label || 'Palette';
   if (hint) pal.after ? opts.prepend(hint) : null;
+}
+function packSection(pal, list, isOn, pickFn) {
+  pal.append(el('div', { class: 'pal-sep' }, el('span', { textContent: 'Eigene Grafiken' }), el('button', { class: 'mini', title: 'Eigene Sets laden/zuordnen', onclick: () => E.openImporter?.() }, '🎨')));
+  if (!list.length) { pal.append(el('div', { class: 'pal-empty', textContent: 'Noch keine – über 🎨 ein Set laden.' })); return; }
+  for (const x of list) pal.append(el('div', { class: 'it' + (isOn(x) ? ' on' : ''), title: x.id, onclick: () => { pickFn(x); renderPalette(); } }, thumb(x.canvas), x.name));
 }
 function renderMaps() {
   const ul = $('#mapList'); ul.textContent = '';
@@ -429,7 +438,7 @@ function renderInspector() {
   const k = E.sel.kind;
   if (k === 'object') {
     head(OBJECTS[r.type] || r.type, 'Objekt');
-    box.append(field('Art', sel(OBJECTS, r.type, edit('Objekt-Art', (v) => { r.type = v; }))));
+    box.append(field('Art', sel({ ...OBJECTS, ...Object.fromEntries(E.packs.objects.map((o) => [o.id, `🎨 ${o.name}`])) }, r.type, edit('Objekt-Art', (v) => { r.type = v; }))));
     box.append(field('Position (Welt-Pixel)', el('div', { class: 'row' }, num(r.x, edit('Position', (v) => { r.x = v; })), num(r.y, edit('Position', (v) => { r.y = v; })))));
     if (r.type === 'sign' || r.text) box.append(field('Text', lines(r.text, edit('Schild-Text', (v) => { r.text = v; }))));
     box.append(field('Nur sichtbar wenn Flag gesetzt (optional)', inp(typeof r.if === 'string' ? r.if : '', edit('Bedingung', (v) => { if (v) r.if = v; else delete r.if; }))));
@@ -443,7 +452,7 @@ function renderInspector() {
   } else if (k === 'npc') {
     head(r.id, 'Person');
     box.append(field('ID', inp(r.id, edit('ID', (v) => { r.id = v.replace(/[^\w.-]/g, '_') || r.id; }))));
-    box.append(field('Aussehen', sel({ ...CHARACTERS, ...Object.fromEntries(Object.keys(E.doc.characters || {}).map((c) => [c, c])) }, r.character, edit('Aussehen', (v) => { r.character = v; }))));
+    box.append(field('Aussehen', sel({ ...CHARACTERS, ...Object.fromEntries(E.packs.characters.map((c) => [c.id, `🎨 ${c.name}`])), ...Object.fromEntries(Object.keys(E.doc.characters || {}).map((c) => [c, c])) }, r.character, edit('Aussehen', (v) => { r.character = v; }))));
     box.append(field('Blickrichtung', sel(DIRS, r.dir, edit('Richtung', (v) => { r.dir = v; }))));
     box.append(field('Verhalten', sel({ idle: 'steht', wander: 'läuft umher' }, r.behavior?.type || 'idle', edit('Verhalten', (v) => { r.behavior = { type: v }; }))));
     const did = r.dialog || (r.dialog = `${m.id}_${r.id}`);
@@ -656,7 +665,7 @@ function loadBundle(b, label) {
   } catch (e) { E.toast('Datei nicht lesbar: ' + e.message, 'error'); }
 }
 function checkProject() {
-  const res = checkContent(bundleFromDoc(E.doc), { known: { species: Object.keys(SPECIES), items: Object.keys(ITEMS) } });
+  const res = checkContent(bundleFromDoc(E.doc), { known: { species: Object.keys(SPECIES), items: Object.keys(ITEMS), characters: Object.keys(CHARACTERS) } });
   const body = $('#modalBody'); body.textContent = '';
   body.append(el('h2', { textContent: res.errors.length ? `${res.errors.length} Fehler` : 'Alles spielbar ✓' }));
   const box = el('div', { class: 'issues' });
@@ -719,7 +728,7 @@ function bindInput() {
   cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
   cv.addEventListener('pointerleave', () => { E.hover = null; E.view.redraw(); });
   window.addEventListener('keydown', (e) => {
-    if (e.target.closest('input, textarea, select') || $('#modal').open) return;
+    if (e.target.closest('input, textarea, select') || $('#modal').open || !document.querySelector('#importer')?.hidden && document.querySelector('#importer')) return;
     const k = e.key.toLowerCase();
     if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? E.redo() : E.undo(); return; }
     if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); E.redo(); return; }
@@ -748,7 +757,7 @@ async function loadPlugins() {
     catch (e) { console.warn('[editor] Plugin', p, e); E.toast(`Plugin „${p}“ konnte nicht geladen werden.`, 'error'); }
   }
 }
-function boot() {
+async function boot() {
   E.assets = buildAssets();
   let raw = null;
   try { raw = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null'); } catch { raw = null; }
@@ -756,6 +765,12 @@ function boot() {
   for (const id of Object.keys(E.doc.maps)) normalizeMap(E.doc.maps[id], id);
   let ui = {}; try { ui = JSON.parse(localStorage.getItem('drift.editor.ui') || '{}'); } catch { /* egal */ }
   E.mapId = E.doc.maps[ui.map] ? ui.map : E.doc.project.start.map || Object.keys(E.doc.maps)[0];
+  E.reloadPacks = async () => {
+    try { E.packs = await installPacks(E.doc.project, E.assets); } catch (e) { console.warn('[editor] Pakete', e); }
+    if (E.packs.missing.length) E.toast(`Grafik-Paket fehlt in diesem Browser: ${E.packs.missing.join(', ')}`, 'error');
+    E.view?.invalidate(); if (E.view) { renderPalette(); renderInspector(); }
+  };
+  await E.reloadPacks();
   for (const t of DEFAULT_TOOLS) E.tools[t.id] = t;
   E.view = createView($('#view'), E);
   setTool(E.tools[ui.tool] ? ui.tool : 'paint');

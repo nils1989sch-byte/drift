@@ -6,5 +6,5 @@
 export default [
   // './tools/index.js',
   // './inspectors/index.js',
-  // './importer/index.js',
+  './importer/index.js',
 ];

@@ -90,7 +90,13 @@ export function createView(canvas, editor) {
   V.spriteFor = (kind, e) => {
     if (kind === 'object') return e.type === 'tree_pine' || e.type === 'tree_autumn' || sprite(e.type) ? e.type : ({ chest: 'chest_closed', switch: 'switch_up' })[e.type] || e.type;
     if (kind === 'item') return e.type === 'chest' ? 'chest_closed' : 'orb';
-    if (kind === 'npc') { const ch = editor.doc.characters?.[e.character]; const s = ['elder', 'girl', 'merchant'].includes(e.character) ? e.character : ch?.sprite || 'elder'; return `npc_${s}_idle_${e.dir || 'down'}`; }
+    if (kind === 'npc') {
+      const has = (c) => !!editor.assets?.sprites?.[`npc_${c}_idle_down`];
+      const ch = editor.doc.characters?.[e.character];
+      const s = has(e.character) ? e.character : has(ch?.sprite) ? ch.sprite : 'elder';
+      const d = e.dir || 'down';
+      return editor.assets.sprites[`npc_${s}_idle_${d}`] ? `npc_${s}_idle_${d}` : `npc_${s}_idle_${d === 'left' ? 'right' : 'down'}`;
+    }
     if (kind === 'trainer') return `soldier_idle_${e.dir || 'down'}`;
     return null;
   };

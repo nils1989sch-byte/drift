@@ -9,6 +9,7 @@ import { DIALOG } from '../game/dialog.js';
 import { OBJ } from '../game/entities/objects.js';
 import { SPECIES } from '../game/monsters/species.js';
 import { ITEMS } from '../game/farm/items.js';
+import { PACK_OBJECTS } from '../assetpack/install.js';
 
 const NPC_SPRITES = new Set(['elder', 'girl', 'merchant']);
 
@@ -26,7 +27,8 @@ export async function loadContentSource(src) {
 }
 
 /** Speicher-Form einer Karte → Laufzeit-Def (wie die Builder in src/game/maps). */
-export function toRuntimeDef(m, content) {
+export function toRuntimeDef(m, content, assets = null) {
+  const hasNpc = (c) => !!assets?.sprites?.[`npc_${c}_idle_down`];
   const w = m.w, h = m.h;
   const legend = buildLegend(m.layers.ground);
   const tx = (px, fx = 8) => (px - fx) / TILE;
@@ -40,7 +42,7 @@ export function toRuntimeDef(m, content) {
     const known = !!OBJ[o.type];
     const { type, x, y, if: cond, ...rest } = o;
     const spec = { ...rest, t: known ? type : 'deco', px: x, py: y, x: Math.floor(x / TILE), y: Math.floor(y / TILE) };
-    if (!known) { spec.sprite = type; spec.solid = o.solid ?? true; spec.box = o.box || [-6, -6, 12, 7]; }
+    if (!known) { const po = PACK_OBJECTS[type]; spec.sprite = type; spec.solid = o.solid ?? po?.solid ?? true; spec.box = o.box || po?.box || [-6, -6, 12, 7]; }
     if (cond) spec.showFlag = typeof cond === 'string' ? cond : cond.flag;
     def.objects.push(spec);
   }
@@ -54,7 +56,7 @@ export function toRuntimeDef(m, content) {
     patrol: e.patrol?.map(([a, b]) => [tx(a), tx(b, 12)]) });
   for (const n of m.npcs) {
     const ch = content.characters?.[n.character];
-    const sprite = NPC_SPRITES.has(n.character) ? n.character : NPC_SPRITES.has(ch?.sprite) ? ch.sprite : 'elder';
+    const sprite = NPC_SPRITES.has(n.character) || hasNpc(n.character) ? n.character : hasNpc(ch?.sprite) || NPC_SPRITES.has(ch?.sprite) ? ch.sprite : 'elder';
     def.npcs.push({ id: n.id, t: sprite, x: tx(n.x), y: tx(n.y, 12), dir: n.dir || 'down',
       wander: n.behavior?.type === 'wander', dialog: n.dialog ? `content:${n.dialog}` : `content:npc:${m.id}:${n.id}`, contentDialog: n.dialog, lines: n.lines });
   }
@@ -106,12 +108,12 @@ export function toRuntimeDef(m, content) {
  * Gibt { content, errors, warnings } zurück; bei Fehlern bleibt das Spiel unverändert.
  */
 export function installContent(g, raw, opts = {}) {
-  const res = checkContent(raw, { known: { species: Object.keys(SPECIES), items: Object.keys(ITEMS), dialogs: Object.keys(DIALOG) } });
+  const res = checkContent(raw, { known: { species: Object.keys(SPECIES), items: Object.keys(ITEMS), dialogs: Object.keys(DIALOG), characters: [...NPC_SPRITES] } });
   if (!res.ok) return res;
   const content = res.content;
   g.content = content;
   // Karten registrieren (eingebaute bleiben erreichbar, gleiche IDs werden überschrieben)
-  for (const m of Object.values(content.maps)) MAPS[m.id] = () => toRuntimeDef(m, content);
+  for (const m of Object.values(content.maps)) MAPS[m.id] = () => toRuntimeDef(m, content, g.assets);
   // Dialoge: NPC-Dialoge laufen über den Interpreter
   const dialogs = { ...content.dialogs };
   for (const m of Object.values(content.maps)) if (m.dialogs) Object.assign(dialogs, m.dialogs);

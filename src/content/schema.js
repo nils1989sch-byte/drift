@@ -390,6 +390,7 @@ export function validateContent(content, opts = {}, R = new Report()) {
   const set = (k) => new Set([...Object.keys(content[k] || {}), ...(known[k] || [])]);
   const SP = set('species'), MV = set('moves'), IT = new Set([...set('items'), ...LEGACY_ITEMS]), DL = new Set([...Object.keys(dialogs), ...(known.dialogs || [])]);
   const CH = set('characters');
+  for (const pk of p.assets?.packs || []) for (const [k, v] of Object.entries(pk.sprites || {})) if (v?.kind === 'character') CH.add(`${pk.id}:${k}`);
   const packTiles = new Set();
   for (const pk of p.assets?.packs || []) for (const t of Object.keys(pk.tiles || {})) { packTiles.add(t); packTiles.add(`${pk.id}:${t}`); }
   const TL = new Set([...Object.keys(TILE_DEFS), ...packTiles, ...(known.tiles || [])]);

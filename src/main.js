@@ -10,6 +10,7 @@ import { createGame } from './game/index.js';
 import { createUI } from './ui/index.js';
 import { setSaveSlot } from './game/save.js';
 import { loadContentSource, installContent } from './content/runtime.js';
+import { installPacks } from './assetpack/install.js';
 
 const STEP = 1 / 60;
 
@@ -122,6 +123,10 @@ async function startContent(game, ui, src, params) {
   try {
     const raw = await loadContentSource(src);
     await game.farmReady?.catch(() => {});
+    if (raw?.project?.assets?.packs?.length) {
+      const packs = await installPacks(raw.project, game.assets).catch((e) => { console.warn('[content] Pakete', e); return null; });
+      if (packs?.missing.length) ui.toast?.(`Grafik-Paket fehlt in diesem Browser: ${packs.missing.join(', ')}`, { time: 6 });
+    }
     setSaveSlot(direct ? null : `content:${raw?.project?.id || raw?.project?.name || src}`);
     const n = (k) => (params.has(k) ? Number(params.get(k)) : undefined);
     const res = installContent(game, raw, { map: params.get('map') || undefined, x: n('x'), y: n('y') });
