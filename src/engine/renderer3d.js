@@ -7,6 +7,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { TILE, LEVEL } from './constants.js';
 import { TILE_DEFS } from '../data/tiles.js';
 import { createModelFactory, houseTextures as houseTexturesFallback } from './models3d.js';
+import { FXU, patchLit, patchTree, puddleMask, setTileLike, createWaterMaterial, createReflection, lightFor, createWeather } from './fx3d.js';
 
 const WALL_LEVELS = 2;      // solid wall tiles are raised blocks of this many levels
 const PLINTH = 40;          // diorama base depth (world px)
@@ -41,6 +42,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   scene.background = BG;
   scene.fog = new THREE.Fog(BG, 600, 1800);
   const camera = new THREE.PerspectiveCamera(30, 16 / 9, 8, 4000);
+  camera.layers.enable(1);                 // Ebene 1: Wasser, Regen, X-Ray – nicht in der Spiegelung
 
   // ---------- lights ----------
   const hemi = new THREE.HemisphereLight('#9ec4e8', '#5a4a3a', 0.9);
@@ -54,7 +56,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   scene.add(sun, sun.target);
   const SUN_DIR = new THREE.Vector3(-0.6, 0.52, 0.3).normalize(); // top-left, slightly from the front, ~38° high: long shadows
   const torchLights = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     const l = new THREE.PointLight('#ffa040', 0, 110, 1.6);
     scene.add(l); torchLights.push(l);
   }
@@ -367,21 +369,41 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       group.add(m);
       return m;
     };
-    mk(top, new THREE.MeshLambertMaterial({ map: groundTex }));
-    // glossy translucent water surface over recessed water beds
-    const wat = { p: [], n: [], uv: [] };
+    const topMat = new THREE.MeshLambertMaterial({ map: groundTex });
+    patchLit(topMat, { puddles: true });
+    mk(top, topMat);
+    if (FXU.tPuddle.value) FXU.tPuddle.value.dispose();
+    FXU.tPuddle.value = puddleMask(world); FXU.uMapPx.value.set(world.pxW, world.pxH);
+    // Wasser: eigener Shader (Wellen, Spiegelung, Glitzern, Schaum, Ringe) über den abgesenkten Wasserbetten
+    const isWat = (x, y) => { const d = world.inside(x, y) ? TILE_DEFS[world.tileAt(x, y)] : null; return !!(d?.water || d?.shallow); };
+    const isDeep = (x, y) => world.inside(x, y) && !!TILE_DEFS[world.tileAt(x, y)]?.water;
+    const corner = (x, y) => {   // Ecke zwischen den Zellen (x-1..x, y-1..y): Anteil tiefes Wasser / Ufer
+      let deep = 0, land = 0;
+      for (const [cx, cy] of [[x - 1, y - 1], [x, y - 1], [x - 1, y], [x, y]]) { if (isDeep(cx, cy)) deep++; if (!isWat(cx, cy) && world.inside(cx, cy)) land++; }
+      return [deep / 4, Math.min(1, land / 2)];
+    };
+    const wp = [], wd = [], wsh = [], wys = new Map();
+    let wx0 = Infinity, wz0 = Infinity, wx1 = -Infinity, wz1 = -Infinity;
     for (let ty = 0; ty < Hh; ty++) for (let tx = 0; tx < W; tx++) {
-      const d = TILE_DEFS[world.tileAt(tx, ty)];
-      if (!d?.water && !d?.shallow) continue;
+      if (!isWat(tx, ty)) continue;
       const y = effH(world, tx, ty) * LEVEL - 1.5, x0 = tx * TILE, z0 = ty * TILE;
-      quad(wat, [x0, y, z0], [x0, y, z0 + TILE], [x0 + TILE, y, z0 + TILE], [x0 + TILE, y, z0], [0, 1, 0], [tx, -ty], [tx, -ty - 1], [tx + 1, -ty - 1], [tx + 1, -ty]);
+      wys.set(y, (wys.get(y) || 0) + 1);
+      const C = [[tx, ty], [tx, ty + 1], [tx + 1, ty + 1], [tx + 1, ty]].map(([cx, cy]) => [cx * TILE, cy * TILE, ...corner(cx, cy)]);
+      for (const k of [0, 1, 2, 0, 2, 3]) { const c = C[k]; wp.push(c[0], y, c[1]); wd.push(c[2]); wsh.push(c[3]); }
+      wx0 = Math.min(wx0, x0); wz0 = Math.min(wz0, z0); wx1 = Math.max(wx1, x0 + TILE); wz1 = Math.max(wz1, z0 + TILE);
     }
-    if (wat.p.length) {
-      const frames = (assets.tiles.water || []).map((c) => { const t = tex(c, true).clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.needsUpdate = true; return t; });
-      const wmat = new THREE.MeshPhongMaterial({ map: frames[0] || null, color: frames.length ? '#b0c8d8' : '#1c4878', specular: '#ffe8c0', shininess: 110, transparent: true, opacity: 0.72, depthWrite: false });
-      const wm = mk(wat, wmat);
-      wm.castShadow = false; wm.renderOrder = 2;
-      waterAnim = { mat: wmat, frames, fps: assets.tiles.water?.fps || 4 };
+    let water = null;
+    if (wp.length) {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(wp, 3));
+      geo.setAttribute('aDepth', new THREE.Float32BufferAttribute(wd, 1));
+      geo.setAttribute('aShore', new THREE.Float32BufferAttribute(wsh, 1));
+      const wmat = createWaterMaterial();
+      const wm = new THREE.Mesh(geo, wmat);
+      wm.renderOrder = 2; wm.layers.set(1); wm.userData.noFx = true;
+      group.add(wm);
+      const wy = [...wys.entries()].sort((a, b) => b[1] - a[1])[0][0];
+      water = { mesh: wm, mat: wmat, y: wy, box: new THREE.Box3(new THREE.Vector3(wx0, wy - 2, wz0), new THREE.Vector3(wx1, wy + 2, wz1)), ripples: [], seen: new WeakMap() };
     }
     mk(side, new THREE.MeshLambertMaterial({ map: faceTex }));
     mk(base, new THREE.MeshLambertMaterial({ map: pl.t, color: '#b0a090' }));
@@ -398,8 +420,9 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     table.visible = !surround;
 
     scene.add(group);
-    cur = { world, group, groundCanvas: gc, groundCtx: g, groundBuf: buf, groundTex, animCells, deco: null, frameKey: -1, dark, version: world.version };
+    cur = { world, group, groundCanvas: gc, groundCtx: g, groundBuf: buf, groundTex, animCells, deco: null, frameKey: -1, dark, version: world.version, water };
     buildDeco(world, drawables);
+    patchTree(group);
     world.dirty.length = 0;
   }
 
@@ -622,6 +645,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
 
   // ----- x-ray silhouettes (drawn only where something is in front: depthFunc = greater) -----
   const xrayPool = []; let xrayUsed = 0;
+  const windowMats = new Set();
   const _toCam = new THREE.Vector3();
   const XRAY_PLAYER = [new THREE.Color('#2c4a8c'), new THREE.Color('#bcd8ff')];
   const XRAY_ENEMY = [new THREE.Color('#7a2030'), new THREE.Color('#ffb0a0')];
@@ -645,7 +669,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       });
       m = new THREE.Mesh(bbGeo, mat);
       m.renderOrder = 20; m.frustumCulled = false;
-      scene.add(m); xrayPool.push(m);
+      m.layers.set(1); scene.add(m); xrayPool.push(m);
     }
     xrayUsed++;
     m.visible = true;
@@ -761,6 +785,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     // door + windows as decals
     const decal = (key, fb, w, h, x, y, z, ry = 0) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshLambertMaterial({ map: tex(sp(key) || fb), alphaTest: 0.5, emissive: key === 'tex_window' ? '#ffb040' : '#000000', emissiveIntensity: key === 'tex_window' ? 0.35 : 0 }));
+      if (key === 'tex_window') windowMats.add(m.material);
       m.emissiveMap = m.material.map; m.material.emissiveMap = m.material.map;
       m.position.set(x, y, z); m.rotation.y = ry; m.receiveShadow = true; g.add(m); return m;
     };
@@ -873,6 +898,9 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     depthTest: false, depthWrite: false,
   });
   let bloom = null;
+  const reflection = createReflection();
+  const weather = createWeather(scene, { mobile });
+  setTileLike((id) => TILE_DEFS[id]?.like);
   function resize(w, h) {
     W = w; H = h;
     gl.setSize(w, h, false);
@@ -884,12 +912,13 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     ov.width = w; ov.height = h;
     if (!bloom) bloom = new UnrealBloomPass(new THREE.Vector2(sw, sh), 0.22, 0.5, 0.9);
     else bloom.setSize(sw, sh);
+    reflection.setSize(sw * (mobile ? 0.35 : 0.5), sh * (mobile ? 0.35 : 0.5));
     camera.aspect = w / h; camera.updateProjectionMatrix();
   }
 
   // ---------- drawable helper (same API as the 2D renderer) ----------
   let order = 0, curDrawable = null, stretch = 1;
-  const torchSpots = [];
+  const torchSpots = [];   // [x, y, z, lightDef]
   const R = {
     three: { THREE, scene, camera, gl },
     assets, time: 0, is3D: true,
@@ -907,7 +936,8 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       const d = curDrawable;
       if (d && (d.model === 'house' || key === 'house')) { houseSeen(d, img, x, y, z); return; }
       if (d && MODEL_KEYS[key] && R.models3d) { modelSeen(d, key, x, y, z, o.hop || 0); return; }
-      if (key === 'torch' || key === 'torch_lit' || (key === 'lantern' && R.night > 0.2)) torchSpots.push([x, y, z]);
+      const L = lightFor(key, d);
+      if (L && (!L.n || R.night > 0.2) && !(d && seenLights.has(d))) { torchSpots.push([x, y, z, L]); if (d) seenLights.add(d); }
       const floor = d?.layer === 'floor';
       const kind = floor ? 'floor' : a < 1 ? 'trans' : 'solid';
       const m = getBB(kind);
@@ -952,6 +982,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   R.ctx = new Proxy({}, { get: (t, k) => (k === 'canvas' ? ov : typeof k === 'string' ? () => {} : undefined), set: () => true });
 
   const seenHouses = new Set();
+  const seenLights = new Set();
   function houseSeen(d, img, x, y, z) {
     let g = houses.get(d);
     if (!g) { g = buildHouse(d, img); houses.set(d, g); }
@@ -1109,10 +1140,63 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     return dist;
   }
 
+  // ---------- Wetter, Wasser ----------
+  const HERO_LIGHT = { c: '#ffc888', p: 1, f: 0.05, r: 95 };
+  const SKY_COLOR = new THREE.Color('#a8c4e0');
+  let fxPatchTick = 0;
+  const _frustum = new THREE.Frustum(), _pm = new THREE.Matrix4();
+  const _bg = new THREE.Color(), _gray = new THREE.Color('#9aa4b0'), _rainFog = new THREE.Color('#6c7684'), _mist = new THREE.Color('#c4ccd2'), _cTmp = new THREE.Color();
+  R.setWeather = (k, instant) => weather.set(k, instant);
+  R.weatherFX = weather;
+  function applyWeather(dt, world, dist) {
+    const outdoor = !cur.dark && world.outdoor !== false;
+    const S = weather.update(dt, cur.dark ? null : R.hours, look, (H / 540) * Math.min(2, R.resScale * 1.4), outdoor);
+    if (!outdoor) return;
+    const c = S.cloud, rn = S.rain;
+    sun.intensity *= Math.max(0.12, 1 - 0.6 * Math.max(0, c - 0.2) - 0.35 * rn);
+    hemi.intensity *= 1 - 0.18 * c - 0.18 * rn - 0.15 * S.storm;
+    hemi.color.lerp(_gray, 0.35 * c);
+    sun.color.lerp(_gray, 0.25 * c);
+    scene.fog.color.lerp(_rainFog, 0.6 * rn).lerp(_mist, 0.7 * S.fogNow);
+    const f = S.fogNow;
+    scene.fog.near *= 1 - 0.85 * f; scene.fog.far *= Math.max(0.25, 1 - 0.66 * f - 0.2 * rn);
+    if (S.light > 0) { hemi.intensity += S.light * 2.6; hemi.color.lerp(_cTmp.set('#dfe8ff'), S.light * 0.7); sun.intensity += S.light * 2; }
+    if (R.night <= 0.5 && (c > 0.4 || rn > 0.05 || f > 0.25)) scene.background = (_bg.copy(SKY_COLOR).lerp(scene.fog.color, Math.min(1, c * 0.6 + rn * 0.4 + f * 0.5)), _bg);
+    FXU.uSkyCol.value.copy(scene.fog.color);
+  }
+  const _lightCol = new THREE.Color();
+  function updateWater(drawables, world, cam) {
+    const w = cur.water; if (!w) return;
+    const u = w.mat.uniforms;
+    // Ringe: Figuren, die durchs Wasser laufen
+    for (const d of drawables) {
+      if (!d || d.hidden || !(d === cam.follow || d.kind === 'npc' || d.kind === 'wild' || d.kind === 'enemy' || d.kind === 'companion')) continue;
+      const def = TILE_DEFS[world.tileAtPx?.(d.x, d.y)];
+      if (!def?.water && !def?.shallow) continue;
+      const last = w.seen.get(d);
+      if (last && Math.hypot(d.x - last.x, d.y - last.y) < 5 && time - last.t < 1.2) continue;
+      if (last && time - last.t < 0.22) continue;
+      w.seen.set(d, { x: d.x, y: d.y, t: time });
+      w.ripples.push([d.x, d.y + 1, time, def.water ? 0.7 : 1]);
+      if (w.ripples.length > 8) w.ripples.shift();
+    }
+    w.ripples.forEach((r, i) => u.uRip.value[i].set(r[0], r[1], r[2], r[3]));
+    u.uFxTime = FXU.uFxTime;
+    _lightCol.copy(hemi.color).multiplyScalar(hemi.intensity * 0.62).add(_cTmp.copy(sun.color).multiplyScalar(sun.intensity * 0.12));
+    u.uLight.value.setRGB(Math.min(1.3, _lightCol.r), Math.min(1.3, _lightCol.g), Math.min(1.3, _lightCol.b));
+    u.uSky.value.copy(R.night > 0.5 ? scene.fog.color : SKY_COLOR).lerp(scene.fog.color, 0.35);
+    u.uSunDir.value.copy(sunDir);
+    u.uSunCol.value.copy(sun.color).multiplyScalar(Math.min(1.4, sun.intensity / 2.6));
+    u.uDay.value = (1 - R.night) * (1 - 0.8 * weather.S.cloud);
+    u.uRain.value = weather.S.rain;
+    u.fogColor.value.copy(scene.fog.color); u.fogNear.value = scene.fog.near; u.fogFar.value = scene.fog.far;
+  }
+
   // ---------- main render ----------
   R.render = function render(world, drawables, cam, dt, overlay) {
     time += dt; R.time = time;
     windUniforms.uTime.value = time;
+    FXU.uFxTime.value = time;
     if (canvas.width !== W || canvas.height !== H) resize(canvas.width, canvas.height);
     if (!world) { gl.setRenderTarget(null); gl.setClearColor(BG); gl.clear(); return; }
     if (!cur || cur.world !== world) { houses.forEach((g) => scene.remove(g)); houses.clear(); models.forEach((g) => scene.remove(g)); models.clear(); camY.init = false; buildWorld(world, drawables); }
@@ -1129,7 +1213,6 @@ export function createRenderer3D(canvas, assets, opts = {}) {
       cur.groundTex.needsUpdate = true;
       buildDeco(world, drawables);
     }
-    if (waterAnim?.frames.length > 1) waterAnim.mat.map = waterAnim.frames[Math.floor(time * waterAnim.fps) % waterAnim.frames.length];
     // animated ground cells
     const fk = Math.floor(time * 4);
     if (fk !== cur.frameKey) {
@@ -1143,10 +1226,11 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     // lighting mood per map
     if (cur.dark) { hemi.intensity = 0.55; hemi.color.set('#8090c8'); sun.intensity = 0.9; sun.color.set('#c8c8ff'); scene.fog.color.copy(BG); scene.background = BG; }
     else applyDaylight();
+    applyWeather(dt, world, dist);
 
     // collect billboards
     used.solid = used.trans = used.floor = 0; blobUsed = 0; xrayUsed = 0; order = 0; torchSpots.length = 0;
-    seenHouses.clear(); seenModels.clear(); matUsed = 0; R.player = cam.follow;
+    seenHouses.clear(); seenModels.clear(); seenLights.clear(); matUsed = 0; R.player = cam.follow;
     R.stats.sprites = 0;
     const list = drawables.filter((d) => d && !d.hidden).sort((a, b) => a.y + (a.sortBias || 0) - (b.y + (b.sortBias || 0)));
     for (const d of list) {
@@ -1163,14 +1247,34 @@ export function createRenderer3D(canvas, assets, opts = {}) {
     fadeOccluders(cam.follow);
     flushBatches();
 
-    // torches -> point lights (nearest to the view centre)
+    // Lichtquellen (Fackeln, Laternen, Kristalle, Feuer-/Blitz-Monster, Attacken) -> Punktlichter, nächste zum Blickpunkt
+    const outdoorNight = !cur.dark && R.night > 0.45 && cam.follow;
+    if (outdoorNight) torchSpots.push([cam.follow.x, cam.follow.y, cam.follow.z || 0, HERO_LIGHT]);
     torchSpots.sort((a, b) => Math.hypot(a[0] - look.x, a[1] - look.z) - Math.hypot(b[0] - look.x, b[1] - look.z));
     torchLights.forEach((l, i) => {
       const t = torchSpots[i];
       if (!t) { l.intensity = 0; return; }
-      l.position.set(t[0], t[2] * LEVEL + 18, t[1] + 2);
-      l.intensity = (cur.dark ? 4200 : 1500 * Math.max(0.35, R.night)) * (0.85 + 0.15 * Math.sin(time * 13 + i * 2.1) * Math.sin(time * 7.3 + i));
+      const L = t[3];
+      l.position.set(t[0], t[2] * LEVEL + (L.mon ? 10 : 18), t[1] + 2);
+      l.color.set(L.c); l.distance = L.r || 110;
+      const fl = 1 - (L.f || 0) * 0.5 * (0.5 + 0.5 * Math.sin(time * 13 + i * 2.1) * Math.sin(time * 7.3 + i * 1.7));
+      const pu = L.pulse ? 0.75 + 0.25 * Math.sin(time * L.pulse * 2.4 + i) : 1;
+      const base = cur.dark ? 4200 : L === HERO_LIGHT ? 900 * R.night : (L.n ? 1500 * Math.max(0.35, R.night) : 1500 * (0.45 + 0.75 * R.night));
+      l.intensity = base * (L.p || 1) * fl * pu;
     });
+    // Fenster leuchten nachts
+    const win = 0.3 + 1.6 * (cur.dark ? 0 : R.night);
+    windowMats.forEach((m) => { m.emissiveIntensity = win; });
+    // neu entstandene Materialien (Billboards, Bäume, Häuser) mit Wolken/Nässe versehen
+    if ((++fxPatchTick & 31) === 0) patchTree(scene);
+    updateWater(drawables, world, cam);
+    if (cur.water && R.reflections !== false && R.look !== 'pur') {
+      _frustum.setFromProjectionMatrix(_pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+      const on = _frustum.intersectsBox(cur.water.box) && reflection.render(gl, scene, camera, cur.water.y);
+      const u = cur.water.mat.uniforms;
+      u.uReflOn.value = on ? 1 : 0;
+      if (on) { u.tRefl.value = reflection.rt.texture; u.uReflMat.value.copy(reflection.texMat); }
+    } else if (cur.water) cur.water.mat.uniforms.uReflOn.value = 0;
 
     // scene -> rtScene
     gl.setRenderTarget(rtScene);
@@ -1226,7 +1330,7 @@ export function createRenderer3D(canvas, assets, opts = {}) {
   R.degrade = function () {
     if (R.quality <= 0) return;
     R.quality--;
-    if (R.quality === 4) R.dof = false;
+    if (R.quality === 4) { R.dof = false; R.reflections = false; }
     else if (R.quality === 3) { R.resScale = Math.min(R.resScale, 0.75); resize(W, H); }
     else if (R.quality === 2) R.bloom = false;
     else if (R.quality === 1) { sun.shadow.mapSize.set(1024, 1024); sun.shadow.map?.dispose(); sun.shadow.map = null; }

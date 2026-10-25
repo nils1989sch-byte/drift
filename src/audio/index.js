@@ -287,6 +287,11 @@ export function createSFX(opts = {}) {
     dash(t) { noise(t, 0.15, 0.2, { f0: 800, f1: 300 }); },
     heart_container(t) { seq(t, ['C5', 'E5', 'G5', 'C6', 'E6', 'G6', 'C7'], 0.06, (f, tt) => tone('pulse25', f, f, tt, 0.2, 0.09)); },
     save(t) { seq(t, ['G5', 'C6', 'E6'], 0.09, (f, tt) => tone('triangle', f, f, tt, 0.3, 0.25)); },
+    thunder(t) {
+      noise(t, 0.12, 0.45, { type: 'lowpass', f0: 3000, f1: 900 });
+      noise(t + 0.05, 2.6, 0.55, { type: 'lowpass', f0: 420, f1: 50, q: 0.8, echo: 0.5 });
+      tone('sine', 62, 32, t + 0.08, 2.2, 0.35, { echo: false });
+    },
   };
   const GAP = { text_blip: 0.03, menu_move: 0.03, bomb_fuse: 0.35, low_health: 0.5 };
 
@@ -337,7 +342,28 @@ export function createSFX(opts = {}) {
     }
   }
 
+  // Regen-Rauschen als Schleife (Lautstärke 0..1 über api.setRain)
+  let rainSrc = null, rainGain = null, rainWant = 0;
+  function rainLoop() {
+    if (rainSrc || !ctx) return;
+    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (0.6 + 0.4 * Math.random());
+    rainSrc = ctx.createBufferSource(); rainSrc.buffer = buf; rainSrc.loop = true;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 0.5;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 5200;
+    rainGain = ctx.createGain(); rainGain.gain.value = 0;
+    rainSrc.connect(bp); bp.connect(lp); lp.connect(rainGain); rainGain.connect(sfxBus);
+    rainSrc.start();
+  }
   const api = {
+    setRain(v) {
+      v = Math.max(0, Math.min(1, v || 0));
+      if (Math.abs(v - rainWant) < 0.02) return;
+      rainWant = v;
+      if (!ready()) return;
+      if (v > 0) rainLoop();
+      if (rainGain) rainGain.gain.setTargetAtTime(v * 0.16, ctx.currentTime, 0.6);
+    },
     play(name, o = {}) {
       if (!ready()) return false;
       const f = SFX[name]; if (!f) return false;

@@ -544,6 +544,7 @@ function mapInspector(box, m, head) {
   box.append(el('div', { class: 'row' },
     field('Musik', sel(MUSIC, m.music, edit('Musik', (v) => { m.music = v; }))),
     field('Klippen', sel(FACES, m.face, edit('Klippen', (v) => { m.face = v; })))));
+  if (m.outdoor) box.append(field('Wetter', sel({ auto: 'automatisch (wechselt täglich)', clear: '☀ immer klar', cloudy: '☁ bewölkt', rain: '🌧 Regen', storm: '⛈ Gewitter', fog: '🌫 Nebel' }, m.weather || 'auto', edit('Wetter', (v) => { if (v === 'auto') delete m.weather; else m.weather = v; }))));
   const size = { w: m.w, h: m.h, ax: 0, ay: 0 };
   box.append(field('Größe (Tiles)', el('div', { class: 'row' },
     num(m.w, (v) => { size.w = v; }, { min: 4, max: 256 }), num(m.h, (v) => { size.h = v; }, { min: 4, max: 256 }),

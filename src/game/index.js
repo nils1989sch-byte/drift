@@ -505,6 +505,20 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
       } : null,
     });
   };
+  // ---- Wetter: pro Spieltag festgelegt (Tag 1 immer klar), Karte kann es festlegen (def.weather), QA kann überschreiben ----
+  const WEATHER_ROLL = [['clear', 50], ['cloudy', 20], ['rain', 16], ['storm', 6], ['fog', 8]];
+  g.weatherOverride = null;
+  g.weatherNow = () => {
+    if (g.weatherOverride) return g.weatherOverride;
+    const def = g.mapDef;
+    if (!def || def.outdoor === false) return 'clear';
+    if (def.weather && def.weather !== 'auto') return def.weather;
+    const day = g.clock?.day ?? 1;
+    if (day <= 1) return 'clear';
+    let h = Math.imul(day ^ 0x9e3779b9, 2654435761) >>> 0; h = ((h ^ (h >>> 15)) >>> 0) % 100;
+    for (const [k, w] of WEATHER_ROLL) { if (h < w) return k; h -= w; }
+    return 'clear';
+  };
   g.healParty = () => { g.party.healAll(); };
   g.chooseStarter = async (list) => {
     const STARTERS = (list || g.starters || DEFAULT_STARTERS).filter((id) => SPECIES[id]);
@@ -625,6 +639,7 @@ export function createGame({ assets, input, camera, fx, sfx, ui }) {
     battle(id = 'boeli', level = 3) { if (!g.party.lead) g.debug.giveMonster('funkel', 5); const w = new WildMon(g, id, level, player.x, player.y - 40); g.wilds.push(w); rebuild(); return g.engageWild(w); },
     winBattle() { g.battle.debugWin(); },
     weaken(frac = 0.2) { g.battle.debugWeaken(frac); },
+    weather(k = null) { g.weatherOverride = k; g.weatherSnap = true; return g.weatherNow(); },
     party() { return g.party.team.map((m) => ({ id: m.id, name: m.name, level: m.level, hp: m.hp, maxHp: m.maxHp, xp: m.xp, moves: m.moves })); },
     setTime(h) { g.clock.setTime?.(h); return g.clock.hours; },
     wilds() { return g.wilds.map((w) => ({ id: w.mon.id, level: w.mon.level, tx: Math.floor(w.x / TILE), ty: Math.floor((w.y - 2) / TILE), state: w.state })); },

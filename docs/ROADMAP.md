@@ -24,6 +24,10 @@ und Spiel. Bilder bleiben lokal (IndexedDB), ins Projekt kommt nur die Zuordnung
 **Szenen-Generator** (✨ im Editor): 6 Vorlagen (Wiesen-Route, Waldweg, Flusstal, Küste, Dorf, Höhle), Seed + Regler
 (Wasser, Wald, Hügel, hohes Gras, Monster-Level, Truhen, Ausgänge), Live-Minikarte, als neue Karte oder Ersatz, Ausgänge mit
 vorhandenen Karten verbinden. **Bildstil** im Pausenmenü: Klar (Standard) / Diorama / Pur.
+**Dynamische Shader** (`src/engine/fx3d.js`): Wasser mit Wellen, Spiegelung, Sonnenglitzern, Uferschaum, Lauf- und
+Regenringen · farbiges, flackerndes Licht von Fackeln, Laternen, Kristallen, Feuer-/Blitz-Monstern und Attacken, Heldenlicht
+nachts, leuchtende Fenster · Wetter je Spieltag (klar, bewölkt, Regen, Gewitter, Nebel; Tag 1 klar; pro Karte festlegbar):
+Wolkenschatten, Nässe, Pfützen auf Wegen, Regen + Spritzer + Rauschen, Blitze + Donner, Morgennebel, Glühwürmchen.
 Offen: HD-Aufwertung importierter Grafik (Detail/Licht), Autotile-Übergänge aus Sets, Smart-Brushes/Generatoren, Figuren-Baukasten, Monster-Werkstatt.
 
 1. **Inhalte als Daten:** Karten, Objekte, NPCs, Dialoge, Truhen, Warps und Gegner-Spawns als JSON in `content/`

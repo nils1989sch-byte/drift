@@ -13,6 +13,7 @@ import { loadContentSource, installContent } from './content/runtime.js';
 import { installPacks } from './assetpack/install.js';
 
 const STEP = 1 / 60;
+const safe = (o, fn, ...a) => { try { return o?.[fn]?.(...a); } catch { return undefined; } };
 
 function boot() {
   const root = document.getElementById('app');
@@ -80,6 +81,8 @@ function boot() {
   renderer.debug = debug;
   if (new URLSearchParams(location.search).get('tilt') === '0') renderer.tiltShift = false;
   if (params.get('look') && renderer.setLook) renderer.setLook(params.get('look'));
+  if (params.get('weather')) game.weatherOverride = params.get('weather');
+  if (renderer.weatherFX) renderer.weatherFX.onThunder = () => safe(sfx, 'play', 'thunder');
 
   function frame(now) {
     let dt = Math.min(0.1, (now - last) / 1000);
@@ -101,6 +104,11 @@ function boot() {
     if (steps === 6) acc = 0;
     const drawables = game.world ? [...game.entities, ...fx.drawables()] : [];
     renderer.setTime?.(game.world?.outdoor === false ? null : game.clock?.hours ?? null);
+    if (renderer.setWeather) {
+      renderer.setWeather(game.weatherNow?.() || 'clear', game.weatherSnap);
+      game.weatherSnap = false;
+      safe(sfx, 'setRain', game.state === 'play' ? renderer.weatherFX.S.rain : 0);
+    }
     renderer.render(game.world, drawables, camera, dt, game.drawOverlay);
     if (renderer.degrade && game.world) {
       if (dt > 1 / 40) { slowT += dt; fastT = 0; } else { fastT += dt; slowT = Math.max(0, slowT - dt * 0.5); }

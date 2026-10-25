@@ -36,6 +36,7 @@ export function toRuntimeDef(m, content, assets = null) {
     id: m.id, name: m.name, face: m.face, plinth: m.plinth, music: m.music, outdoor: !!m.outdoor, ambient: m.ambient !== false,
     legend, rows: groundToRows(m.layers.ground, w, h, legend), heights: heightToRows(m.layers.height, w, h),
     objects: [], enemies: [], npcs: [], wild: [], spawners: [], warps: [], spawns: {}, content: m,
+    weather: m.weather || 'auto',
   };
   for (const o of m.objects) {
     if (o.type === 'barrier' && o.rect) { def.objects.push({ t: 'barrier', x: o.rect[0], y: o.rect[1], w: o.rect[2], h: o.rect[3] }); continue; }

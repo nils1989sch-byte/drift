@@ -304,7 +304,9 @@ export function registerBattleFX(kit) {
   function typeFX(type, x, y, o) {
     const t = typeKey(type || o.type);
     const f = FORMS[o.form || 'hit'] || hit;
-    return f(t, x, y, o);
+    const p = f(t, x, y, o);
+    if (p) p.elem = t;            // Renderer: farbiges Licht der Attacke
+    return p;
   }
   for (const t of [...FX_TYPES, ...Object.keys(TYPE_ALIAS)]) {
     SPAWN['type_' + t] = (x, y, o) => typeFX(t, x, y, o);
