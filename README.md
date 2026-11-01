@@ -10,6 +10,10 @@
 
 <p align="center">
   <a href="https://github.com/nils1989sch-byte/drift/releases/latest"><b>DRIFT für Windows herunterladen</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://ko-fi.com/slinsch">DRIFT unterstützen</a>
+  &nbsp;·&nbsp;
+  <a href="README.en.md">English</a>
 </p>
 
 ---
@@ -132,6 +136,14 @@ Deine Dateien verlassen den Rechner nicht. Umwandeln, Texterkennung, Diktat und 
 ## Systemvoraussetzungen
 
 Windows 10 oder 11 mit 64 Bit. Auf schwächeren Rechnern schaltet DRIFT auf Wunsch in einen Sparmodus mit weniger Animation.
+
+## DRIFT unterstützen
+
+DRIFT ist kostenlos und bleibt es. Wenn es dir Zeit spart, freue ich mich über einen Kaffee. Davon bezahle ich zuerst ein Zertifikat, damit Windows beim Installieren nicht mehr warnt, und danach die Zeit für neue Funktionen.
+
+<p align="center">
+  <a href="https://ko-fi.com/slinsch"><img src="https://img.shields.io/badge/Ko--fi-DRIFT%20unterst%C3%BCtzen-e05cbf?style=for-the-badge&logo=ko-fi&logoColor=white" alt="DRIFT auf Ko-fi unterstützen"></a>
+</p>
 
 ## Fehler gefunden oder eine Idee?
 
