@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: DRIFT herunterladen
+    url: https://github.com/nils1989sch-byte/drift/releases/latest
+    about: Die neueste Version für Windows

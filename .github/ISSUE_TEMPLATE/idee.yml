@@ -1,0 +1,16 @@
+name: Idee vorschlagen
+description: Eine neue Funktion oder etwas, das besser gehen könnte
+labels: ["Idee"]
+body:
+  - type: textarea
+    id: idee
+    attributes:
+      label: Was wünschst du dir?
+      description: Beschreib kurz, was DRIFT können soll.
+    validations:
+      required: true
+  - type: textarea
+    id: wozu
+    attributes:
+      label: Wofür brauchst du das?
+      description: Ein Beispiel aus deinem Alltag hilft, die beste Lösung zu finden.

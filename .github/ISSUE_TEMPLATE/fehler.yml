@@ -1,0 +1,42 @@
+name: Fehler melden
+description: Etwas funktioniert nicht oder sieht falsch aus
+labels: ["Fehler"]
+body:
+  - type: markdown
+    attributes:
+      value: Danke fürs Melden. Je genauer, desto schneller lässt es sich beheben.
+  - type: textarea
+    id: was
+    attributes:
+      label: Was ist passiert?
+      description: Und was hättest du stattdessen erwartet?
+    validations:
+      required: true
+  - type: textarea
+    id: schritte
+    attributes:
+      label: So lässt es sich nachstellen
+      placeholder: |
+        1. Bild aus dem Explorer ziehen
+        2. Umschalt drücken
+        3. ...
+  - type: input
+    id: version
+    attributes:
+      label: DRIFT-Version
+      description: Steht in den Einstellungen ganz unten.
+      placeholder: z. B. 1.40.0
+    validations:
+      required: true
+  - type: dropdown
+    id: windows
+    attributes:
+      label: Windows
+      options:
+        - Windows 11
+        - Windows 10
+  - type: textarea
+    id: bild
+    attributes:
+      label: Screenshot oder Log
+      description: Bild einfach hier hineinziehen. Das Log findest du in den Einstellungen unter „Log öffnen“.
