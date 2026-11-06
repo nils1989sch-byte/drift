@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/bilder/menue-start.png" alt="DRIFT: drag a file, open the ring, done" width="100%">
+  <img src="docs/bilder/drift-header.svg" alt="DRIFT — Your Dynamic Island for Windows. Drag. Drop. Convert. Edit. English + Deutsch." width="100%">
 </p>
 
 <p align="center">
