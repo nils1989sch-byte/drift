@@ -30,6 +30,10 @@ Eine Insel, wie du sie von Apple kennst — für deinen Windows-Desktop. DRIFT v
 
 Zieh eine Datei aus dem Explorer, halte dabei Umschalt und lass sie auf das gewünschte Format im Ring fallen. Die neue Datei liegt neben dem Original; das Original bleibt unverändert.
 
+<p align="center">
+  <video src="docs/bilder/DRIFT DESKTOP_mac2MB.mp4" controls width="400"></video>
+</p>
+
 ## Der Ring
 
 <p align="center">
