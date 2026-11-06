@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/bilder/banner.png" alt="DRIFT: Datei ziehen, Ring auf, fertig umgewandelt" width="100%">
+  <img src="docs/bilder/menue-start.png" alt="DRIFT: Datei ziehen, Ring auf, fertig umgewandelt" width="100%">
 </p>
 
 <p align="center">
@@ -18,9 +18,9 @@
 
 ---
 
-# Weniger klicken. Mehr erledigen.
+# Deine Dynamic Island für Windows
 
-Bilder umwandeln, PDFs zusammenfügen und Dateien aus verschiedenen Ordnern sammeln — direkt dort, wo du arbeitest. DRIFT ist dein kostenloser Windows-Helfer mit einem Ringmenü am Mauszeiger und einer kleinen Insel am Bildschirmrand.
+Eine Insel, wie du sie von Apple kennst — für deinen Windows-Desktop. DRIFT verbindet eine Oberfläche im Stil der Dynamic Island für Musik, Schnellzugriffe und Alltagsaufgaben mit **Dateien umwandeln und bearbeiten per Drag-and-drop**. Datei ziehen, Umschalt halten, Aktion im Ring wählen — fertig.
 
 **Jetzt auf Deutsch und Englisch · Windows 10 & 11 · Dateiverarbeitung lokal · Ohne Konto**
 
