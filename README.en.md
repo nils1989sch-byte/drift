@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/bilder/drift-header.svg" alt="DRIFT — Your Dynamic Island for Windows. Drag. Drop. Convert. Edit. English + Deutsch." width="100%">
+  <img src="docs/bilder/banner.png" alt="DRIFT — Datei ziehen, Ring auf, fertig umgewandelt" width="100%">
 </p>
 
 <p align="center">
