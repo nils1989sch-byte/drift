@@ -18,17 +18,37 @@
 
 ---
 
-DRIFT lives as a small black island at the top of your screen. Grab a file in Explorer, press Shift while dragging, and a ring opens right at your cursor. Drop the file on the format you want and the new file appears next to the original. The original is never touched.
+# Less clicking. More done.
 
-On top of that there are screenshots, dictation, a shelf for files, music with synced lyrics and a few small things that make the workday nicer. Conversions run on your own computer, no upload, no account.
+Convert images, merge PDFs and collect files from different folders — right where you work. DRIFT is a free Windows helper with a ring menu at your cursor and a small island at the edge of your screen.
 
-> DRIFT itself is in German right now. An English interface is in the works, and the screenshots below will follow.
+**Now available in English and German · Windows 10 & 11 · Local file processing · No account required**
+
+- **Get images ready:** convert, resize or remove backgrounds, including several files at once.
+- **Bring PDFs together:** drop them on the island, arrange the order and merge.
+- **Collect and send files:** park files from different folders on the shelf and drag them into an email together.
+
+Grab a file in Explorer, hold Shift while dragging, and drop it on a format in the ring. The converted file appears next to the original, which stays unchanged.
+
+*The screenshots below currently show the German interface. DRIFT itself is also available in English.*
 
 ## The ring
 
 <p align="center">
   <img src="docs/bilder/ring.gif" alt="The ring opens and the target name appears as a pill" width="420">
 </p>
+
+## Help DRIFT keep growing
+
+I'm Nils, the developer behind DRIFT. I want everyday file tasks on Windows to take fewer clicks. **DRIFT is free and stays free — supporting it is entirely optional.**
+
+If DRIFT saves you time, you can support its development on Ko-fi. The first priority is code signing for installers with a verifiable publisher. Further support helps fund maintenance, improvements and new features.
+
+[**Support DRIFT on Ko-fi →**](https://ko-fi.com/slinsch)
+
+A one-time thank-you is welcome; monthly support is optional. You can also help by sharing DRIFT, starring the repository or reporting a bug.
+
+### Formats and tools
 
 The ring only shows what fits the file. For an image that means other image formats, PDF, background removal, crop, rotate, flip and more; for a video MP4, GIF, audio only or 720p. Hover a dot and it turns into a pill with its name and the estimated size afterwards. Several files at once work too.
 
@@ -103,7 +123,7 @@ Ctrl + Alt + F opens a search across everything DRIFT can do. Type a few letters
 ## Installation
 
 1. Download `DRIFT-Setup-….exe` from [Releases](https://github.com/nils1989sch-byte/drift/releases/latest).
-2. Double-click it. Windows may show the blue SmartScreen notice because the installer isn't signed by a big company. Click "More info" and then "Run anyway".
+2. Double-click it. Windows may display a SmartScreen notice. Check that the installer comes from this repository’s official release before deciding whether to run it.
 3. DRIFT starts and explains itself in a few short steps the first time.
 
 DRIFT downloads new versions in the background and installs them the next time you quit.
@@ -138,14 +158,6 @@ Your files never leave your computer. Converting, text recognition, dictation an
 ## Requirements
 
 Windows 10 or 11, 64-bit. On slower computers DRIFT can switch to a power saving mode with less animation.
-
-## Support DRIFT
-
-DRIFT is free and stays free. If it saves you time, a coffee is very welcome. The first goal is a code signing certificate so Windows stops warning during installation, after that it pays for time spent on new features.
-
-<p align="center">
-  <a href="https://ko-fi.com/slinsch"><img src="https://img.shields.io/badge/Ko--fi-Support%20DRIFT-e05cbf?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Support DRIFT on Ko-fi"></a>
-</p>
 
 ## Found a bug or have an idea?
 
