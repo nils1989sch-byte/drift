@@ -18,15 +18,35 @@
 
 ---
 
-DRIFT sitzt als kleine schwarze Insel oben auf dem Bildschirm. Du ziehst eine Datei aus dem Explorer, drückst beim Ziehen Umschalt, und am Mauszeiger klappt ein Ring auf. Lass die Datei auf das gewünschte Format fallen, und die neue Datei liegt neben dem Original. Das Original bleibt immer, wie es war.
+# Weniger klicken. Mehr erledigen.
 
-Dazu kommen Screenshots, Diktat, eine Ablage für Dateien, Musik mit Songtext und ein paar kleine Dinge, die den Arbeitstag angenehmer machen. Die Umwandlung läuft auf deinem Rechner, ohne Upload und ohne Konto.
+Bilder umwandeln, PDFs zusammenfügen und Dateien aus verschiedenen Ordnern sammeln — direkt dort, wo du arbeitest. DRIFT ist dein kostenloser Windows-Helfer mit einem Ringmenü am Mauszeiger und einer kleinen Insel am Bildschirmrand.
+
+**Jetzt auf Deutsch und Englisch · Windows 10 & 11 · Dateiverarbeitung lokal · Ohne Konto**
+
+- **Bilder fertig machen:** umwandeln, verkleinern oder freistellen — auch mehrere auf einmal.
+- **PDFs zusammenbringen:** auf die Insel ziehen, Reihenfolge festlegen und zusammenfügen.
+- **Dateien gesammelt weitergeben:** aus verschiedenen Ordnern in der Ablage parken und gemeinsam in eine Mail ziehen.
+
+Zieh eine Datei aus dem Explorer, halte dabei Umschalt und lass sie auf das gewünschte Format im Ring fallen. Die neue Datei liegt neben dem Original; das Original bleibt unverändert.
 
 ## Der Ring
 
 <p align="center">
   <img src="docs/bilder/ring.gif" alt="Der Ring klappt auf, der Name des Ziels erscheint als Pille" width="420">
 </p>
+
+## Hilf mit, DRIFT weiterzuentwickeln
+
+Ich bin Nils, der Entwickler hinter DRIFT. Ich möchte alltägliche Dateiaufgaben unter Windows mit weniger Klicks erledigen. **DRIFT ist kostenlos und bleibt es — Unterstützung ist freiwillig.**
+
+Wenn dir DRIFT Zeit spart, kannst du die Entwicklung auf Ko-fi unterstützen. Das erste Ziel ist die Codesignierung für Installationsdateien mit überprüfbarem Herausgeber. Weitere Unterstützung hilft bei der Pflege, Verbesserungen und neuen Funktionen.
+
+[**DRIFT auf Ko-fi unterstützen →**](https://ko-fi.com/slinsch)
+
+Ein einmaliges Dankeschön ist willkommen; monatliche Unterstützung ist optional. Auch Weiterempfehlen, ein GitHub-Stern oder ein Fehlerbericht helfen dem Projekt.
+
+### Formate und Werkzeuge
 
 Der Ring zeigt nur, was zur Datei passt. Bei einem Bild sind das andere Bildformate, PDF, Freistellen, Zuschneiden, Drehen, Spiegeln und Co., bei einem Video MP4, GIF, nur den Ton oder 720p. Fährst du über einen Punkt, wird er zur Pille mit Namen und der geschätzten Größe danach. Mehrere Dateien auf einmal gehen auch.
 
@@ -101,7 +121,7 @@ Strg + Alt + F öffnet eine Suche über alles, was DRIFT kann. Ein paar Buchstab
 ## Installation
 
 1. Unter [Releases](https://github.com/nils1989sch-byte/drift/releases/latest) die Datei `DRIFT-Setup-….exe` herunterladen.
-2. Doppelklicken. Windows zeigt eventuell den blauen SmartScreen-Hinweis, weil der Installer nicht von einer großen Firma signiert ist. Dann auf „Weitere Informationen“ und „Trotzdem ausführen“ klicken.
+2. Doppelklicken. Windows zeigt möglicherweise einen SmartScreen-Hinweis. Prüfe, dass der Installer aus dem offiziellen Release dieses Repositorys stammt, bevor du entscheidest, ihn auszuführen.
 3. DRIFT startet und erklärt sich beim ersten Mal in ein paar kurzen Schritten.
 
 Neue Versionen lädt DRIFT selbst im Hintergrund und installiert sie beim nächsten Beenden.
@@ -136,14 +156,6 @@ Deine Dateien verlassen den Rechner nicht. Umwandeln, Texterkennung, Diktat und 
 ## Systemvoraussetzungen
 
 Windows 10 oder 11 mit 64 Bit. Auf schwächeren Rechnern schaltet DRIFT auf Wunsch in einen Sparmodus mit weniger Animation.
-
-## DRIFT unterstützen
-
-DRIFT ist kostenlos und bleibt es. Wenn es dir Zeit spart, freue ich mich über einen Kaffee. Davon bezahle ich zuerst ein Zertifikat, damit Windows beim Installieren nicht mehr warnt, und danach die Zeit für neue Funktionen.
-
-<p align="center">
-  <a href="https://ko-fi.com/slinsch"><img src="https://img.shields.io/badge/Ko--fi-DRIFT%20unterst%C3%BCtzen-e05cbf?style=for-the-badge&logo=ko-fi&logoColor=white" alt="DRIFT auf Ko-fi unterstützen"></a>
-</p>
 
 ## Fehler gefunden oder eine Idee?
 
