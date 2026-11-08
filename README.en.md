@@ -11,6 +11,8 @@
 <p align="center">
   <a href="https://github.com/nils1989sch-byte/drift/releases/latest"><b>Download DRIFT for Windows</b></a>
   &nbsp;·&nbsp;
+  <a href="https://nils1989sch-byte.github.io/drift/">Website with live demo</a>
+  &nbsp;·&nbsp;
   <a href="https://ko-fi.com/slinsch">Support DRIFT</a>
   &nbsp;·&nbsp;
   <a href="README.md">Deutsch</a>
